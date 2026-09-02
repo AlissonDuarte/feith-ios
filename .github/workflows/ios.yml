@@ -1,0 +1,192 @@
+name: iOS — build e TestFlight
+
+# Runner macOS em repo privado consome minutos com multiplicador 10x: os 2.000
+# min/mes gratuitos viram ~200 min de macOS, e um build leva 15-25 min. Por isso
+# este workflow NUNCA roda em push comum — so manualmente ou por tag.
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: 'Lane do fastlane'
+        required: true
+        # `beta` e o default de proposito: com outra lane no topo, um disparo
+        # manual sem trocar o seletor terminaria verde sem publicar nada.
+        default: beta
+        type: choice
+        options:
+          - beta
+          - devclient
+          - build_only
+  push:
+    tags:
+      - 'v*'
+
+# Um build de cada vez: se uma tag nova chegar, cancela a anterior em vez de
+# gastar dois runners.
+concurrency:
+  group: ios-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Xcode 26+ e obrigatorio: o Expo SDK 57 traz pacotes SwiftPM com
+    # `swift-tools-version: 6.2` (expo-modules-jsi), que o Xcode 16 nao resolve.
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    env:
+      # Sem isto o app aponta para localhost e nao acha a API.
+      EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+      EXPO_PUBLIC_WEB_URL: ${{ secrets.EXPO_PUBLIC_WEB_URL }}
+      # Google Sign-In. Precisam existir no `expo prebuild` (o iOS gera o URL
+      # scheme do callback) e no bundle JS. Vazios = botao escondido.
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}
+      # Product ID da assinatura no App Store Connect.
+      EXPO_PUBLIC_IAP_SKU: ${{ secrets.EXPO_PUBLIC_IAP_SKU }}
+      # Vira o entitlement aps-environment no prebuild. Sem isto o default do
+      # app.config.ts e 'development', e um TestFlight assinado assim registra
+      # no APNs, recebe device token e nunca entrega nada — sem erro nenhum.
+      APS_ENVIRONMENT: production
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+      # Fastlane em CI: sem prompt e com log legivel.
+      FASTLANE_DISABLE_COLORS: '1'
+      LC_ALL: en_US.UTF-8
+      LANG: en_US.UTF-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # A App Store rejeita por 3.1.1 qualquer caminho de pagamento externo, e a
+      # web do fidio tem o checkout da Stripe pronto para ser copiado por
+      # engano (PriceTableModal.svelte, SubscriptionSection.svelte). No iOS a
+      # cobranca e 100% StoreKit; se algo da Stripe entrar no bundle, o build
+      # morre aqui em vez de num ciclo de review.
+      - name: Guarda anti-Stripe (App Review 3.1.1)
+        run: |
+          # Duas varreduras. A primeira pega o que e sempre proibido: URL de
+          # pagamento externo ou chamada aos endpoints de checkout da web.
+          if grep -rniE 'stripe\.com|checkout\.stripe|checkout_url|subscriptions/(checkout|change-plan|cancel|reactivate|pause)' app/ src/; then
+            echo "::error::Caminho de pagamento externo encontrado. No iOS a cobranca e so StoreKit."
+            exit 1
+          fi
+
+          # A segunda pega qualquer mencao a "stripe". Ela tem excecoes
+          # legitimas — o backend devolve provider: "stripe" para quem assinou
+          # pela web, e o app precisa saber disso para NAO oferecer o gerenciar
+          # da App Store. Uma linha so passa marcada com `stripe-ok:` e uma
+          # justificativa, o que mantem cada excecao visivel no code review.
+          if grep -rni 'stripe' app/ src/ | grep -v 'stripe-ok:'; then
+            echo "::error::Mencao a Stripe sem justificativa. Se for legitima, marque a MESMA linha com 'stripe-ok: <motivo>'."
+            exit 1
+          fi
+          echo "Nenhum caminho de pagamento externo."
+
+      # O app esconde o botao do Google quando o client ID nao chega ao bundle
+      # (ver src/auth/googleSignIn.ts). Dentro do app isso e o certo — melhor
+      # nenhum botao do que um que so falharia ao ser tocado. Numa build de
+      # release e o oposto: o TestFlight sairia sem login social e sem nenhum
+      # erro no log. Entao aqui a falta de secret quebra o build, cedo.
+      - name: Conferir configuracao do login social
+        run: |
+          fail=0
+          for var in EXPO_PUBLIC_API_URL EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Secret $var vazio ou ausente nas configuracoes do repositorio."
+              fail=1
+            fi
+          done
+          # app.config.ts deriva o reversed client ID com endsWith(...): um valor
+          # truncado nao entra no plugin e o callback do OAuth some do Info.plist,
+          # sem aviso nenhum.
+          case "$EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID" in
+            *.apps.googleusercontent.com) ;;
+            *) echo "::error::EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID nao termina em .apps.googleusercontent.com."; fail=1 ;;
+          esac
+          [ "$fail" = 0 ]
+
+      # Escolha explicita do Xcode: imagens de runner trazem varias versoes e o
+      # default nem sempre e a mais nova. Com Xcode 16 o archive morre la na
+      # frente com "Could not resolve package dependencies", 15 min depois.
+      - name: Selecionar Xcode 26+
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "Nenhum Xcode 26+ nesta imagem. Disponiveis:" >&2
+            ls -d /Applications/Xcode*.app >&2
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Symlink Node para Xcode
+        run: sudo ln -sf $(which node) /usr/local/bin/node
+
+      - name: Instalar dependencias JS
+        run: npm ci
+
+      - name: Checar tipos
+        run: npx tsc --noEmit
+
+      # Continuous native generation: ios/ nao e versionado, nasce aqui.
+      - name: Gerar projeto iOS (expo prebuild)
+        run: npx expo prebuild --platform ios
+
+      # Prova que os plugins nativos entraram. Falhar aqui custa 2 min;
+      # descobrir no TestFlight custa um ciclo de review.
+      - name: Conferir configuracao nativa
+        run: |
+          PLIST=ios/fidio/Info.plist
+          ENT=ios/fidio/fidio.entitlements
+
+          grep -q "com.googleusercontent.apps" "$PLIST" \
+            || { echo "::error::URL scheme do Google ausente do Info.plist."; exit 1; }
+
+          grep -q "com.apple.developer.applesignin" "$ENT" \
+            || { echo "::error::Entitlement do Sign in with Apple ausente."; exit 1; }
+
+          # Nao basta o entitlement existir: com o valor 'development' o build
+          # sai verde e o push some em silencio no TestFlight.
+          grep -A1 "aps-environment" "$ENT" | grep -q "<string>production</string>" \
+            || { echo "::error::aps-environment nao e 'production'. Confira APS_ENVIRONMENT."; \
+                 cat "$ENT"; exit 1; }
+
+          grep -q "com.apple.developer.associated-domains" "$ENT" \
+            || { echo "::error::Associated Domains ausente — os links /r/<token> nao abririam o app."; exit 1; }
+
+          # O player precisa continuar tocando com a tela apagada.
+          grep -A2 "UIBackgroundModes" "$PLIST" | grep -q "<string>audio</string>" \
+            || { echo "::error::UIBackgroundModes sem 'audio'. O audio pararia ao ir para background."; \
+                 exit 1; }
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      # No disparo manual vale o seletor; num push de tag os inputs vem vazios,
+      # e ai a tag publica.
+      - name: Rodar fastlane
+        run: bundle exec fastlane ios ${{ inputs.lane || 'beta' }}
+
+      - name: Guardar o .ipa
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fidio-ios
+          path: build/*.ipa
+          if-no-files-found: ignore
+          retention-days: 7

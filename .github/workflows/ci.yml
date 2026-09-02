@@ -1,0 +1,79 @@
+name: CI
+
+# Roda em ubuntu, que nao tem o multiplicador de 10x dos minutos de macOS.
+# Tudo o que da para checar sem compilar codigo nativo mora aqui, para que o
+# ios.yml so seja acionado quando ja se sabe que o JS esta de pe.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Valores de fachada: aqui nada e assinado nem publicado, mas o
+      # app.config.ts e o bundle precisam de algo para resolver. A conferencia
+      # de que os secrets REAIS existem e do ios.yml, antes do build.
+      EXPO_PUBLIC_API_URL: https://api.fidio.online/api
+      EXPO_PUBLIC_WEB_URL: https://fidio.online
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Mesma guarda do ios.yml, de proposito. La ela e o ultimo portao antes
+      # de um build que pode chegar na review; aqui ela e de graca e avisa no
+      # primeiro push, quando o custo de corrigir e menor.
+      - name: Guarda anti-Stripe (App Review 3.1.1)
+        run: |
+          if grep -rniE 'stripe\.com|checkout\.stripe|checkout_url|subscriptions/(checkout|change-plan|cancel|reactivate|pause)' app/ src/; then
+            echo "::error::Caminho de pagamento externo encontrado. No iOS a cobranca e so StoreKit."
+            exit 1
+          fi
+          if grep -rni 'stripe' app/ src/ | grep -v 'stripe-ok:'; then
+            echo "::error::Mencao a Stripe sem justificativa. Se for legitima, marque a MESMA linha com 'stripe-ok: <motivo>'."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
+      - name: Checar tipos
+        run: npm run typecheck
+
+      - name: Rodar testes
+        run: npm test
+
+      - name: Conferir versoes do SDK
+        run: npx expo-doctor
+
+      # Empacota o bundle iOS de verdade, sem compilar nativo. Pega import
+      # quebrado, rota invalida e modulo faltando — as tres coisas que, sem
+      # isto, so apareceriam 20 minutos adentro de um runner macOS.
+      - name: Empacotar bundle iOS
+        run: npx expo export --platform ios --output-dir /tmp/export
+
+      # O tamanho e vigiado porque e facil de estragar sem perceber: importar
+      # uma fonte da raiz de @expo-google-fonts em vez do subpath ja custou 9MB
+      # uma vez. O teto e folgado; ele existe para uma regressao grosseira ser
+      # barulhenta, nao para brigar por kilobytes.
+      - name: Conferir tamanho do bundle
+        run: |
+          KB=$(du -sk /tmp/export | cut -f1)
+          echo "Bundle iOS: $((KB / 1024)) MB"
+          if [ "$KB" -gt 15360 ]; then
+            echo "::error::Bundle passou de 15MB ($((KB / 1024))MB). Confira se alguma dependencia esta entrando inteira."
+            find /tmp/export -type f -size +300k -printf '%s %p\n' | sort -rn | head -20
+            exit 1
+          fi

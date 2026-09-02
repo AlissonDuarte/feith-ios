@@ -1,0 +1,203 @@
+# Pipeline iOS do fidio.
+#
+# Roda inteiro no runner macOS do GitHub Actions: nao existe Mac no fluxo de
+# desenvolvimento. As pastas ios/ e android/ nao sao versionadas — o workflow
+# gera ios/ com `expo prebuild` antes de chamar estas lanes.
+
+default_platform(:ios)
+
+APP_IDENTIFIER = ENV['IOS_BUNDLE_ID'] || 'online.fidio.app'
+SCHEME = 'fidio'
+
+platform :ios do
+  # Chave da App Store Connect API, montada a partir do .p8 em base64 guardado
+  # nos secrets. Evita 2FA de Apple ID no CI.
+  def asc_key
+    app_store_connect_api_key(
+      key_id: ENV.fetch('ASC_KEY_ID'),
+      issuer_id: ENV.fetch('ASC_ISSUER_ID'),
+      key_content: ENV.fetch('ASC_KEY_P8'),
+      is_key_content_base64: true,
+      in_house: false
+    )
+  end
+
+  # O archive so reclama de capability faltando ~30s depois de comecar, com um
+  # texto que nao diz o que fazer. Este check custa 1s, roda logo apos o match e
+  # falha explicando. Le o profile que o match ACABOU de instalar, entao mede a
+  # coisa certa: o que esta guardado no repo de certificados, e nao o que o App
+  # ID tem no portal.
+  #
+  # O fidio tem quatro capabilities contra as duas do lexa. In-App Purchase nao
+  # entra na lista: ela nao gera entitlement no profile — e habilitada no App ID
+  # e vale automaticamente. As outras tres aparecem no plist do profile.
+  # Cada entrada e [entitlement no profile, nome no portal, instrucao do passo 1].
+  REQUIRED_CAPABILITIES = [
+    [
+      'com.apple.developer.applesignin',
+      'Sign In with Apple',
+      'marque "Sign In with Apple", clique em Edit/Configure e escolha ' \
+      '"Enable as a primary App ID"',
+    ],
+    [
+      'aps-environment',
+      'Push Notifications',
+      'marque "Push Notifications"',
+    ],
+    [
+      'com.apple.developer.associated-domains',
+      'Associated Domains',
+      'marque "Associated Domains"',
+    ],
+  ].freeze
+
+  def verify_profile_capabilities
+    path = ENV["sigh_#{APP_IDENTIFIER}_appstore_profile-path"]
+    UI.user_error!('O match nao exportou o caminho do profile.') if path.to_s.empty?
+
+    plist = sh('security', 'cms', '-D', '-i', path, log: false).force_encoding('BINARY')
+
+    missing = REQUIRED_CAPABILITIES.reject { |entitlement, _, _| plist.include?(entitlement) }
+    return if missing.empty?
+
+    nomes = missing.map { |_, nome, _| nome }.join(' e ')
+    passos = missing.map { |_, _, instrucao| "           #{instrucao}" }.join(";\n")
+
+    UI.user_error!(<<~MSG)
+      O provisioning profile guardado nao tem #{nomes}.
+
+      O profile e gerado a partir das capabilities que o App ID tinha no momento
+      em que ele nasceu, e aqui o match roda em readonly: ele so baixa o que ja
+      esta no repo de certificados. Habilitar a capability no portal nao muda um
+      profile que ja existe.
+
+      Na ordem:
+        1. developer.apple.com > Certificates, Identifiers & Profiles >
+           Identifiers > #{APP_IDENTIFIER}:
+#{passos}
+           e SALVE — a confirmacao e um passo separado, e sem ela nao persiste.
+        2. Rode o workflow ios-credentials.yml. E ele que regenera o profile
+           (lane `certificates`: readonly false + force true).
+        3. Rode este build de novo.
+
+      Se o passo 2 ja rodou depois do passo 1 e este erro continua, entao o
+      problema esta no passo 1: a capability nao ficou salva no App ID.
+
+      Faltando: #{missing.map(&:first).join(', ')}
+      Profile conferido: #{path}
+    MSG
+  end
+
+  # Assinatura manual com o profile do match. Repetido nas tres lanes que
+  # buildam, entao vive aqui.
+  def apply_manual_signing
+    disable_automatic_code_signing(path: "ios/#{SCHEME}.xcodeproj")
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/#{SCHEME}.xcodeproj",
+      team_id: ENV['APPLE_TEAM_ID'],
+      bundle_identifier: APP_IDENTIFIER,
+      profile_name: "match AppStore #{APP_IDENTIFIER}",
+      code_sign_identity: 'Apple Distribution'
+    )
+  end
+
+  def archive(configuration: 'Release')
+    build_app(
+      workspace: "ios/#{SCHEME}.xcworkspace",
+      scheme: SCHEME,
+      configuration: configuration,
+      export_method: 'app-store',
+      output_directory: 'build',
+      skip_package_dependencies_resolution: true,
+      export_options: {
+        method: 'app-store',
+        provisioningProfiles: {
+          APP_IDENTIFIER => "match AppStore #{APP_IDENTIFIER}"
+        }
+      },
+      xcargs: "DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']} CODE_SIGN_IDENTITY=\"Apple Distribution\" PROVISIONING_PROFILE_SPECIFIER=\"match AppStore #{APP_IDENTIFIER}\"",
+      clean: true
+    )
+  end
+
+  # O numero de build precisa ser sempre maior que o ultimo no TestFlight; o
+  # projeto gerado pelo prebuild sempre nasce em 1.
+  def bump_build_number(key)
+    increment_build_number(
+      xcodeproj: "ios/#{SCHEME}.xcodeproj",
+      build_number: latest_testflight_build_number(
+        app_identifier: APP_IDENTIFIER,
+        api_key: key,
+        initial_build_number: 0
+      ) + 1
+    )
+  end
+
+  desc 'Cria/renova certificado e provisioning profile e guarda no repo de certs.'
+  desc 'Rodar no bootstrap E sempre que uma capability mudar no App ID.'
+  lane :certificates do
+    setup_ci
+    match(
+      type: 'appstore',
+      app_identifier: APP_IDENTIFIER,
+      api_key: asc_key,
+      readonly: false,
+      # Sem force, o match ve que o profile guardado ainda e valido e o
+      # reaproveita — a validacao dele nao olha capabilities. Ou seja: habilitar
+      # uma capability no App ID e rodar este lane nao bastaria, o profile
+      # incompleto continuaria no lugar e o archive seguiria falhando com
+      # "doesn't include the ... entitlement". Regerar profile e barato e nao
+      # revoga certificado, entao aqui e sempre.
+      force: true
+    )
+  end
+
+  desc 'Build assinado, sem upload. Valida prebuild + pods + signing barato.'
+  lane :build_only do
+    setup_ci
+    match(type: 'appstore', app_identifier: APP_IDENTIFIER, api_key: asc_key, readonly: true)
+    verify_profile_capabilities
+    apply_manual_signing
+    archive
+  end
+
+  desc 'Development build (expo-dev-client) para o TestFlight interno.'
+  desc 'E o que destrava desenvolver no Linux: instale no iPhone e rode'
+  desc '`npx expo start --dev-client`. So precisa rodar de novo quando uma'
+  desc 'dependencia NATIVA mudar — mexer em TS/TSX nao exige rebuild.'
+  lane :devclient do
+    setup_ci
+    key = asc_key
+
+    match(type: 'appstore', app_identifier: APP_IDENTIFIER, api_key: key, readonly: true)
+    verify_profile_capabilities
+    apply_manual_signing
+    bump_build_number(key)
+    # Debug para o dev client carregar o bundle do Metro em vez de embutir um.
+    archive(configuration: 'Debug')
+
+    upload_to_testflight(
+      api_key: key,
+      skip_waiting_for_build_processing: true,
+      groups: ['Internal']
+    )
+  end
+
+  desc 'Build e envio para o TestFlight.'
+  lane :beta do
+    setup_ci
+    key = asc_key
+
+    match(type: 'appstore', app_identifier: APP_IDENTIFIER, api_key: key, readonly: true)
+    verify_profile_capabilities
+    apply_manual_signing
+    bump_build_number(key)
+    archive
+
+    upload_to_testflight(
+      api_key: key,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end

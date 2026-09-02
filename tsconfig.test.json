@@ -1,0 +1,9 @@
+{
+  "//": "Config so dos testes. Eles rodam no test runner embutido do Node, nao no React Native, e por isso precisam de @types/node. Fica separado de proposito: com 'node' no tsconfig principal, um `import fs from 'node:fs'` em codigo de tela passaria pelo typecheck e so quebraria no aparelho.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/**/*.test.ts", "src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

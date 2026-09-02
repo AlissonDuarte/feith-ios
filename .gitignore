@@ -1,0 +1,53 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+# O .env carrega a URL da API da maquina local; so o .env.example e versionado.
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+# Continuous native generation: `expo prebuild` recria estas pastas no CI.
+/ios
+/android
+
+# fastlane
+# `build/` e a saida do build_app (o .ipa); o resto e ruido de execucao.
+/build
+/fastlane/report.xml
+/fastlane/Preview.html
+/fastlane/screenshots
+/fastlane/test_output
+
+# ferramentas locais
+.claude
