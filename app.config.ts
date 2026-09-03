@@ -62,7 +62,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'online.fidio.app',
+    bundleIdentifier: 'com.feith.app',
     appleTeamId: process.env.APPLE_TEAM_ID,
     // Escreve o entitlement com.apple.developer.applesignin no prebuild. Sem
     // ele o botao da Apple aparece e o signInAsync falha na hora.
@@ -92,7 +92,7 @@ const config: ExpoConfig = {
     },
   },
   android: {
-    package: 'online.fidio.app',
+    package: 'com.feith.app',
     predictiveBackGestureEnabled: false,
   },
   plugins: [

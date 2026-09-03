@@ -6,7 +6,7 @@
 
 default_platform(:ios)
 
-APP_IDENTIFIER = ENV['IOS_BUNDLE_ID'] || 'online.fidio.app'
+APP_IDENTIFIER = ENV['IOS_BUNDLE_ID'] || 'com.feith.app'
 SCHEME = 'fidio'
 
 platform :ios do
