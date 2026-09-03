@@ -99,6 +99,10 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     'expo-font',
+    // Picker nativo de data e hora — usado na data de nascimento e no horario
+    // do lembrete diario. Digitar hora num campo de texto e pior em todos os
+    // sentidos, e um app de habito depende desse horario estar certo.
+    '@react-native-community/datetimepicker',
     // Sem condicional, diferente do Google: nao ha client ID para configurar, e
     // a disponibilidade e decidida em runtime por isAvailableAsync().
     'expo-apple-authentication',

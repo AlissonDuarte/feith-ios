@@ -1,11 +1,16 @@
 /**
- * Estado de autenticacao.
+ * Estado de autenticacao e de sessao.
  *
- * A web nao tem nada equivalente: `front_fide` nao possui store de auth nem
- * guard de rota — cada pagina /user/** simplesmente renderiza e deixa os
- * fetches falharem quando nao ha sessao, e um 401 vira um toast que nao leva a
- * lugar nenhum. Aqui a sessao e um estado unico e o guard vive em
- * app/_layout.tsx.
+ * A web nao tem equivalente: `front_fide` nao possui store de auth nem guard de
+ * rota — cada pagina /user/** renderiza e deixa os fetches falharem, e um 401
+ * vira um toast que nao leva a lugar nenhum. Aqui a sessao e um estado unico e
+ * o guard vive em app/_layout.tsx.
+ *
+ * O contexto carrega o SUMMARY (plano, streak, quotas, onboarding) e nao o
+ * perfil completo. Sao dados que quase toda tela precisa, e a rota
+ * /users/me/summary traz os tres numa requisicao — a web pede perfil e streak
+ * separadamente em cada navegacao. O perfil completo (data de nascimento,
+ * genero) e assunto so da tela de editar perfil, que o busca sozinha.
  */
 import React, {
   createContext,
@@ -16,39 +21,39 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 
 import { api, setToken, setUnauthorizedHandler } from '../api/client';
-import type { AuthResponse, Plan, UserProfile } from '../api/types';
+import type { AuthResponse, Plan, UserSummary } from '../api/types';
 import { signOutFromGoogle } from './googleSignIn';
 import { unregisterFromPush } from '../push/registerDevice';
-import { clearSession, loadSession, saveProfile, saveToken } from './tokenStore';
+import { clearSession, jwtExpiresAt, loadSession, saveSummary, saveToken } from './tokenStore';
 
 /**
- * Quantos dias antes de expirar o app comeca a avisar.
+ * A partir de quanto tempo restante o app tenta renovar o token.
  *
- * O JWT do backend dura 7 dias e NAO ha refresh (auth_service.py:71). Ate o
- * item B3 do plano existir, o melhor que da para fazer e avisar antes de a
- * pessoa ser deslogada no meio da leitura. Quando /users/refresh entrar, este
- * aviso vira renovacao silenciosa.
+ * O JWT dura 7 dias. Renovar no foreground quando faltam menos de 48h torna a
+ * janela deslizante: quem abre o app ao menos uma vez por semana nunca mais
+ * digita a senha. Sem isso, todo usuario e deslogado a cada 7 dias, no meio do
+ * que estiver fazendo.
  */
-const AVISO_EXPIRACAO_MS = 2 * 24 * 60 * 60 * 1000;
+const LIMIAR_RENOVACAO_MS = 2 * 24 * 60 * 60 * 1000;
 
 interface AuthState {
-  profile: UserProfile | null;
+  summary: UserSummary | null;
   token: string | null;
   expiresAt: number | null;
-  /** true ate a sessao persistida terminar de carregar — evita piscar o login. */
+  /** true ate a sessao persistida carregar — evita piscar a tela de login. */
   loading: boolean;
 }
 
 interface AuthContextValue extends AuthState {
   signIn: (response: AuthResponse) => Promise<void>;
   signOut: () => Promise<void>;
-  updateProfile: (profile: UserProfile) => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshSummary: () => Promise<void>;
   /** `plan === 'supporter'`. Fonte unica de entitlement no app. */
   isSupporter: boolean;
-  /** Dias ate a sessao expirar, ou null se ainda falta muito. */
+  /** Dias ate a sessao expirar quando ja esta perto; null caso contrario. */
   diasParaExpirar: number | null;
 }
 
@@ -56,7 +61,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
-    profile: null,
+    summary: null,
     token: null,
     expiresAt: null,
     loading: true,
@@ -75,7 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Antes de limpar a sessao, enquanto o Bearer ainda vale: sem isto o
     // aparelho continua recebendo os lembretes do dono anterior.
     await unregisterFromPush();
-    // Best-effort: o endpoint so apaga cookie, entao falhar aqui nao importa.
     await api.logout().catch(() => undefined);
 
     setToken(null);
@@ -85,50 +89,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOutFromGoogle();
 
     if (mounted.current) {
-      setState({ profile: null, token: null, expiresAt: null, loading: false });
+      setState({ summary: null, token: null, expiresAt: null, loading: false });
     }
   }, []);
 
-  const signIn = useCallback(async (response: AuthResponse) => {
-    setToken(response.access_token);
-    await saveToken(response.access_token);
-
-    // O login nao devolve o perfil; busca agora para o app ja abrir sabendo o
-    // plano e o estado do onboarding.
-    let profile: UserProfile | null = null;
-    try {
-      profile = await api.getProfile();
-      await saveProfile(profile);
-    } catch {
-      // Sem perfil o app ainda funciona: o layout raiz tenta de novo.
-    }
-
+  const aplicarToken = useCallback(async (token: string, expiresIn?: number) => {
+    setToken(token);
+    await saveToken(token);
+    const expiresAt = expiresIn ? Date.now() + expiresIn * 1000 : jwtExpiresAt(token);
     if (mounted.current) {
-      setState({
-        profile,
-        token: response.access_token,
-        expiresAt: Date.now() + response.expires_in * 1000,
-        loading: false,
-      });
+      setState((s) => ({ ...s, token, expiresAt }));
     }
   }, []);
 
-  const updateProfile = useCallback(async (profile: UserProfile) => {
-    await saveProfile(profile);
-    if (mounted.current) {
-      setState((s) => ({ ...s, profile }));
-    }
-  }, []);
-
-  const refreshProfile = useCallback(async () => {
+  const refreshSummary = useCallback(async () => {
     try {
-      const fresh = await api.getProfile();
-      await updateProfile(fresh);
+      const summary = await api.getSummary();
+      await saveSummary(summary);
+      if (mounted.current) {
+        setState((s) => ({ ...s, summary }));
+      }
     } catch {
-      // Offline ou token morto: seguimos com o perfil em cache. Se o token
-      // estiver realmente invalido, o handler de 401 desloga.
+      // Offline ou token morto: segue com o cache. Se o token estiver mesmo
+      // invalido, o handler de 401 desloga.
     }
-  }, [updateProfile]);
+  }, []);
+
+  const signIn = useCallback(
+    async (response: AuthResponse) => {
+      await aplicarToken(response.access_token, response.expires_in);
+      await refreshSummary();
+      if (mounted.current) {
+        setState((s) => ({ ...s, loading: false }));
+      }
+    },
+    [aplicarToken, refreshSummary],
+  );
 
   // Liga o client a este contexto: um 401 sem recuperacao desloga.
   useEffect(() => {
@@ -149,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (vencido) await clearSession();
         setToken(null);
         if (mounted.current) {
-          setState({ profile: null, token: null, expiresAt: null, loading: false });
+          setState({ summary: null, token: null, expiresAt: null, loading: false });
         }
         return;
       }
@@ -157,25 +153,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(session.token);
       if (mounted.current) {
         setState({
-          profile: session.profile,
+          summary: session.summary,
           token: session.token,
           expiresAt: session.expiresAt,
           loading: false,
         });
       }
       // Revalida em background — o cache serve so para nao piscar.
-      void refreshProfile();
+      void refreshSummary();
     })();
-    // Roda uma vez: refreshProfile e estavel via useCallback.
+    // Roda uma vez: refreshSummary e estavel via useCallback.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Renovacao no foreground. Um app de habito diario e aberto quase todo dia,
+  // entao na pratica a sessao nunca expira.
+  useEffect(() => {
+    const aoVoltar = async (status: AppStateStatus) => {
+      if (status !== 'active') return;
+      if (!state.token || !state.expiresAt) return;
+
+      const restante = state.expiresAt - Date.now();
+      if (restante <= 0 || restante > LIMIAR_RENOVACAO_MS) return;
+
+      try {
+        const novo = await api.refresh();
+        await aplicarToken(novo.access_token, novo.expires_in);
+      } catch {
+        // Renovacao e best-effort: se falhar, o token atual ainda vale ate
+        // expirar, e o 401 desloga limpo quando chegar a hora.
+      }
+    };
+
+    const sub = AppState.addEventListener('change', aoVoltar);
+    // Tambem na montagem: o app pode ter sido aberto do zero ja perto do prazo.
+    void aoVoltar(AppState.currentState);
+    return () => sub.remove();
+  }, [state.token, state.expiresAt, aplicarToken]);
+
   const value = useMemo<AuthContextValue>(() => {
-    const plan = (state.profile?.plan ?? 'free') as Plan;
+    const plan = (state.summary?.plan ?? 'free') as Plan;
 
     const restante = state.expiresAt ? state.expiresAt - Date.now() : null;
     const diasParaExpirar =
-      restante !== null && restante > 0 && restante < AVISO_EXPIRACAO_MS
+      restante !== null && restante > 0 && restante < LIMIAR_RENOVACAO_MS
         ? Math.max(1, Math.ceil(restante / 86_400_000))
         : null;
 
@@ -183,12 +204,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...state,
       signIn,
       signOut,
-      updateProfile,
-      refreshProfile,
+      refreshSummary,
       isSupporter: plan === 'supporter',
       diasParaExpirar,
     };
-  }, [state, signIn, signOut, updateProfile, refreshProfile]);
+  }, [state, signIn, signOut, refreshSummary]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

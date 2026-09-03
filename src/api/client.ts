@@ -42,6 +42,7 @@ import {
   type Transcript,
   type TranscriptResponse,
   type UserProfile,
+  type UserSummary,
 } from './types';
 
 const BASE_URL =
@@ -132,9 +133,12 @@ function publicRequest<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 /**
- * Dois endpoints de nota respondem HTTP 200 com `{status: false}` quando
- * falham (user_note_views.py:39 e :148). O codigo HTTP mente, entao a checagem
- * do corpo mora aqui e nunca vaza para as telas.
+ * Rede de seguranca para os endpoints de nota.
+ *
+ * Eles respondiam HTTP 200 com `{status: false}` quando falhavam — o codigo
+ * HTTP mentia. O backend ja foi corrigido para devolver 400/404, mas a
+ * checagem fica: ela custa nada e cobre o intervalo em que uma versao do app
+ * esteja no ar contra um backend ainda nao atualizado.
  */
 function assertStatus<T extends { status: boolean; message: string }>(
   path: string,
@@ -239,7 +243,31 @@ export const api = {
    */
   logout: () => publicRequest<{ message: string }>('/users/logout', { method: 'POST' }),
 
+  /**
+   * Renova o token antes dos 7 dias. Chamado quando o app volta ao primeiro
+   * plano e falta pouco para expirar — sem isto a sessao morre no meio da
+   * leitura, sem aviso.
+   */
+  refresh: () => request<AuthResponse>('/users/refresh', { method: 'POST' }),
+
+  /**
+   * Exclusao de conta. `password` e obrigatoria para quem entrou por e-mail;
+   * contas de Google ou Apple nao tem senha e o token ja e a reautenticacao.
+   */
+  deleteAccount: (password?: string) =>
+    request<{ deleted: boolean; message: string }>('/users/me', {
+      method: 'DELETE',
+      body: { password: password ?? null },
+    }),
+
   // Perfil
+  /**
+   * Perfil, streak e quotas de uma vez. Preferir a /users/profile: a web pede
+   * perfil e streak separadamente em cada tela, e esta rota existe para o app
+   * nao repetir isso.
+   */
+  getSummary: () => request<UserSummary>('/users/me/summary'),
+
   getProfile: () => request<UserProfile>('/users/profile'),
 
   /** Devolve o perfil completo e atualizado — da para gravar sem refetch. */
@@ -332,8 +360,9 @@ export const api = {
       query: { ref_key: reflectionUuid },
     });
     return {
-      // `tittle` esta escrito errado no backend e a web ja depende do typo.
-      title: raw.tittle || 'Leitura do dia',
+      // `title` e o campo correto; `tittle` e o typo original, mantido no
+      // backend porque a web ja depende dele.
+      title: raw.title || raw.tittle || 'Leitura do dia',
       subtitle: raw.subtitle,
       audioUrl: raw.audio_url,
       issuedAt: Date.now(),
@@ -342,15 +371,15 @@ export const api = {
 
   // Compartilhamento
   /**
-   * O backend devolve so o token opaco (shared_link_schemas.py:12); a URL e
-   * montada aqui, a partir de EXPO_PUBLIC_WEB_URL, para o dominio viver num
-   * lugar so — o mesmo que os Universal Links usam.
+   * A URL pronta vem do servidor (`share_url`), para o dominio viver num lugar
+   * so — o mesmo que os Universal Links usam. O fallback monta localmente,
+   * porque um backend ainda nao atualizado devolve apenas o token.
    */
   createShareLink: async (reflectionUuid: string): Promise<SharedLink> => {
     const raw = await request<SharedLinkResponse>(`/shorts/create/${reflectionUuid}`);
     return {
       token: raw.short_link,
-      url: `${WEB_URL}/r/${raw.short_link}`,
+      url: raw.share_url || `${WEB_URL}/r/${raw.short_link}`,
       maxReads: raw.max_reads,
       expiresAt: parseExpiresBR(raw.expires_at),
     };

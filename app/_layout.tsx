@@ -9,15 +9,18 @@ import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { useFonts } from 'expo-font';
-import { Slot, SplashScreen, useRouter, useSegments } from 'expo-router';
+import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
+import { fonts, schemes } from '../src/theme/tokens';
 import { usePushNotifications } from '../src/push/usePushNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+const schemeAtual = schemes.light;
 
 /**
  * Rotas que funcionam sem sessao.
@@ -37,7 +40,7 @@ const ROTAS_PUBLICAS = ['r', 'politicas'];
  * decisao vive num lugar so.
  */
 function RouteGuard() {
-  const { token, loading } = useAuth();
+  const { token, loading, summary } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -51,15 +54,85 @@ function RouteGuard() {
     const raiz = segments[0];
     const inAuthGroup = raiz === '(auth)';
     const inPublicRoute = ROTAS_PUBLICAS.includes(raiz as string);
+    const noOnboarding = raiz === 'onboarding';
 
     if (!token && !inAuthGroup && !inPublicRoute) {
       router.replace('/(auth)/login');
-    } else if (token && inAuthGroup) {
+      return;
+    }
+
+    if (!token) return;
+
+    // Onboarding pendente tem precedencia sobre qualquer destino logado. A
+    // condicao exige `summary` carregado: enquanto ele e null nao da para
+    // distinguir "ainda nao concluiu" de "ainda nao sabemos", e redirecionar
+    // no escuro faria a tela piscar em toda abertura.
+    if (summary && !summary.onboarding_completed && !noOnboarding) {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (inAuthGroup || (noOnboarding && summary?.onboarding_completed)) {
       router.replace('/(tabs)/hoje');
     }
-  }, [token, loading, segments, router]);
+  }, [token, loading, summary, segments, router]);
 
-  return <Slot />;
+  // Stack e nao Slot: as telas fora das abas (leitura, link compartilhado,
+  // politicas) precisam de header nativo, botao de voltar e do gesto de
+  // arrastar da borda. Com Slot elas apareceriam sem nenhuma forma de sair.
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="leitura/[key]"
+        options={{
+          headerShown: true,
+          headerBackTitle: 'Voltar',
+          headerTintColor: schemeAtual.accent,
+          headerStyle: { backgroundColor: schemeAtual.canvas },
+          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
+        }}
+      />
+      <Stack.Screen
+        name="politicas"
+        options={{
+          headerShown: true,
+          title: 'Privacidade',
+          headerBackTitle: 'Voltar',
+          headerTintColor: schemeAtual.accent,
+          headerStyle: { backgroundColor: schemeAtual.canvas },
+          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
+        }}
+      />
+      <Stack.Screen
+        name="perfil/editar"
+        options={{
+          headerShown: true,
+          title: 'Editar perfil',
+          headerBackTitle: 'Perfil',
+          headerTintColor: schemeAtual.accent,
+          headerStyle: { backgroundColor: schemeAtual.canvas },
+          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
+        }}
+      />
+      <Stack.Screen
+        name="perfil/notificacoes"
+        options={{
+          headerShown: true,
+          title: 'Lembretes',
+          headerBackTitle: 'Perfil',
+          headerTintColor: schemeAtual.accent,
+          headerStyle: { backgroundColor: schemeAtual.canvas },
+          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
+        }}
+      />
+      <Stack.Screen name="r/[token]" options={{ headerShown: false }} />
+      {/* Sem gesto de voltar: sair pelo swipe deixaria a pessoa numa tela
+          logada com o onboarding pendente, e o guard a traria de volta. */}
+      <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {

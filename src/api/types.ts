@@ -234,6 +234,9 @@ export interface Page<T> {
  * (transcription_service.py:33). Nao persista: veja src/player/.
  */
 export interface TranscriptResponse {
+  /** O nome correto. Backends antigos so tem `tittle`. */
+  title?: string;
+  /** O typo original, mantido porque a web ja depende dele. */
   tittle?: string;
   subtitle: string;
   audio_url: string;
@@ -255,8 +258,16 @@ export interface Streak {
 }
 
 export interface SharedLinkResponse {
-  /** Token opaco, NAO uma URL completa. O client monta a URL final. */
+  /** Token opaco. */
   short_link: string;
+  /**
+   * URL pronta, montada pelo servidor a partir de PUBLIC_WEB_URL.
+   *
+   * Antes cada cliente montava a sua, e o dominio precisa casar com o dos
+   * Universal Links. Fica opcional porque um backend mais antigo nao devolve
+   * este campo — o client cai para a montagem local nesse caso.
+   */
+  share_url?: string;
   max_reads: number;
   /** HH:MM:SS dd/mm/aaaa — sim, nesta ordem. */
   expires_at: string;
@@ -287,4 +298,35 @@ export interface SubscriptionStatus {
   months_paid?: number;
   cancel_at_period_end?: boolean;
   current_period_end?: string;
+}
+
+
+// ── Summary ──────────────────────────────────────────────────────────────────
+
+export interface UserQuotas {
+  bookmarks_used: number;
+  bookmarks_limit: number;
+  notes_used_month: number;
+  notes_limit: number;
+}
+
+/**
+ * GET /users/me/summary — perfil, streak e quotas numa requisicao so.
+ *
+ * Os LIMITES vem daqui de proposito, em vez de constantes no app: assim mudar
+ * o limite do plano gratuito e editar uma variavel de ambiente no servidor.
+ * Se o app os replicasse, mudar um numero exigiria publicar uma versao nova e
+ * esperar a App Review.
+ */
+export interface UserSummary {
+  username: string;
+  email: string;
+  plan: Plan | string;
+  onboarding_completed: boolean;
+  streak: number;
+  read_today: boolean;
+  quotas: UserQuotas;
+  /** Quantos dias para tras o plano enxerga. null = sem limite (apoiador). */
+  history_window_days: number | null;
+  notification_schedule: NotificationSchedule | Record<string, never>;
 }

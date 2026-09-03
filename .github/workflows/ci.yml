@@ -49,6 +49,26 @@ jobs:
 
       - run: npm ci
 
+      # Os tipos de rota do expo-router (.expo/types) nao sao versionados e nao
+      # saem do `expo export` — quem os gera e o dev server. Sem eles o tsc
+      # passa, mas NAO valida navegacao: um `router.push('/rota-errada')` so
+      # falharia no aparelho. Entao geramos aqui, e quebramos se nao vierem.
+      - name: Gerar tipos de rota do expo-router
+        run: |
+          npx expo start --port 8081 > /tmp/metro.log 2>&1 &
+          METRO=$!
+          for _ in $(seq 1 90); do
+            [ -f .expo/types/router.d.ts ] && break
+            sleep 1
+          done
+          kill "$METRO" 2>/dev/null || true
+          if [ ! -f .expo/types/router.d.ts ]; then
+            echo "::error::Tipos de rota nao gerados — o typecheck nao validaria navegacao."
+            tail -40 /tmp/metro.log
+            exit 1
+          fi
+          echo "Tipos de rota gerados."
+
       - name: Checar tipos
         run: npm run typecheck
 

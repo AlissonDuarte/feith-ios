@@ -42,12 +42,17 @@ app/                    rotas (expo-router, file-based)
   _layout.tsx           AuthProvider, fontes e o guard central de rota
   (auth)/               login, registro
   (tabs)/               hoje, anotações, favoritos, histórico, perfil
+  leitura/[key].tsx     uma reflexão — aberta pelos três feeds
+  perfil/               editar, notificações
+  onboarding.tsx        carrossel de boas-vindas
   r/[token].tsx         link compartilhado — PÚBLICO, fora do guard
   politicas.tsx         também público (a App Review precisa alcançar)
 src/
   api/types.ts          contrato da API, derivado de fide-backend/api/schemas/
   api/client.ts         fetch tipado, 401 → logout, erro já em pt-BR
   api/dates.ts          os três formatos de data não-ISO do backend
+  api/agendamento.ts    dias do lembrete (lista vazia = todos os dias)
+  hooks/                useListaPaginada (scroll infinito + busca)
   api/errors.ts         tradução de `detail` (inglês) para pt-BR
   auth/                 AuthContext + persistência (SecureStore)
   push/                 registro de device token no APNs
@@ -94,13 +99,19 @@ Além disso, `GET /reflections/daily` **tem efeito colateral**: registra a
 leitura do dia, que é o que alimenta o streak. Buscar o streak antes dele
 mostra o número de ontem.
 
+E o agendamento do lembrete tem uma convenção fácil de inverter: **lista de
+dias vazia significa TODOS os dias**, porque o filtro do backend é
+`if days and current_day not in days`. A conversão vive em
+`src/api/agendamento.ts`, com teste — inverter isso silenciosamente faria a
+pessoa parar de receber lembretes sem nenhum sinal na interface.
+
 ## Build iOS
 
 Três workflows:
 
-- `ci.yml` — ubuntu, roda em todo push. Typecheck, `expo-doctor`, guarda
-  anti-Stripe, e empacota o bundle iOS de verdade (`expo export`), que pega
-  import quebrado e rota inválida sem gastar minuto de macOS.
+- `ci.yml` — ubuntu, roda em todo push. Typecheck, testes, `expo-doctor`,
+  guarda anti-Stripe, e empacota o bundle iOS de verdade (`expo export`), que
+  pega import quebrado sem gastar minuto de macOS.
 - `ios-credentials.yml` — `workflow_dispatch`, roda **uma vez** e a cada
   capability nova. Cria certificado e provisioning profile via `fastlane match`
   e guarda cifrados num repo git privado separado.
@@ -115,10 +126,22 @@ min. Por isso nenhum deles roda em push comum. Valide o que der localmente
 antes de gastar minuto de macOS:
 
 ```bash
-npx tsc --noEmit
-npx expo export --platform ios     # pega import quebrado e rota inválida
+npm run typecheck
+npm test
+npx expo export --platform ios     # pega import quebrado
 npx expo prebuild --platform ios   # gera ios/ sem compilar: dá para ler o Info.plist
 ```
+
+### Tipos de rota
+
+`experiments.typedRoutes` faz o TypeScript validar cada `router.push()` contra
+as rotas que existem de verdade. Mas os tipos vivem em `.expo/types/`, que **não
+é versionado e não sai do `expo export`** — quem os gera é o dev server.
+
+Consequência: num clone limpo, `tsc` passa sem validar navegação nenhuma, e um
+`router.push('/rota-que-nao-existe')` só quebraria no aparelho. Por isso o
+`ci.yml` sobe o dev server só para gerar os tipos, e falha se eles não vierem.
+Localmente eles aparecem no primeiro `npm start`.
 
 ### Capabilities
 
@@ -209,7 +232,7 @@ a única janela em que existem, e quem persiste é o backend.
   submissão.
 - `app/politicas.tsx` está vazia: o conteúdo tem que ser portado de
   `front_fide/src/routes/policies` antes de submeter.
-- As abas Anotações, Favoritos e Histórico são placeholders (M2 do plano).
+- O player de áudio (M4) e a assinatura via StoreKit (M5) ainda não existem.
 - O registro envia `birth_date` vazio e `gender: 'other'` porque o backend
   exige os dois campos (`user_schemas.py:5-12`), mas nenhum é necessário para
   ler um devocional — coletar dado sem necessidade é questionamento certo na

@@ -13,17 +13,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
-import type { UserProfile } from '../api/types';
+import type { UserSummary } from '../api/types';
 
 const TOKEN_KEY = 'fidio_token';
 const EXPIRES_KEY = 'fidio_token_expires';
-const PROFILE_KEY = 'fidio_profile';
+const SUMMARY_KEY = 'fidio_summary';
 
 export interface StoredSession {
   token: string | null;
   /** Epoch em ms, decodificado do `exp` do JWT. */
   expiresAt: number | null;
-  profile: UserProfile | null;
+  /** Ultimo summary conhecido — serve so para a primeira tela nao piscar. */
+  summary: UserSummary | null;
 }
 
 /**
@@ -52,26 +53,26 @@ export function jwtExpiresAt(token: string): number | null {
 }
 
 export async function loadSession(): Promise<StoredSession> {
-  const [token, rawExpires, rawProfile] = await Promise.all([
+  const [token, rawExpires, rawSummary] = await Promise.all([
     SecureStore.getItemAsync(TOKEN_KEY).catch(() => null),
     SecureStore.getItemAsync(EXPIRES_KEY).catch(() => null),
-    AsyncStorage.getItem(PROFILE_KEY).catch(() => null),
+    AsyncStorage.getItem(SUMMARY_KEY).catch(() => null),
   ]);
 
-  let profile: UserProfile | null = null;
-  if (rawProfile) {
+  let summary: UserSummary | null = null;
+  if (rawSummary) {
     try {
-      profile = JSON.parse(rawProfile) as UserProfile;
+      summary = JSON.parse(rawSummary) as UserSummary;
     } catch {
-      // Cache corrompido nao pode derrubar o boot: seguimos sem perfil em
-      // cache e o /users/profile do layout raiz repopula.
-      profile = null;
+      // Cache corrompido nao pode derrubar o boot: seguimos sem cache e o
+      // /users/me/summary do layout raiz repopula.
+      summary = null;
     }
   }
 
   const expiresAt = rawExpires ? Number(rawExpires) : token ? jwtExpiresAt(token) : null;
 
-  return { token, expiresAt: Number.isFinite(expiresAt) ? expiresAt : null, profile };
+  return { token, expiresAt: Number.isFinite(expiresAt) ? expiresAt : null, summary };
 }
 
 export async function saveToken(token: string): Promise<void> {
@@ -82,14 +83,14 @@ export async function saveToken(token: string): Promise<void> {
   }
 }
 
-export async function saveProfile(profile: UserProfile): Promise<void> {
-  await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+export async function saveSummary(summary: UserSummary): Promise<void> {
+  await AsyncStorage.setItem(SUMMARY_KEY, JSON.stringify(summary));
 }
 
 export async function clearSession(): Promise<void> {
   await Promise.all([
     SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => undefined),
     SecureStore.deleteItemAsync(EXPIRES_KEY).catch(() => undefined),
-    AsyncStorage.removeItem(PROFILE_KEY).catch(() => undefined),
+    AsyncStorage.removeItem(SUMMARY_KEY).catch(() => undefined),
   ]);
 }
