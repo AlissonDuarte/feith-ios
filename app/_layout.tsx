@@ -16,7 +16,7 @@ import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
 import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 import { useFonts } from 'expo-font';
-import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
+import { SplashScreen, Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -73,6 +73,7 @@ function header({ title, voltar }: { title?: string; voltar: string }) {
 function RouteGuard() {
   const { token, loading, summary } = useAuth();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
 
   // Aqui dentro por dois motivos: precisa do AuthProvider acima (o registro so
@@ -86,6 +87,19 @@ function RouteGuard() {
     const inAuthGroup = raiz === '(auth)';
     const inPublicRoute = ROTAS_PUBLICAS.includes(raiz as string);
     const noOnboarding = raiz === 'onboarding';
+
+    // A rota "/" e o app/index.tsx, que so existe para a raiz ter onde montar.
+    // Ela nao e destino: quem para nela nao ve tela nenhuma.
+    //
+    // E onde TODA abertura a frio comeca. Deslogado nao doia, porque o ramo do
+    // login abaixo tira a pessoa dali; logado, nenhum ramo casava (a raiz nao e
+    // "(auth)" nem "onboarding") e a sessao persistida terminava em branco.
+    //
+    // Pelo pathname e nao por `segments.length === 0`: com typedRoutes ligado o
+    // TS tipa o comprimento como `1 | 2`, entao a comparacao com 0 nem compila
+    // — e depender do formato interno do array para reconhecer a raiz seria
+    // frouxo de qualquer forma. O pathname da raiz e "/" e ponto.
+    const naRaiz = pathname === '/';
 
     if (!token && !inAuthGroup && !inPublicRoute) {
       router.replace('/(auth)/login');
@@ -103,10 +117,16 @@ function RouteGuard() {
       return;
     }
 
-    if (inAuthGroup || (noOnboarding && summary?.onboarding_completed)) {
+    // `naRaiz` sai daqui mesmo com `summary` ainda null. E de proposito: se o
+    // summary nunca chegar (offline, cache vazio), esperar por ele deixaria a
+    // pessoa presa na tela branca para sempre. A Hoje trata erro de rede
+    // sozinha, e se o summary chegar depois dizendo que o onboarding esta
+    // pendente, o ramo acima roda de novo (o efeito depende de `summary`) e
+    // leva para la.
+    if (inAuthGroup || naRaiz || (noOnboarding && summary?.onboarding_completed)) {
       router.replace('/(tabs)/hoje');
     }
-  }, [token, loading, summary, segments, router]);
+  }, [token, loading, summary, segments, pathname, router]);
 
   // Stack e nao Slot: as telas fora das abas (leitura, link compartilhado,
   // politicas) precisam de header nativo, botao de voltar e do gesto de
