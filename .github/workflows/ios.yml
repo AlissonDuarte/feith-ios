@@ -59,6 +59,13 @@ jobs:
       FASTLANE_DISABLE_COLORS: '1'
       LC_ALL: en_US.UTF-8
       LANG: en_US.UTF-8
+      # Gemfile.lock nao e versionado, entao o bundler-cache do setup-ruby gera
+      # (ou restaura do cache) um lockfile novo a cada rodada. O Bundler nao
+      # consegue calcular checksum de gems "default" do proprio Ruby (ex.:
+      # rake), entao o CHECKSUMS sai vazio — e com CI=true o Bundler liga
+      # frozen mode sozinho e trava tentando "corrigir" algo que nunca vai
+      # ter checksum. Sem isto: "empty CHECKSUMS entry ... frozen mode is set".
+      BUNDLE_FROZEN: 'false'
 
     steps:
       - uses: actions/checkout@v4
