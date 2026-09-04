@@ -1,5 +1,5 @@
 /**
- * Datas do fidio.
+ * Datas do feith.
  *
  * O backend NAO devolve ISO-8601 em nenhum campo visivel: validators do
  * Pydantic pre-formatam tudo para exibicao em pt-BR, em tres formatos

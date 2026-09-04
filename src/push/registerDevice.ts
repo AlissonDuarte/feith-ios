@@ -35,9 +35,10 @@ export interface PushState {
  * O ultimo token registrado, para o logout saber o que apagar sem gastar uma
  * ida ao APNs so para descobrir algo que ja sabiamos.
  */
-const TOKEN_KEY = 'fidio_push_token';
-/** 'off' quando o usuario desligou o toggle. Ausente = nunca decidiu. */
-const PREF_KEY = 'fidio_push_pref';
+const TOKEN_KEY = 'feith_push_token';
+const LEGACY_TOKEN_KEY = 'fidio_push_token';
+const PREF_KEY = 'feith_push_pref';
+const LEGACY_PREF_KEY = 'fidio_push_pref';
 
 /**
  * O simulador registra e ate devolve um token, mas ele nao vale no APNs real:
@@ -66,7 +67,8 @@ async function currentStatus(): Promise<PushStatus> {
 }
 
 async function optedOut(): Promise<boolean> {
-  return (await AsyncStorage.getItem(PREF_KEY)) === 'off';
+  const pref = (await AsyncStorage.getItem(PREF_KEY)) || (await AsyncStorage.getItem(LEGACY_PREF_KEY));
+  return pref === 'off';
 }
 
 /** Le permissao e preferencia sem nunca abrir o prompt do sistema. */
@@ -132,6 +134,7 @@ export async function registerForPush({
  */
 export async function disablePush(): Promise<void> {
   await AsyncStorage.setItem(PREF_KEY, 'off');
+  await AsyncStorage.removeItem(LEGACY_PREF_KEY);
   await unregisterFromPush();
 }
 
@@ -144,10 +147,11 @@ export async function disablePush(): Promise<void> {
  */
 export async function unregisterFromPush(): Promise<void> {
   try {
-    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    const token = (await AsyncStorage.getItem(TOKEN_KEY)) || (await AsyncStorage.getItem(LEGACY_TOKEN_KEY));
     if (!token) return;
     await api.unregisterDeviceToken(token);
     await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch {
     // Rede fora ou token ja expirado nao pode travar o logout. O backend apaga
     // a linha sozinho no primeiro Unregistered que o APNs devolver.

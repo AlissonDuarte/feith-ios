@@ -1,5 +1,5 @@
 /**
- * Design tokens do fidio.
+ * Design tokens do feith.
  *
  * Fonte de verdade compartilhada entre o NativeWind (tailwind.config.js deste
  * projeto consome palette.js) e os componentes que usam StyleSheet direto.

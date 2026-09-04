@@ -7,7 +7,7 @@ import type { ExpoConfig } from 'expo/config';
  * backend do docker-compose por HTTP simples num IP de LAN, e o App Transport
  * Security do iOS bloqueia cleartext por padrao. A excecao so e injetada
  * quando a URL configurada e de fato http://, entao um build de producao
- * (https://api.fidio.online/api) sai sem nenhuma brecha.
+ * (https://api.feith.space/api) sai sem nenhuma brecha.
  *
  * TODAS as capabilities entram aqui de uma vez, mesmo as que so serao usadas
  * la na frente (IAP, audio em background, associated domains). O motivo e o
@@ -47,18 +47,18 @@ const googleIosUrlScheme = googleIosClientId.endsWith('.apps.googleusercontent.c
  * Dominio dos Universal Links. Um link /r/<token> compartilhado no WhatsApp
  * abre o app quando ele esta instalado e a pagina web quando nao esta — o que
  * so funciona com o apple-app-site-association servido em
- * https://fidio.online/.well-known/ (ver front_fide/static/).
+ * https://feith.space/.well-known/ (ver front_fide/static/).
  */
-const webUrl = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://fidio.online';
+const webUrl = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://feith.space';
 const webHost = webUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
 const config: ExpoConfig = {
-  name: 'fidio',
-  slug: 'fidio',
+  name: 'feith',
+  slug: 'feith',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  scheme: 'fidio',
+  scheme: 'feith',
   userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: true,

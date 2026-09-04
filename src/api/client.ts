@@ -1,5 +1,5 @@
 /**
- * Client HTTP do fidio.
+ * Client HTTP do feith.
  *
  * A web (front_fide) nao tem camada de API: cada componente Svelte chama
  * fetch() inline com o objeto de options repetido a mao, e trata erro do seu
@@ -48,7 +48,7 @@ import {
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000/api';
 
-const WEB_URL = (process.env.EXPO_PUBLIC_WEB_URL || 'https://fidio.online').replace(/\/$/, '');
+const WEB_URL = (process.env.EXPO_PUBLIC_WEB_URL || 'https://feith.space').replace(/\/$/, '');
 
 // ── Estado de sessao em memoria ──────────────────────────────────────────────
 // Mantido fora do React para o client ser chamavel de qualquer lugar sem

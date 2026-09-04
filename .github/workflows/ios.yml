@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@v4
 
       # A App Store rejeita por 3.1.1 qualquer caminho de pagamento externo, e a
-      # web do fidio tem o checkout da Stripe pronto para ser copiado por
+      # web do feith tem o checkout da Stripe pronto para ser copiado por
       # engano (PriceTableModal.svelte, SubscriptionSection.svelte). No iOS a
       # cobranca e 100% StoreKit; se algo da Stripe entrar no bundle, o build
       # morre aqui em vez de num ciclo de review.
@@ -149,8 +149,8 @@ jobs:
       # descobrir no TestFlight custa um ciclo de review.
       - name: Conferir configuracao nativa
         run: |
-          PLIST=ios/fidio/Info.plist
-          ENT=ios/fidio/fidio.entitlements
+          PLIST=ios/feith/Info.plist
+          ENT=ios/feith/feith.entitlements
 
           grep -q "com.googleusercontent.apps" "$PLIST" \
             || { echo "::error::URL scheme do Google ausente do Info.plist."; exit 1; }
@@ -186,7 +186,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fidio-ios
+          name: feith-ios
           path: build/*.ipa
           if-no-files-found: ignore
           retention-days: 7

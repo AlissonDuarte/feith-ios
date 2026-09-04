@@ -21,8 +21,8 @@ jobs:
       # Valores de fachada: aqui nada e assinado nem publicado, mas o
       # app.config.ts e o bundle precisam de algo para resolver. A conferencia
       # de que os secrets REAIS existem e do ios.yml, antes do build.
-      EXPO_PUBLIC_API_URL: https://api.fidio.online/api
-      EXPO_PUBLIC_WEB_URL: https://fidio.online
+      EXPO_PUBLIC_API_URL: https://api.feith.space/api
+      EXPO_PUBLIC_WEB_URL: https://feith.space
 
     steps:
       - uses: actions/checkout@v4

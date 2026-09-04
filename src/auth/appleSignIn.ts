@@ -3,11 +3,11 @@
  *
  * Obrigatorio pela Guideline 4.8: um app que oferece login social de terceiros
  * (aqui, o Google) precisa oferecer o da Apple tambem. Nao ha equivalente na
- * web do fidio — e codigo que nasce aqui.
+ * web do feith — e codigo que nasce aqui.
  *
  * O equivalente do idToken do Google e o `identityToken`: um JWT que o backend
  * valida contra as chaves publicas da Apple, com `aud` igual ao bundle
- * (online.fidio.app), sem client ID nenhum para configurar.
+ * (com.feith.app), sem client ID nenhum para configurar.
  *
  * Duas diferencas em relacao ao googleSignIn.ts moldam este modulo:
  *

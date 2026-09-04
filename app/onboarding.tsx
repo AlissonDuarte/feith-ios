@@ -33,11 +33,11 @@ interface Passo {
 const PASSOS: Passo[] = [
   {
     icone: 'book-outline',
-    titulo: 'Bem-vindo ao fidio',
+    titulo: 'Bem-vindo ao feith',
     corpo:
       'Uma exegese bíblica aprofundada, todo dia. Sem ruído, sem sensacionalismo — apenas o texto e o que ele significa de fato.',
     detalhe:
-      'O fidio foi construído para quem leva a fé a sério e quer entender as Escrituras com rigor histórico e teológico.',
+      'O feith foi construído para quem leva a fé a sério e quer entender as Escrituras com rigor histórico e teológico.',
   },
   {
     icone: 'layers-outline',

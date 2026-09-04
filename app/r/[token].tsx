@@ -16,7 +16,7 @@ import { useAuth } from '../../src/auth/AuthContext';
  * recebe o link no WhatsApp e abre sem ter conta. Mandar essa pessoa para o
  * login seria jogar fora o unico canal de aquisicao organico do produto.
  *
- * Chega por Universal Link (https://fidio.online/r/<token>) quando o app esta
+ * Chega por Universal Link (https://feith.space/r/<token>) quando o app esta
  * instalado, e pela pagina web quando nao esta.
  */
 export default function LinkCompartilhado() {
@@ -80,7 +80,7 @@ export default function LinkCompartilhado() {
           descricao={falha?.descricao}
           acao={
             <Button
-              label={sessao ? 'Ir para a reflexão de hoje' : 'Conhecer o fidio'}
+              label={sessao ? 'Ir para a reflexão de hoje' : 'Conhecer o feith'}
               onPress={() => router.replace(sessao ? '/(tabs)/hoje' : '/(auth)/login')}
             />
           }

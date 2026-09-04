@@ -1,5 +1,5 @@
 /**
- * Paleta fidio.
+ * Paleta feith.
  *
  * A web tem DUAS identidades que nunca foram reconciliadas: as paginas de
  * marketing usam oxblood + ouro sobre pergaminho (routes/+page.svelte,

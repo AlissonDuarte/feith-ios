@@ -134,7 +134,7 @@ export function Card({
 /**
  * Estado vazio ou de erro em tela cheia.
  *
- * Vale para os casos que a API do fidio produz com frequencia e que a web
+ * Vale para os casos que a API do feith produz com frequencia e que a web
  * trata mal: o dia sem reflexao publicada, o link expirado (410), o limite de
  * leituras (429).
  */

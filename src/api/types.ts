@@ -1,5 +1,5 @@
 /**
- * Contrato da API do fidio, derivado de fide-backend/api/schemas/*.py.
+ * Contrato da API do feith, derivado de fide-backend/api/schemas/*.py.
  *
  * O backend expoe /openapi.json (o FastAPI liga por padrao), mas os schemas de
  * la nao contam as duas coisas que mais mordem aqui: quais campos sao strings

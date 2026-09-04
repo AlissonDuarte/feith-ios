@@ -1,5 +1,5 @@
 # Repo git PRIVADO e separado onde o match guarda certificados e provisioning
-# profiles cifrados. Nunca apontar para o repo do fidio.
+# profiles cifrados. Nunca apontar para o repo do feith.
 git_url(ENV['MATCH_GIT_URL'])
 storage_mode('git')
 type('appstore')

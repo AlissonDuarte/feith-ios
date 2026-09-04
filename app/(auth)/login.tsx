@@ -83,7 +83,7 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
         >
           <Text variant="display" display weight="bold">
-            fidio
+            feith
           </Text>
           <Text variant="body" color={scheme.textSecondary} style={{ marginTop: 6 }}>
             Exegese diária para quem leva a fé a sério.

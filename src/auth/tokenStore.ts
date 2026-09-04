@@ -15,9 +15,12 @@ import * as SecureStore from 'expo-secure-store';
 
 import type { UserSummary } from '../api/types';
 
-const TOKEN_KEY = 'fidio_token';
-const EXPIRES_KEY = 'fidio_token_expires';
-const SUMMARY_KEY = 'fidio_summary';
+const TOKEN_KEY = 'feith_token';
+const LEGACY_TOKEN_KEY = 'fidio_token';
+const EXPIRES_KEY = 'feith_token_expires';
+const LEGACY_EXPIRES_KEY = 'fidio_token_expires';
+const SUMMARY_KEY = 'feith_summary';
+const LEGACY_SUMMARY_KEY = 'fidio_summary';
 
 export interface StoredSession {
   token: string | null;
@@ -53,11 +56,19 @@ export function jwtExpiresAt(token: string): number | null {
 }
 
 export async function loadSession(): Promise<StoredSession> {
-  const [token, rawExpires, rawSummary] = await Promise.all([
+  let [token, rawExpires, rawSummary] = await Promise.all([
     SecureStore.getItemAsync(TOKEN_KEY).catch(() => null),
     SecureStore.getItemAsync(EXPIRES_KEY).catch(() => null),
     AsyncStorage.getItem(SUMMARY_KEY).catch(() => null),
   ]);
+
+  if (!token) {
+    token = await SecureStore.getItemAsync(LEGACY_TOKEN_KEY).catch(() => null);
+    if (token) {
+      rawExpires = await SecureStore.getItemAsync(LEGACY_EXPIRES_KEY).catch(() => null);
+      rawSummary = await AsyncStorage.getItem(LEGACY_SUMMARY_KEY).catch(() => null);
+    }
+  }
 
   let summary: UserSummary | null = null;
   if (rawSummary) {
@@ -90,7 +101,10 @@ export async function saveSummary(summary: UserSummary): Promise<void> {
 export async function clearSession(): Promise<void> {
   await Promise.all([
     SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => undefined),
+    SecureStore.deleteItemAsync(LEGACY_TOKEN_KEY).catch(() => undefined),
     SecureStore.deleteItemAsync(EXPIRES_KEY).catch(() => undefined),
+    SecureStore.deleteItemAsync(LEGACY_EXPIRES_KEY).catch(() => undefined),
     AsyncStorage.removeItem(SUMMARY_KEY).catch(() => undefined),
+    AsyncStorage.removeItem(LEGACY_SUMMARY_KEY).catch(() => undefined),
   ]);
 }

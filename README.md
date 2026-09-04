@@ -1,4 +1,4 @@
-# fidio mobile
+# feith mobile
 
 App iOS nativo em React Native + Expo, consumindo a mesma API FastAPI que o
 frontend SvelteKit (`front_fide`).
@@ -32,7 +32,7 @@ LAN e adicione esse IP ao CORS do backend (`fide-backend/main.py:45-50`).
 
 O `app.config.ts` injeta a exceção de App Transport Security
 (`NSAllowsLocalNetworking`) automaticamente **apenas** quando a URL configurada
-é `http://`. Um build apontando para `https://api.fidio.online/api` sai sem
+é `http://`. Um build apontando para `https://api.feith.space/api` sai sem
 nenhuma brecha de cleartext.
 
 ## Estrutura
@@ -145,7 +145,7 @@ Localmente eles aparecem no primeiro `npm start`.
 
 ### Capabilities
 
-O App ID `online.fidio.app` precisa de **quatro**: Sign In with Apple (como
+O App ID `com.feith.app` precisa de **quatro**: Sign In with Apple (como
 primary), Push Notifications, Associated Domains e In-App Purchase. Todas já
 estão declaradas no `app.config.ts` desde o primeiro commit, de propósito.
 
@@ -202,7 +202,7 @@ esconder o botão.
 
 1. No Google Cloud Console (**APIs e serviços › Credenciais**), no mesmo projeto
    que já atende o site, crie um **client ID OAuth do tipo iOS** com o bundle
-   `online.fidio.app`.
+   `com.feith.app`.
 2. Preencha `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` com ele e
    `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` com o client **web** que o site já usa. O
    URL scheme do callback é derivado do client iOS automaticamente, em
@@ -242,11 +242,11 @@ a única janela em que existem, e quem persiste é o backend.
 
 | Secret | O que é |
 |---|---|
-| `EXPO_PUBLIC_API_URL` | `https://api.fidio.online/api` |
-| `EXPO_PUBLIC_WEB_URL` | `https://fidio.online` |
+| `EXPO_PUBLIC_API_URL` | `https://api.feith.space/api` |
+| `EXPO_PUBLIC_WEB_URL` | `https://feith.space` |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | client OAuth **web** (o mesmo do site) |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | client OAuth **iOS** do bundle `online.fidio.app` |
-| `EXPO_PUBLIC_IAP_SKU` | `online.fidio.supporter.monthly` |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | client OAuth **iOS** do bundle `com.feith.app` |
+| `EXPO_PUBLIC_IAP_SKU` | `com.feith.app.supporter.monthly` |
 | `APPLE_TEAM_ID` | Team ID da conta Apple Developer |
 | `ASC_KEY_ID` / `ASC_ISSUER_ID` | App Store Connect API Key |
 | `ASC_KEY_P8` | o arquivo `.p8` da chave, em base64 |

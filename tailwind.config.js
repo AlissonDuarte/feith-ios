@@ -6,7 +6,7 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
-      colors: { fidio: palette },
+      colors: { feith: palette, fidio: palette },
       fontFamily: {
         display: ['CormorantGaramond_600SemiBold'],
         sans: ['Inter_400Regular'],

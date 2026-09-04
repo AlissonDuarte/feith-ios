@@ -1,4 +1,4 @@
-# Pipeline iOS do fidio.
+# Pipeline iOS do feith.
 #
 # Roda inteiro no runner macOS do GitHub Actions: nao existe Mac no fluxo de
 # desenvolvimento. As pastas ios/ e android/ nao sao versionadas — o workflow
@@ -7,7 +7,7 @@
 default_platform(:ios)
 
 APP_IDENTIFIER = ENV['IOS_BUNDLE_ID'] || 'com.feith.app'
-SCHEME = 'fidio'
+SCHEME = 'feith'
 
 platform :ios do
   # Chave da App Store Connect API, montada a partir do .p8 em base64 guardado
@@ -28,7 +28,7 @@ platform :ios do
   # coisa certa: o que esta guardado no repo de certificados, e nao o que o App
   # ID tem no portal.
   #
-  # O fidio tem quatro capabilities contra as duas do lexa. In-App Purchase nao
+  # O feith tem quatro capabilities contra as duas do lexa. In-App Purchase nao
   # entra na lista: ela nao gera entitlement no profile — e habilitada no App ID
   # e vale automaticamente. As outras tres aparecem no plist do profile.
   # Cada entrada e [entitlement no profile, nome no portal, instrucao do passo 1].
