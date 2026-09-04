@@ -7,7 +7,7 @@ import type { ExpoConfig } from 'expo/config';
  * backend do docker-compose por HTTP simples num IP de LAN, e o App Transport
  * Security do iOS bloqueia cleartext por padrao. A excecao so e injetada
  * quando a URL configurada e de fato http://, entao um build de producao
- * (https://api.feith.space/api) sai sem nenhuma brecha.
+ * (https://feith.space/api) sai sem nenhuma brecha.
  *
  * TODAS as capabilities entram aqui de uma vez, mesmo as que so serao usadas
  * la na frente (IAP, audio em background, associated domains). O motivo e o
