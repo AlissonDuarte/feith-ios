@@ -4,58 +4,76 @@
  * A web tem DUAS identidades que nunca foram reconciliadas: as paginas de
  * marketing usam oxblood + ouro sobre pergaminho (routes/+page.svelte,
  * callback, PriceTable) e o app usa ambar + slate sobre off-white
- * (routes/user/**). O app nativo nao carrega o marketing, entao aqui a
- * identidade de app e a principal; oxblood e ouro sobrevivem apenas como
- * acentos do modo sepia e de ornamentos.
+ * (routes/user/**). O ambar-sobre-slate e a identidade generica de dashboard —
+ * a mesma de qualquer SaaS — e era ela que o app nativo carregava.
+ *
+ * Aqui a decisao esta tomada no sentido oposto: a identidade EDITORIAL do
+ * marketing e a principal. E ela que promete "exegese seria" antes de qualquer
+ * palavra ser lida, e e a unica das duas que sustenta o preco do produto. O
+ * ambar sobrevive apenas onde precisa gritar (streak, alerta de quota).
  *
  * CommonJS de proposito: tailwind.config.js precisa dar require() nisto, e um
  * .ts nao e carregavel de la. O tokens.ts tipado importa deste arquivo, entao a
  * paleta existe uma vez so.
  */
 module.exports = {
-  // Superficies — off-white de routes/user/home/+page.svelte:221
-  bg: '#FCFCFE',
+  // ── Superficies ────────────────────────────────────────────────────────────
+  // Creme e o `body { background-color: #faf8f4 }` da landing; `warm` e a
+  // `.bg-warm` das secoes alternadas. Branco puro fica reservado aos cards, o
+  // que da a eles o relevo que um off-white sobre off-white nunca teve.
+  cream: '#FAF8F4',
+  warm: '#F5F0E8',
   surface: '#FFFFFF',
-  card: '#FFFFFF',
-  border: '#F1F5F9',
-  'border-soft': '#F8FAFC',
-
-  // Pergaminho, de callback/+page.svelte:223. Base do modo sepia.
   parchment: '#FCFAF5',
   'parchment-deep': '#F4ECD8',
 
-  // Texto (slate)
-  text: '#1E293B',
-  'text-soft': '#334155',
-  muted: '#64748B',
-  'muted-soft': '#94A3B8',
+  // Vidro da `.glass-card` — sobre creme, nao sobre branco.
+  glass: 'rgba(255,255,255,0.72)',
+  'glass-strong': 'rgba(255,255,255,0.92)',
 
-  // Primaria: ambar — o acento do app inteiro
-  primary: '#F59E0B',
-  'primary-dark': '#B45309',
-  'primary-light': '#FDE68A',
-  'primary-tint': '#FFFBEB',
+  // ── Tinta ──────────────────────────────────────────────────────────────────
+  // Preto tipografico, nao slate: #1a1a1a da landing. Slate puxa para o azul e
+  // briga com o pergaminho.
+  ink: '#1A1A1A',
+  'ink-soft': '#2A2A2A',
+  'ink-muted': '#5A5A5A',
+  'ink-faint': '#8A8A8A',
+  'ink-ghost': '#AFA89C',
 
-  // Marca editorial: oxblood + ouro (marketing da web, acentos no sepia)
+  // ── Fios ───────────────────────────────────────────────────────────────────
+  // Hairlines quentes. O #F1F5F9 anterior era um cinza-azulado que sobre creme
+  // aparecia esverdeado.
+  rule: '#E6E0D4',
+  'rule-soft': '#EFEAE0',
+
+  // ── Oxblood: o acento da marca ─────────────────────────────────────────────
   oxblood: '#7A1F1F',
   'oxblood-light': '#922525',
-  gold: '#B89C5C',
-  'gold-dark': '#8B6914',
+  'oxblood-bright': '#A52D2D',
+  'oxblood-tint': '#F4EDEC',
+  'oxblood-veil': 'rgba(122,31,31,0.10)',
 
-  // Escuro (modo noturno)
-  'dark-bg': '#0B1220',
-  'dark-surface': '#111A2B',
-  'dark-border': '#1E293B',
-  'dark-text': '#E8EDF5',
+  // ── Ouro: fios, numerais e ornamentos ──────────────────────────────────────
+  gold: '#8B6914',
+  'gold-light': '#B89C5C',
+  'gold-pale': '#D8C79A',
+  'gold-tint': '#F7F1E2',
 
-  // Status
-  success: '#10B981',
-  'success-soft': '#ECFDF5',
-  danger: '#E11D48',
-  'danger-soft': '#FFF1F2',
-  info: '#0EA5E9',
+  // ── Escuro (modo noturno de leitura) ───────────────────────────────────────
+  // Marrom-carvao, e nao azul-marinho: o modo noturno de um app de leitura
+  // continua sendo papel, so que sem luz.
+  'dark-bg': '#15120F',
+  'dark-surface': '#1E1A16',
+  'dark-rule': '#2E2822',
+  'dark-text': '#EDE7DB',
 
-  // Streak
-  streak: '#F97316',
-  'streak-dark': '#C2410C',
+  // ── Status ─────────────────────────────────────────────────────────────────
+  success: '#2F6B4F',
+  danger: '#9B2C2C',
+  'danger-soft': '#FBF0EF',
+
+  // Streak: o unico lugar em que o ambar continua fazendo sentido — e um
+  // numero que precisa brilhar, nao um texto que precisa ser lido.
+  streak: '#B4841F',
+  'streak-tint': '#FAF3E2',
 };

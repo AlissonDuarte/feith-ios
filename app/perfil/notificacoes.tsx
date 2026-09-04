@@ -1,6 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { diasDoServidor, diasParaServidor } from '../../src/api/agendamento';
@@ -8,18 +9,18 @@ import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import type { WeekdayCode } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, Text, scheme } from '../../src/components/ui';
+import { Button, Card, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
 import { disablePush, getPushState, registerForPush, type PushStatus } from '../../src/push/registerDevice';
-import { radius } from '../../src/theme/tokens';
+import { fonts, radius, space } from '../../src/theme/tokens';
 
-const DIAS: { codigo: WeekdayCode; rotulo: string }[] = [
-  { codigo: 'seg', rotulo: 'S' },
-  { codigo: 'ter', rotulo: 'T' },
-  { codigo: 'qua', rotulo: 'Q' },
-  { codigo: 'qui', rotulo: 'Q' },
-  { codigo: 'sex', rotulo: 'S' },
-  { codigo: 'sab', rotulo: 'S' },
-  { codigo: 'dom', rotulo: 'D' },
+const DIAS: { codigo: WeekdayCode; rotulo: string; nome: string }[] = [
+  { codigo: 'seg', rotulo: 'S', nome: 'Segunda' },
+  { codigo: 'ter', rotulo: 'T', nome: 'Terça' },
+  { codigo: 'qua', rotulo: 'Q', nome: 'Quarta' },
+  { codigo: 'qui', rotulo: 'Q', nome: 'Quinta' },
+  { codigo: 'sex', rotulo: 'S', nome: 'Sexta' },
+  { codigo: 'sab', rotulo: 'S', nome: 'Sábado' },
+  { codigo: 'dom', rotulo: 'D', nome: 'Domingo' },
 ];
 
 function horaParaData(hhmm: string): Date {
@@ -121,17 +122,21 @@ export default function Notificacoes() {
   }
 
   const nenhumDia = dias.length === 0;
+  const desligado = !ligado;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['bottom']}>
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: space.gutter, gap: space.xl, paddingBottom: space.section }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Interruptor ────────────────────────────────────────────────
+            Primeiro e sozinho no card: e a decisao que governa tudo abaixo. */}
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text variant="body" weight="semi">
-                Lembrete diário
-              </Text>
-              <Text variant="caption" color={scheme.textSecondary} style={{ marginTop: 4 }}>
+            <View style={{ flex: 1, paddingRight: space.lg }}>
+              <Text variant="heading">Lembrete diário</Text>
+              <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 4 }}>
                 {status === 'unsupported'
                   ? 'Só funciona em um aparelho físico.'
                   : 'Um aviso quando a reflexão do dia estiver disponível.'}
@@ -146,108 +151,142 @@ export default function Notificacoes() {
           </View>
         </Card>
 
-        <View>
-          <Text variant="caption" weight="semi" color={scheme.textSecondary}>
-            DIAS
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-            {DIAS.map((d, i) => {
-              const ativo = dias.includes(d.codigo);
-              return (
-                <Pressable
-                  key={d.codigo}
-                  onPress={() => alternarDia(d.codigo)}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: ativo }}
-                  // O rotulo visivel repete letras (S, T, Q, Q, S, S, D); o
-                  // leitor de tela precisa do nome inteiro.
-                  accessibilityLabel={
-                    ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'][i]
-                  }
-                  style={({ pressed }) => [
-                    {
-                      flex: 1,
-                      height: 44,
-                      borderRadius: radius.sm,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: ativo ? scheme.accent : scheme.border,
-                      backgroundColor: ativo ? scheme.accentSubtle : scheme.surface,
-                      opacity: pressed ? 0.6 : 1,
-                    },
-                  ]}
-                >
-                  <Text
-                    variant="caption"
-                    weight="semi"
-                    color={ativo ? scheme.accent : scheme.textMuted}
+        {/* O agendamento continua editavel com o lembrete desligado — a pessoa
+            pode preparar o horario antes de aceitar a permissao — mas em meio
+            tom, para nao prometer entrega que nao vai acontecer. */}
+        <View style={{ opacity: desligado ? 0.55 : 1, gap: space.xl }}>
+          <View>
+            <Overline>Dias</Overline>
+            <GoldRule align="left" width={32} style={{ marginTop: space.sm }} />
+
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: space.lg }}>
+              {DIAS.map((d) => {
+                const ativo = dias.includes(d.codigo);
+                return (
+                  <Pressable
+                    key={d.codigo}
+                    onPress={() => alternarDia(d.codigo)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: ativo }}
+                    // O rotulo visivel repete letras (S, T, Q, Q, S, S, D); o
+                    // leitor de tela precisa do nome inteiro.
+                    accessibilityLabel={d.nome}
+                    style={({ pressed }) => [
+                      estilos.dia,
+                      ativo && estilos.diaAtivo,
+                      pressed && { opacity: 0.6 },
+                    ]}
                   >
-                    {d.rotulo}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Text
+                      variant="caption"
+                      font={ativo ? 'bodySemi' : 'body'}
+                      color={ativo ? scheme.onAccent : scheme.textMuted}
+                    >
+                      {d.rotulo}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {nenhumDia ? (
+              <Text variant="caption" color={scheme.accent} style={{ marginTop: space.sm }}>
+                Escolha ao menos um dia.
+              </Text>
+            ) : null}
           </View>
-          {nenhumDia ? (
-            <Text variant="caption" color="#E11D48" style={{ marginTop: 8 }}>
-              Escolha ao menos um dia.
-            </Text>
+
+          <View>
+            <Overline>Horário</Overline>
+            <GoldRule align="left" width={32} style={{ marginTop: space.sm }} />
+
+            {/* O horario em serifada grande: e o unico numero desta tela, e o
+                que a pessoa veio conferir. */}
+            <Pressable
+              onPress={() => setMostrandoPicker((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={`Horário do lembrete: ${hora}`}
+              style={({ pressed }) => [estilos.hora, pressed && { borderColor: scheme.accent }]}
+            >
+              <Text style={estilos.horaTexto}>{hora}</Text>
+              <Ionicons
+                name={mostrandoPicker ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={scheme.textGhost}
+              />
+            </Pressable>
+          </View>
+
+          {mostrandoPicker ? (
+            <Card>
+              <DateTimePicker
+                value={horaParaData(hora)}
+                mode="time"
+                display="spinner"
+                locale="pt-BR"
+                onChange={(_, d) => {
+                  if (d) setHora(dataParaHora(d));
+                  if (Platform.OS !== 'ios') setMostrandoPicker(false);
+                }}
+              />
+              <Button
+                label="Pronto"
+                variant="secondary"
+                size="sm"
+                onPress={() => setMostrandoPicker(false)}
+              />
+            </Card>
           ) : null}
         </View>
 
-        <View>
-          <Text variant="caption" weight="semi" color={scheme.textSecondary}>
-            HORÁRIO
-          </Text>
-          <Pressable onPress={() => setMostrandoPicker((v) => !v)}>
-            <View
-              style={{
-                minHeight: 52,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: scheme.border,
-                backgroundColor: scheme.surface,
-                paddingHorizontal: 16,
-                marginTop: 8,
-                justifyContent: 'center',
-              }}
-            >
-              <Text variant="body">{hora}</Text>
-            </View>
-          </Pressable>
-        </View>
-
-        {mostrandoPicker ? (
-          <Card>
-            <DateTimePicker
-              value={horaParaData(hora)}
-              mode="time"
-              display="spinner"
-              locale="pt-BR"
-              onChange={(_, d) => {
-                if (d) setHora(dataParaHora(d));
-                if (Platform.OS !== 'ios') setMostrandoPicker(false);
-              }}
-            />
-            <Button label="Pronto" variant="secondary" onPress={() => setMostrandoPicker(false)} />
-          </Card>
-        ) : null}
-
         {erro ? (
-          <Text variant="caption" color="#E11D48">
+          <Text variant="caption" color={scheme.accent}>
             {erro}
           </Text>
         ) : null}
 
         <Button
-          label="Salvar horário"
+          label="Salvar lembrete"
           onPress={salvar}
           loading={salvando}
           disabled={salvando || nenhumDia}
-          style={{ marginTop: 8 }}
         />
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const estilos = StyleSheet.create({
+  dia: {
+    flex: 1,
+    height: 46,
+    borderRadius: radius.sharp,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: scheme.border,
+    backgroundColor: scheme.surface,
+  },
+  diaAtivo: {
+    borderColor: scheme.accent,
+    backgroundColor: scheme.accent,
+  },
+  hora: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 64,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: scheme.border,
+    backgroundColor: scheme.surface,
+    paddingHorizontal: 18,
+    marginTop: space.lg,
+  },
+  horaTexto: {
+    fontFamily: fonts.display,
+    fontSize: 30,
+    lineHeight: 38,
+    color: scheme.textPrimary,
+  },
+});

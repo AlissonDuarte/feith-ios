@@ -1,15 +1,16 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActionSheetIOS, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActionSheetIOS, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import type { UserProfile } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, Text, scheme } from '../../src/components/ui';
-import { radius } from '../../src/theme/tokens';
+import { Button, Card, Field, Loading, Overline, Text, scheme } from '../../src/components/ui';
+import { radius, space } from '../../src/theme/tokens';
 
 type Genero = 'male' | 'female' | 'other';
 
@@ -42,6 +43,45 @@ function exibirData(d: Date | null): string {
   if (!d) return 'Não informada';
   const p = (n: number) => String(n).padStart(2, '0');
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
+/**
+ * Campo que abre um seletor em vez de aceitar digitacao.
+ *
+ * Mesma altura e mesmo fio do `Field`, com o chevron dizendo que ha algo a
+ * escolher — sem ele, um campo que nao aceita o teclado parece um campo
+ * desativado.
+ */
+function CampoSeletor({
+  label,
+  valor,
+  vazio,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  valor: string;
+  vazio: boolean;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <View>
+      <Overline style={{ marginBottom: space.sm }}>{label}</Overline>
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${valor}`}
+        style={({ pressed }) => [estilos.seletor, pressed && { borderColor: scheme.accent }]}
+      >
+        <Text variant="body" color={vazio ? scheme.textGhost : scheme.textPrimary}>
+          {valor}
+        </Text>
+        <Ionicons name="chevron-down" size={15} color={scheme.textGhost} />
+      </Pressable>
+    </View>
+  );
 }
 
 export default function EditarPerfil() {
@@ -118,7 +158,7 @@ export default function EditarPerfil() {
   if (carregando) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
-        <View style={{ flex: 1 }} />
+        <Loading />
       </SafeAreaView>
     );
   }
@@ -127,32 +167,27 @@ export default function EditarPerfil() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['bottom']}>
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }} keyboardShouldPersistTaps="handled">
-        <View>
-          <Text variant="caption" weight="semi" color={scheme.textSecondary}>
-            NOME DE USUÁRIO
-          </Text>
-          <TextInput
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            editable={!salvando}
-            style={campo}
-          />
-        </View>
+      <ScrollView
+        contentContainerStyle={{ padding: space.gutter, gap: space.xl, paddingBottom: space.section }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Field
+          label="Nome de usuário"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          autoComplete="username"
+          editable={!salvando}
+        />
 
-        <View>
-          <Text variant="caption" weight="semi" color={scheme.textSecondary}>
-            DATA DE NASCIMENTO
-          </Text>
-          <Pressable onPress={() => setMostrandoPicker(true)} disabled={salvando}>
-            <View style={[campo, { justifyContent: 'center' }]}>
-              <Text variant="body" color={nascimento ? scheme.textPrimary : scheme.textMuted}>
-                {exibirData(nascimento)}
-              </Text>
-            </View>
-          </Pressable>
-        </View>
+        <CampoSeletor
+          label="Data de nascimento"
+          valor={exibirData(nascimento)}
+          vazio={!nascimento}
+          onPress={() => setMostrandoPicker(true)}
+          disabled={salvando}
+        />
 
         {mostrandoPicker ? (
           <Card>
@@ -167,54 +202,49 @@ export default function EditarPerfil() {
                 if (Platform.OS !== 'ios') setMostrandoPicker(false);
               }}
             />
-            <Button label="Pronto" variant="secondary" onPress={() => setMostrandoPicker(false)} />
+            <Button
+              label="Pronto"
+              variant="secondary"
+              size="sm"
+              onPress={() => setMostrandoPicker(false)}
+            />
           </Card>
         ) : null}
 
-        <View>
-          <Text variant="caption" weight="semi" color={scheme.textSecondary}>
-            GÊNERO
-          </Text>
-          <Pressable onPress={escolherGenero} disabled={salvando}>
-            <View style={[campo, { justifyContent: 'center' }]}>
-              <Text variant="body" color={genero ? scheme.textPrimary : scheme.textMuted}>
-                {rotuloGenero}
-              </Text>
-            </View>
-          </Pressable>
-        </View>
+        <CampoSeletor
+          label="Gênero"
+          valor={rotuloGenero}
+          vazio={!genero}
+          onPress={escolherGenero}
+          disabled={salvando}
+        />
 
-        <Text variant="caption" color={scheme.textMuted}>
+        <Text variant="caption" color={scheme.textGhost}>
           O e-mail ({perfil?.email}) não pode ser alterado por aqui.
         </Text>
 
         {erro ? (
-          <Text variant="caption" color="#E11D48">
+          <Text variant="caption" color={scheme.accent}>
             {erro}
           </Text>
         ) : null}
 
-        <Button
-          label="Salvar"
-          onPress={salvar}
-          loading={salvando}
-          disabled={salvando}
-          style={{ marginTop: 8 }}
-        />
+        <Button label="Salvar" onPress={salvar} loading={salvando} disabled={salvando} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const campo = {
-  minHeight: 52,
-  borderRadius: radius.md,
-  borderWidth: 1,
-  borderColor: scheme.border,
-  backgroundColor: scheme.surface,
-  paddingHorizontal: 16,
-  marginTop: 8,
-  fontFamily: 'Inter_400Regular',
-  fontSize: 17,
-  color: scheme.textPrimary,
-} as const;
+const estilos = StyleSheet.create({
+  seletor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 54,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: scheme.border,
+    backgroundColor: scheme.surface,
+    paddingHorizontal: 16,
+  },
+});

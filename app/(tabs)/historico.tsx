@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
@@ -8,8 +8,17 @@ import type { HistoryItem } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { FeedList } from '../../src/components/FeedList';
-import { Card, Text, scheme } from '../../src/components/ui';
+import {
+  Card,
+  GoldRule,
+  Overline,
+  ScreenHeader,
+  Text,
+  TouchableCard,
+  scheme,
+} from '../../src/components/ui';
 import { useListaPaginada } from '../../src/hooks/useListaPaginada';
+import { space } from '../../src/theme/tokens';
 
 export default function Historico() {
   const router = useRouter();
@@ -24,71 +33,80 @@ export default function Historico() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
-        <Text variant="display" display weight="bold">
-          Histórico
-        </Text>
-      </View>
+      <ScreenHeader
+        overline="Suas leituras"
+        title="Histórico"
+        right={
+          lista.total > 0 ? (
+            <Text variant="micro" color={scheme.textGhost}>
+              {lista.total}
+            </Text>
+          ) : null
+        }
+      />
 
       <FeedList
         lista={lista}
         chave={(h) => h.reflection_uuid}
         placeholderBusca="Buscar no histórico"
+        iconeVazio="time-outline"
         tituloVazio="Nada no histórico ainda"
         descricaoVazia="As reflexões que você abrir aparecem aqui."
         cabecalho={
           !isSupporter && janela ? (
-            <Card style={{ marginBottom: 16, backgroundColor: scheme.accentSubtle }}>
-              <Text variant="caption" color={scheme.textSecondary}>
-                No plano gratuito, o histórico mostra os últimos {janela} dias. Apoiadores veem o
-                acervo completo.
+            <Card quiet style={{ marginBottom: space.xl }}>
+              <Overline color={scheme.gold}>Plano gratuito</Overline>
+              <Text variant="caption" color={scheme.textSecondary} style={{ marginTop: 6 }}>
+                O histórico mostra os últimos {janela} dias. Apoiadores veem o acervo completo.
               </Text>
             </Card>
           ) : null
         }
         renderItem={(item) => (
-          <Pressable
+          <TouchableCard
             onPress={() => router.push(`/leitura/${item.reflection_uuid}`)}
-            style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+            accessibilityLabel={item.scripture_reference}
+            style={{ marginBottom: space.md }}
           >
-            <Card style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="title" display weight="bold">
-                    {item.scripture_reference}
-                  </Text>
-                  <Text
-                    variant="body"
-                    color={scheme.textSecondary}
-                    style={{ marginTop: 6 }}
-                    numberOfLines={3}
-                  >
-                    {item.bible_text}
-                  </Text>
-                  <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 10 }}>
-                    {formatRelativePT(item.publishAt)}
-                    {item.notes_count > 0
-                      ? ` · ${item.notes_count} ${item.notes_count === 1 ? 'anotação' : 'anotações'}`
-                      : ''}
-                  </Text>
-                </View>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, paddingRight: space.md }}>
+                <Text variant="title">{item.scripture_reference}</Text>
 
-                <View style={{ paddingLeft: 12 }}>
-                  <BotaoFavorito
-                    reflectionUuid={item.reflection_uuid}
-                    favoritado={item.bookmarked}
-                    tamanho={22}
-                    onMudou={(v) =>
-                      lista.atualizarLocal(
-                        (h) => h.reflection_uuid === item.reflection_uuid,
-                        (h) => ({ ...h, bookmarked: v }),
-                      )
-                    }
-                  />
-                </View>
+                <GoldRule align="left" width={28} style={{ marginTop: space.md }} />
+
+                <Text
+                  variant="bodySm"
+                  color={scheme.textSecondary}
+                  style={{ marginTop: space.md }}
+                  numberOfLines={3}
+                >
+                  {item.bible_text}
+                </Text>
+
+                <Text variant="micro" color={scheme.textGhost} style={{ marginTop: space.lg }}>
+                  {[
+                    formatRelativePT(item.publishAt),
+                    item.notes_count > 0
+                      ? `${item.notes_count} ${item.notes_count === 1 ? 'anotação' : 'anotações'}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join('  ·  ')}
+                </Text>
               </View>
-            </Card>
-          </Pressable>
+
+              <BotaoFavorito
+                reflectionUuid={item.reflection_uuid}
+                favoritado={item.bookmarked}
+                onMudou={(v) =>
+                  lista.atualizarLocal(
+                    (h) => h.reflection_uuid === item.reflection_uuid,
+                    (h) => ({ ...h, bookmarked: v }),
+                  )
+                }
+              />
+            </View>
+          </TouchableCard>
         )}
       />
     </SafeAreaView>

@@ -1,12 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
@@ -14,10 +8,29 @@ import { mensagemDe } from '../../src/api/errors';
 import { isAppleSignInAvailable, signInWithApple } from '../../src/auth/appleSignIn';
 import { useAuth } from '../../src/auth/AuthContext';
 import { googleSignInAvailable, signInWithGoogle } from '../../src/auth/googleSignIn';
-import { Button, Text, scheme } from '../../src/components/ui';
-import { radius } from '../../src/theme/tokens';
+import { AccentHalo } from '../../src/components/ornaments';
+import { Button, Field, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
+import { fonts, space } from '../../src/theme/tokens';
 
 type Metodo = 'email' | 'google' | 'apple' | null;
+
+/**
+ * Separador "ou" entre o login por e-mail e os provedores.
+ *
+ * Sem ele os cinco botoes empilhados parecem cinco alternativas de igual peso;
+ * com ele fica claro que ha um caminho principal e dois atalhos.
+ */
+function Separador({ children }: { children: string }) {
+  return (
+    <View style={estilos.separador}>
+      <View style={estilos.fio} />
+      <Text variant="overline" color={scheme.textGhost} style={{ textTransform: 'uppercase' }}>
+        {children}
+      </Text>
+      <View style={estilos.fio} />
+    </View>
+  );
+}
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -74,73 +87,93 @@ export default function Login() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
+      <AccentHalo height={420} />
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 28 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingHorizontal: 28,
+            paddingVertical: space.section,
+          }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text variant="display" display weight="bold">
-            feith
-          </Text>
-          <Text variant="body" color={scheme.textSecondary} style={{ marginTop: 6 }}>
-            Exegese diária para quem leva a fé a sério.
-          </Text>
+          {/* ── Frontispicio ────────────────────────────────────────────
+              A mesma abertura do hero da landing: etiqueta espacada, marca em
+              serifada leve, fio de ouro, promessa. E a unica tela que a pessoa
+              ve antes de decidir se o produto e serio. */}
+          <View style={{ alignItems: 'center', marginBottom: space.section }}>
+            <Overline color={scheme.accent}>Exegese diária</Overline>
 
-          <View style={{ marginTop: 36, gap: 12 }}>
-            <TextInput
+            <Text style={estilos.marca}>feith</Text>
+
+            <GoldRule width={72} style={{ marginTop: space.lg }} />
+
+            <Text
+              variant="bodySm"
+              color={scheme.textSecondary}
+              style={{ textAlign: 'center', marginTop: space.xl, maxWidth: 280 }}
+            >
+              A Escritura merece mais do que uma leitura superficial.
+            </Text>
+          </View>
+
+          <View style={{ gap: space.md }}>
+            <Field
               value={email}
               onChangeText={setEmail}
               placeholder="E-mail"
-              placeholderTextColor={scheme.textMuted}
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
               inputMode="email"
               editable={!ocupado}
-              style={estiloCampo}
             />
-            <TextInput
+            <Field
               value={senha}
               onChangeText={setSenha}
               placeholder="Senha"
-              placeholderTextColor={scheme.textMuted}
               autoCapitalize="none"
               autoComplete="current-password"
               secureTextEntry
               editable={!ocupado}
               onSubmitEditing={comEmail}
               returnKeyType="go"
-              style={estiloCampo}
             />
           </View>
 
           {erro ? (
-            <Text variant="caption" color="#E11D48" style={{ marginTop: 12 }}>
+            <Text variant="caption" color={scheme.accent} style={{ marginTop: space.md }}>
               {erro}
             </Text>
           ) : null}
 
           <Button
             label="Entrar"
+            icon="arrow-forward"
             onPress={comEmail}
             loading={carregando === 'email'}
             disabled={ocupado || !email || !senha}
-            style={{ marginTop: 20 }}
+            style={{ marginTop: space.xl }}
           />
+
+          {googleSignInAvailable || appleDisponivel ? <Separador>ou</Separador> : null}
 
           {/* O botao do Google so aparece com os dois client IDs configurados:
               melhor nenhum botao do que um que so falharia ao ser tocado. */}
           {googleSignInAvailable ? (
             <Button
               label="Continuar com o Google"
+              iconLeft="logo-google"
               variant="secondary"
               onPress={comGoogle}
               loading={carregando === 'google'}
               disabled={ocupado}
-              style={{ marginTop: 10 }}
             />
           ) : null}
 
@@ -149,16 +182,22 @@ export default function Login() {
           {appleDisponivel ? (
             <Button
               label="Continuar com a Apple"
+              iconLeft="logo-apple"
               variant="secondary"
               onPress={comApple}
               loading={carregando === 'apple'}
               disabled={ocupado}
-              style={{ marginTop: 10 }}
+              style={{ marginTop: space.md }}
             />
           ) : null}
 
           <Link href="/(auth)/register" asChild>
-            <Button label="Criar uma conta" variant="ghost" disabled={ocupado} style={{ marginTop: 16 }} />
+            <Button
+              label="Ainda não tenho conta"
+              variant="ghost"
+              disabled={ocupado}
+              style={{ marginTop: space.xl, alignSelf: 'center' }}
+            />
           </Link>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -166,14 +205,24 @@ export default function Login() {
   );
 }
 
-const estiloCampo = {
-  minHeight: 52,
-  borderRadius: radius.md,
-  borderWidth: 1,
-  borderColor: scheme.border,
-  backgroundColor: scheme.surface,
-  paddingHorizontal: 16,
-  fontFamily: 'Inter_400Regular',
-  fontSize: 17,
-  color: scheme.textPrimary,
-} as const;
+const estilos = StyleSheet.create({
+  marca: {
+    fontFamily: fonts.display,
+    fontSize: 56,
+    lineHeight: 64,
+    letterSpacing: -1,
+    color: scheme.textPrimary,
+    marginTop: space.md,
+  },
+  separador: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginVertical: space.xxl,
+  },
+  fio: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: scheme.border,
+  },
+});

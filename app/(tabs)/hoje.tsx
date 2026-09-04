@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
@@ -9,13 +10,24 @@ import type { Reflection } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
-import { Button, EmptyState, Text, scheme } from '../../src/components/ui';
+import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  Loading,
+  Text,
+  scheme,
+  useEspacoTabBar,
+} from '../../src/components/ui';
+import { radius, shadow, space } from '../../src/theme/tokens';
 
 export default function Hoje() {
   // O streak vem do summary do AuthContext, que ja e compartilhado por todas
   // as telas — buscar /streaks/me aqui seria a mesma duplicacao que a web faz.
   const { summary, refreshSummary } = useAuth();
+  const { altura: alturaTabBar, respiro } = useEspacoTabBar();
 
   const [reflexao, setReflexao] = useState<Reflection | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -66,18 +78,17 @@ export default function Hoje() {
 
   if (carregando) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={scheme.accent} />
-        </View>
+      <SafeAreaView style={estilos.tela}>
+        <Loading />
       </SafeAreaView>
     );
   }
 
   if (erro) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
+      <SafeAreaView style={estilos.tela}>
         <EmptyState
+          icone="cloud-offline-outline"
           titulo="Não foi possível carregar"
           descricao={erro}
           acao={<Button label="Tentar de novo" onPress={puxarParaAtualizar} />}
@@ -92,56 +103,59 @@ export default function Hoje() {
   // e exatamente o que um revisor da App Store veria num dia sem conteudo.
   if (!reflexao || !reflexao.uuid) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
+      <SafeAreaView style={estilos.tela}>
         <EmptyState
+          icone="hourglass-outline"
           titulo="A reflexão de hoje ainda não saiu"
           descricao="Assim que ela for publicada, você a encontra aqui. Enquanto isso, seu histórico continua disponível."
-          acao={<Button label="Atualizar" variant="secondary" onPress={puxarParaAtualizar} />}
+          acao={
+            <Button label="Atualizar" variant="secondary" onPress={puxarParaAtualizar} />
+          }
         />
       </SafeAreaView>
     );
   }
 
+  const streak = summary?.streak ?? 0;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
-      {/* O badge de streak vem do Sidebar da web (Sidebar.svelte:264-284).
-          Numa tab bar nao ha onde poe-lo, e a header da Hoje e melhor lugar:
-          e a primeira coisa que a pessoa ve ao abrir o app. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: 24,
-          paddingTop: 8,
-        }}
-      >
-        {/* O badge de streak vem do Sidebar da web (Sidebar.svelte:264-284).
-            Numa tab bar nao ha onde poe-lo, e a header da Hoje e melhor lugar:
-            e a primeira coisa que a pessoa ve ao abrir o app. */}
-        {summary && summary.streak > 0 ? (
-          <Text variant="caption" weight="semi" color={scheme.accent}>
-            {summary.streak} {summary.streak === 1 ? 'dia seguido' : 'dias seguidos'}
-          </Text>
+    <SafeAreaView style={estilos.tela} edges={['top']}>
+      {/* Halo de oxblood atras da abertura — o mesmo do hero da landing. Da
+          profundidade ao topo da pagina sem colocar nada nele. */}
+      <AccentHalo height={360} />
+
+      {/* ── Barra superior ────────────────────────────────────────────────
+          Sem titulo: o titulo da tela e a propria referencia biblica, logo
+          abaixo. Repetir "Hoje" aqui gastaria a linha mais nobre da tela. */}
+      <View style={estilos.barra}>
+        {streak > 0 ? (
+          <View style={estilos.streak}>
+            <Ionicons name="flame" size={12} color={scheme.gold} />
+            <Text variant="micro" font="bodySemi" color={scheme.gold}>
+              {streak} {streak === 1 ? 'dia' : 'dias'}
+            </Text>
+          </View>
         ) : (
           <View />
         )}
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
           <BotaoFavorito
             reflectionUuid={reflexao.uuid}
             favoritado={reflexao.bookmarked}
             onMudou={(v) => setReflexao((r) => (r ? { ...r, bookmarked: v } : r))}
-            tamanho={22}
+            emMoldura
           />
-          <Pressable onPress={compartilhar} hitSlop={12} accessibilityLabel="Compartilhar">
-            <Ionicons name="share-outline" size={22} color={scheme.textSecondary} />
-          </Pressable>
+          <IconButton name="share-outline" label="Compartilhar" onPress={compartilhar} />
         </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 24, paddingBottom: 64 }}
+        contentContainerStyle={{
+          paddingHorizontal: space.gutter,
+          paddingBottom: respiro,
+        }}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={atualizando}
@@ -154,25 +168,27 @@ export default function Hoje() {
       </ScrollView>
 
       {/* Botao fixo, e nao o FAB arrastavel da web (Note.svelte): arrastar
-          briga com o gesto de voltar do iOS e com o scroll. */}
-      <View style={{ position: 'absolute', right: 24, bottom: 32 }}>
+          briga com o gesto de voltar do iOS e com o scroll.
+          Pilula com rotulo em vez de circulo com icone: "anotar" e a acao que
+          o produto quer estimular, e um icone de lapis sozinho nao a promete
+          para quem nunca a usou. */}
+      <View style={[estilos.ancora, { bottom: alturaTabBar + space.lg }]} pointerEvents="box-none">
         <Pressable
-          onPress={() => setEscrevendo(true)}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setEscrevendo(true);
+          }}
           accessibilityRole="button"
           accessibilityLabel="Escrever anotação"
           style={({ pressed }) => [
-            {
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: scheme.accent,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.8 : 1,
-            },
+            estilos.fab,
+            { backgroundColor: pressed ? scheme.accentPressed : scheme.accent },
           ]}
         >
-          <Ionicons name="create-outline" size={26} color="#FFFFFF" />
+          <Ionicons name="create-outline" size={17} color={scheme.onAccent} />
+          <Text variant="micro" font="bodySemi" color={scheme.onAccent} style={{ letterSpacing: 2 }}>
+            ANOTAR
+          </Text>
         </Pressable>
       </View>
 
@@ -185,3 +201,41 @@ export default function Hoje() {
     </SafeAreaView>
   );
 }
+
+const estilos = StyleSheet.create({
+  tela: { flex: 1, backgroundColor: scheme.canvas },
+  barra: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: space.gutter,
+    paddingTop: space.sm,
+    paddingBottom: space.xs,
+  },
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: scheme.goldSoft,
+    backgroundColor: scheme.goldSubtle,
+    borderRadius: radius.sharp,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  // `bottom` vem da tela: e a altura real da tab bar mais a safe area, para o
+  // botao ficar ACIMA dela e nao atras do vidro.
+  ancora: {
+    position: 'absolute',
+    right: space.gutter,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 46,
+    paddingHorizontal: 18,
+    borderRadius: radius.sharp,
+    ...shadow.raised,
+  },
+});

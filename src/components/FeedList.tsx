@@ -3,21 +3,16 @@
  *
  * Na web sao tres componentes quase iguais (BookmarkedFeed, NotesFeed,
  * HistoryFeed), cada um com sua paginacao por botoes. Aqui e um so, com
- * scroll infinito, busca, pull-to-refresh, skeleton na primeira carga e
+ * scroll infinito, busca, pull-to-refresh, esqueleto na primeira carga e
  * estados vazios distintos para "nao ha nada" e "a busca nao achou".
  */
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMemo } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, TextInput, View } from 'react-native';
 
 import type { ListaPaginada } from '../hooks/useListaPaginada';
-import { radius } from '../theme/tokens';
-import { Button, Card, EmptyState, Text, scheme } from './ui';
+import { fonts, radius, space } from '../theme/tokens';
+import { Button, Card, EmptyState, Text, scheme, useEspacoTabBar } from './ui';
 
 interface FeedListProps<T> {
   lista: ListaPaginada<T>;
@@ -27,34 +22,93 @@ interface FeedListProps<T> {
   placeholderBusca?: string;
   tituloVazio: string;
   descricaoVazia?: string;
+  /** Icone do estado vazio. */
+  iconeVazio?: keyof typeof Ionicons.glyphMap;
   /** Mostrado acima da lista — usado pelo aviso de janela do plano gratuito. */
   cabecalho?: React.ReactElement | null;
 }
 
-/** Bloco cinza no formato aproximado de um card, para a primeira carga. */
-function Skeleton() {
+/**
+ * Esqueleto da primeira carga.
+ *
+ * Barras no formato aproximado do card real, e nao um spinner: o esqueleto diz
+ * o que vai chegar, e a tela nao "pula" quando o conteudo entra.
+ */
+function Esqueleto() {
   return (
-    <Card style={{ marginBottom: 12, opacity: 0.5 }}>
-      <View style={{ height: 12, width: '40%', backgroundColor: scheme.border, borderRadius: 6 }} />
+    <Card style={{ marginBottom: space.md, opacity: 0.6 }}>
+      <View style={{ height: 14, width: '46%', backgroundColor: scheme.borderSoft, borderRadius: 3 }} />
       <View
         style={{
           height: 10,
-          width: '90%',
-          backgroundColor: scheme.border,
-          borderRadius: 5,
-          marginTop: 14,
+          width: '92%',
+          backgroundColor: scheme.borderSoft,
+          borderRadius: 3,
+          marginTop: 16,
         }}
       />
       <View
         style={{
           height: 10,
-          width: '65%',
-          backgroundColor: scheme.border,
-          borderRadius: 5,
-          marginTop: 8,
+          width: '68%',
+          backgroundColor: scheme.borderSoft,
+          borderRadius: 3,
+          marginTop: 9,
         }}
       />
     </Card>
+  );
+}
+
+/**
+ * Campo de busca.
+ *
+ * Com a lupa dentro do campo, e nao so um placeholder: sem o icone, um campo
+ * de texto no topo de uma lista le como "escreva algo aqui", nao como "busque".
+ */
+function CampoBusca({
+  valor,
+  aoMudar,
+  placeholder,
+}: {
+  valor: string;
+  aoMudar: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        minHeight: 46,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: scheme.border,
+        backgroundColor: scheme.surface,
+        paddingHorizontal: 14,
+        marginBottom: space.xl,
+      }}
+    >
+      <Ionicons name="search" size={15} color={scheme.textGhost} />
+      <TextInput
+        value={valor}
+        onChangeText={aoMudar}
+        placeholder={placeholder}
+        placeholderTextColor={scheme.textGhost}
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+        clearButtonMode="while-editing"
+        style={{
+          flex: 1,
+          paddingVertical: 12,
+          fontFamily: fonts.body,
+          fontSize: 16,
+          color: scheme.textPrimary,
+        }}
+      />
+    </View>
   );
 }
 
@@ -65,6 +119,7 @@ export function FeedList<T>({
   placeholderBusca,
   tituloVazio,
   descricaoVazia,
+  iconeVazio,
   cabecalho,
 }: FeedListProps<T>) {
   const {
@@ -79,34 +134,12 @@ export function FeedList<T>({
     carregarMais,
   } = lista;
 
+  const { respiro } = useEspacoTabBar();
   const buscando = busca.trim().length > 0;
 
   const campoBusca = useMemo(() => {
     if (!placeholderBusca) return null;
-    return (
-      <TextInput
-        value={busca}
-        onChangeText={setBusca}
-        placeholder={placeholderBusca}
-        placeholderTextColor={scheme.textMuted}
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="search"
-        clearButtonMode="while-editing"
-        style={{
-          minHeight: 44,
-          borderRadius: radius.md,
-          borderWidth: 1,
-          borderColor: scheme.border,
-          backgroundColor: scheme.surface,
-          paddingHorizontal: 14,
-          fontFamily: 'Inter_400Regular',
-          fontSize: 16,
-          color: scheme.textPrimary,
-          marginBottom: 16,
-        }}
-      />
-    );
+    return <CampoBusca valor={busca} aoMudar={setBusca} placeholder={placeholderBusca} />;
   }, [placeholderBusca, busca, setBusca]);
 
   // Erro sem nada em tela: a lista inteira vira o erro. Erro com itens ja
@@ -114,8 +147,11 @@ export function FeedList<T>({
   if (erro && itens.length === 0 && !carregando) {
     return (
       <View style={{ flex: 1 }}>
-        {campoBusca ? <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>{campoBusca}</View> : null}
+        {campoBusca ? (
+          <View style={{ paddingHorizontal: space.gutter, paddingTop: space.xl }}>{campoBusca}</View>
+        ) : null}
         <EmptyState
+          icone="cloud-offline-outline"
           titulo="Não foi possível carregar"
           descricao={erro}
           acao={<Button label="Tentar de novo" onPress={() => void recarregar()} />}
@@ -126,11 +162,11 @@ export function FeedList<T>({
 
   if (carregando) {
     return (
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 8 }}>
+      <View style={{ flex: 1, paddingHorizontal: space.gutter, paddingTop: space.xl }}>
         {campoBusca}
-        <Skeleton />
-        <Skeleton />
-        <Skeleton />
+        <Esqueleto />
+        <Esqueleto />
+        <Esqueleto />
       </View>
     );
   }
@@ -141,11 +177,12 @@ export function FeedList<T>({
       keyExtractor={chave}
       renderItem={({ item }) => renderItem(item)}
       contentContainerStyle={{
-        paddingHorizontal: 24,
-        paddingTop: 8,
-        paddingBottom: 48,
+        paddingHorizontal: space.gutter,
+        paddingTop: space.xl,
+        paddingBottom: respiro,
         flexGrow: 1,
       }}
+      showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <>
           {campoBusca}
@@ -155,23 +192,24 @@ export function FeedList<T>({
       ListEmptyComponent={
         buscando ? (
           <EmptyState
+            icone="search-outline"
             titulo="Nada encontrado"
             descricao={`Nenhum resultado para “${busca.trim()}”.`}
           />
         ) : (
-          <EmptyState titulo={tituloVazio} descricao={descricaoVazia} />
+          <EmptyState icone={iconeVazio} titulo={tituloVazio} descricao={descricaoVazia} />
         )
       }
       ListFooterComponent={
         carregandoMais ? (
-          <View style={{ paddingVertical: 24 }}>
+          <View style={{ paddingVertical: space.xxl }}>
             <ActivityIndicator color={scheme.accent} />
           </View>
         ) : erro && itens.length > 0 ? (
           <Text
             variant="caption"
             color={scheme.textMuted}
-            style={{ textAlign: 'center', paddingVertical: 24 }}
+            style={{ textAlign: 'center', paddingVertical: space.xxl }}
           >
             {erro}
           </Text>

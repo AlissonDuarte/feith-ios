@@ -116,7 +116,10 @@ const config: ExpoConfig = {
       {
         image: './assets/splash-icon.png',
         resizeMode: 'contain',
-        backgroundColor: '#FCFCFE',
+        // Creme da identidade editorial (palette.js). Precisa ser IGUAL ao
+        // canvas das telas: um off-white azulado aqui faz a abertura do app
+        // piscar de branco para papel.
+        backgroundColor: '#FAF8F4',
       },
     ],
     // A anotacao de tupla e necessaria: sem ela o TS infere (string | objeto)[]

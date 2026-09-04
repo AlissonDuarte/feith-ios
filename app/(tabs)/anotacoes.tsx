@@ -8,10 +8,11 @@ import { api } from '../../src/api/client';
 import { formatRelativePT } from '../../src/api/dates';
 import { mensagemDe } from '../../src/api/errors';
 import type { NoteItem } from '../../src/api/types';
-import { FeedList } from '../../src/components/FeedList';
-import { Card, Text, scheme } from '../../src/components/ui';
 import { useAuth } from '../../src/auth/AuthContext';
+import { FeedList } from '../../src/components/FeedList';
+import { GoldRule, Overline, ScreenHeader, Text, TouchableCard, scheme } from '../../src/components/ui';
 import { useListaPaginada } from '../../src/hooks/useListaPaginada';
+import { space } from '../../src/theme/tokens';
 
 export default function Anotacoes() {
   const router = useRouter();
@@ -44,48 +45,60 @@ export default function Anotacoes() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
-        <Text variant="display" display weight="bold">
-          Anotações
-        </Text>
-      </View>
+      <ScreenHeader
+        overline="Seu caderno"
+        title="Anotações"
+        right={
+          lista.total > 0 ? (
+            <Text variant="micro" color={scheme.textGhost}>
+              {lista.total}
+            </Text>
+          ) : null
+        }
+      />
 
       <FeedList
         lista={lista}
         chave={(n) => n.note_uuid}
         placeholderBusca="Buscar nas anotações"
+        iconeVazio="create-outline"
         tituloVazio="Nenhuma anotação ainda"
-        descricaoVazia="Ao ler uma reflexão, toque no botão de escrever para guardar o que ela te disse."
+        descricaoVazia="Ao ler uma reflexão, toque em Anotar para guardar o que ela te disse."
         renderItem={(nota) => (
-          <Pressable
+          <TouchableCard
             onPress={() => router.push(`/leitura/${nota.reflection_uuid}`)}
-            style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+            accessibilityLabel={`Anotação em ${nota.reflection_verse}`}
+            style={{ marginBottom: space.md }}
           >
-            <Card style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="caption" weight="semi" color={scheme.accent}>
-                    {nota.reflection_verse}
-                  </Text>
-                  <Text variant="body" style={{ marginTop: 8 }} numberOfLines={4}>
-                    {nota.note}
-                  </Text>
-                  <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 10 }}>
-                    {formatRelativePT(nota.createdAt)}
-                  </Text>
-                </View>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, paddingRight: space.md }}>
+                {/* A referencia e o CONTEXTO da anotacao, nao o titulo dela —
+                    por isso etiqueta em maiuscula, e nao a serifada grande que
+                    os outros feeds usam para nomear a reflexao. */}
+                <Overline color={scheme.accent}>{nota.reflection_verse}</Overline>
 
-                <Pressable
-                  onPress={() => apagar(nota)}
-                  hitSlop={12}
-                  accessibilityLabel="Apagar anotação"
-                  style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1, paddingLeft: 12 }]}
-                >
-                  <Ionicons name="trash-outline" size={20} color={scheme.textMuted} />
-                </Pressable>
+                <Text variant="body" style={{ marginTop: space.md }} numberOfLines={4}>
+                  {nota.note}
+                </Text>
+
+                <GoldRule align="left" width={28} style={{ marginTop: space.lg }} />
+
+                <Text variant="micro" color={scheme.textGhost} style={{ marginTop: space.md }}>
+                  {formatRelativePT(nota.createdAt)}
+                </Text>
               </View>
-            </Card>
-          </Pressable>
+
+              <Pressable
+                onPress={() => apagar(nota)}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Apagar anotação"
+                style={({ pressed }) => [{ opacity: pressed ? 0.4 : 1 }]}
+              >
+                <Ionicons name="trash-outline" size={17} color={scheme.textGhost} />
+              </Pressable>
+            </View>
+          </TouchableCard>
         )}
       />
     </SafeAreaView>

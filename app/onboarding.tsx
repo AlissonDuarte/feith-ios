@@ -1,29 +1,31 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { FlatList, useWindowDimensions, View, type ViewToken } from 'react-native';
+import { FlatList, StyleSheet, useWindowDimensions, View, type ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../src/api/client';
 import { useAuth } from '../src/auth/AuthContext';
-import { Button, Text, scheme } from '../src/components/ui';
-import { radius } from '../src/theme/tokens';
+import { AccentHalo } from '../src/components/ornaments';
+import { Button, GoldRule, Overline, Text, scheme } from '../src/components/ui';
+import { fonts, radius, space } from '../src/theme/tokens';
 
 /**
  * Onboarding em tela cheia.
  *
  * Porte de modals/OnboardingModal.svelte — mesmo texto, mesmos quatro passos.
- * Duas diferencas:
+ * Tres diferencas:
  *
  * 1. Tela cheia com paginacao horizontal, e nao um modal com botoes de avancar.
  *    Deslizar e o gesto natural de um carrossel no iPhone.
  * 2. O gatilho e `onboarding_completed` do servidor, e nao o localStorage que a
  *    web usa (home/+page.svelte:195). Assim quem troca de aparelho nao ve o
  *    onboarding de novo, e quem limpa os dados do app tambem nao.
+ * 3. Numeral gigante em serifada no lugar do icone — o `.number-accent` da
+ *    secao "Como funciona" da landing. Um icone de contorno em circulo ambar e
+ *    o vocabulario de qualquer app; o numeral e o desta marca.
  */
 
 interface Passo {
-  icone: keyof typeof Ionicons.glyphMap;
   titulo: string;
   corpo: string;
   itens?: { rotulo: string; desc: string }[];
@@ -32,7 +34,6 @@ interface Passo {
 
 const PASSOS: Passo[] = [
   {
-    icone: 'book-outline',
     titulo: 'Bem-vindo ao feith',
     corpo:
       'Uma exegese bíblica aprofundada, todo dia. Sem ruído, sem sensacionalismo — apenas o texto e o que ele significa de fato.',
@@ -40,7 +41,6 @@ const PASSOS: Passo[] = [
       'O feith foi construído para quem leva a fé a sério e quer entender as Escrituras com rigor histórico e teológico.',
   },
   {
-    icone: 'layers-outline',
     titulo: 'Como cada reflexão funciona',
     corpo: 'Toda reflexão diária é estruturada em três camadas de leitura:',
     itens: [
@@ -51,14 +51,12 @@ const PASSOS: Passo[] = [
     detalhe: 'Leva cerca de 5–10 minutos por dia. Profundidade sem pressa.',
   },
   {
-    icone: 'create-outline',
     titulo: 'Capture seus pensamentos',
     corpo:
       'Registre insights, perguntas e conexões enquanto lê. Suas anotações ficam salvas e organizadas por reflexão.',
-    detalhe: 'O botão no canto da tela de leitura abre o editor a qualquer momento.',
+    detalhe: 'O botão Anotar, no canto da tela de leitura, abre o editor a qualquer momento.',
   },
   {
-    icone: 'flame-outline',
     titulo: 'A consistência que transforma',
     corpo:
       'A leitura diária é o que separa conhecimento acumulado de transformação real.',
@@ -104,6 +102,8 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
+      <AccentHalo height={420} />
+
       <FlatList
         ref={listaRef}
         data={PASSOS}
@@ -113,93 +113,114 @@ export default function Onboarding() {
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={aoVerItens}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View style={{ width, paddingHorizontal: 32, justifyContent: 'center', flex: 1 }}>
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: radius.lg,
-                backgroundColor: scheme.accentSubtle,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name={item.icone} size={32} color={scheme.accent} />
-            </View>
+            {/* `.number-accent` da landing: Cormorant leve, enorme, em oxblood
+                quase apagado. Ele conta a posicao sem ocupar hierarquia. */}
+            <Text style={estilos.numeral}>{String(index + 1).padStart(2, '0')}</Text>
 
-            <Text variant="display" display weight="bold" style={{ marginTop: 28 }}>
+            <GoldRule align="left" width={52} style={{ marginTop: space.lg }} />
+
+            <Text variant="hero" style={{ marginTop: space.xxl }}>
               {item.titulo}
             </Text>
 
-            <Text variant="body" color={scheme.textSecondary} style={{ marginTop: 14 }}>
+            <Text variant="body" color={scheme.textSecondary} style={{ marginTop: space.lg }}>
               {item.corpo}
             </Text>
 
             {item.itens?.map((i) => (
-              <View key={i.rotulo} style={{ flexDirection: 'row', marginTop: 14 }}>
-                <View
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: scheme.accent,
-                    marginTop: 9,
-                    marginRight: 12,
-                  }}
-                />
+              <View key={i.rotulo} style={estilos.item}>
+                <Text style={estilos.losango}>◆</Text>
                 <View style={{ flex: 1 }}>
-                  <Text variant="body" weight="semi">
+                  <Text variant="bodySm" font="bodySemi">
                     {i.rotulo}
                   </Text>
-                  <Text variant="caption" color={scheme.textSecondary} style={{ marginTop: 2 }}>
+                  <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 2 }}>
                     {i.desc}
                   </Text>
                 </View>
               </View>
             ))}
 
-            <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 24 }}>
+            <Text variant="caption" color={scheme.textGhost} style={{ marginTop: space.xxl }}>
               {item.detalhe}
             </Text>
           </View>
         )}
       />
 
-      <View style={{ paddingHorizontal: 32, paddingBottom: 16 }}>
-        {/* Pontos de paginacao */}
-        <View
-          style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 24 }}
-        >
-          {PASSOS.map((p, i) => (
+      <View style={{ paddingHorizontal: 32, paddingBottom: space.lg }}>
+        {/* Progresso como fio continuo, e nao pontos: e o mesmo fio de ouro
+            que separa as secoes do app inteiro. */}
+        <View style={estilos.progresso}>
+          <Overline>{`Passo ${indice + 1} de ${PASSOS.length}`}</Overline>
+          <View style={estilos.trilho}>
             <View
-              key={p.titulo}
-              style={{
-                width: i === indice ? 20 : 6,
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: i === indice ? scheme.accent : scheme.border,
-              }}
+              style={[
+                estilos.avanco,
+                { width: `${((indice + 1) / PASSOS.length) * 100}%` },
+              ]}
             />
-          ))}
+          </View>
         </View>
 
         <Button
           label={ultimo ? 'Começar a ler' : 'Continuar'}
+          icon="arrow-forward"
           onPress={avancar}
           loading={concluindo}
           disabled={concluindo}
         />
         {!ultimo ? (
           <Button
-            label="Pular"
+            label="Pular apresentação"
             variant="ghost"
             onPress={concluir}
             disabled={concluindo}
-            style={{ marginTop: 8 }}
+            style={{ marginTop: space.sm, alignSelf: 'center' }}
           />
-        ) : null}
+        ) : (
+          <View style={{ height: 52 }} />
+        )}
       </View>
     </SafeAreaView>
   );
 }
+
+const estilos = StyleSheet.create({
+  numeral: {
+    fontFamily: fonts.display,
+    fontSize: 76,
+    lineHeight: 80,
+    color: scheme.accent,
+    opacity: 0.22,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginTop: space.lg,
+  },
+  losango: {
+    fontFamily: fonts.body,
+    fontSize: 9,
+    lineHeight: 22,
+    color: scheme.gold,
+  },
+  progresso: {
+    marginBottom: space.xxl,
+  },
+  trilho: {
+    height: 2,
+    backgroundColor: scheme.border,
+    marginTop: space.md,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  avanco: {
+    height: 2,
+    backgroundColor: scheme.gold,
+    borderRadius: radius.pill,
+  },
+});

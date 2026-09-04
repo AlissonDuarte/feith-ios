@@ -1,13 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
 import { ApiError, type SharedReflection } from '../../src/api/types';
-import { Button, EmptyState, Text, scheme } from '../../src/components/ui';
+import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
+import { Button, EmptyState, GoldRule, Loading, Overline, Text, scheme } from '../../src/components/ui';
 import { useAuth } from '../../src/auth/AuthContext';
+import { space } from '../../src/theme/tokens';
 
 /**
  * Reflexao compartilhada por link curto.
@@ -65,9 +67,7 @@ export default function LinkCompartilhado() {
   if (carregando) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={scheme.accent} />
-        </View>
+        <Loading />
       </SafeAreaView>
     );
   }
@@ -76,11 +76,13 @@ export default function LinkCompartilhado() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
         <EmptyState
+          icone="link-outline"
           titulo={falha?.titulo ?? 'Não foi possível abrir'}
           descricao={falha?.descricao}
           acao={
             <Button
               label={sessao ? 'Ir para a reflexão de hoje' : 'Conhecer o feith'}
+              icon="arrow-forward"
               onPress={() => router.replace(sessao ? '/(tabs)/hoje' : '/(auth)/login')}
             />
           }
@@ -91,17 +93,50 @@ export default function LinkCompartilhado() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 64 }}>
+      <AccentHalo height={360} />
+
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.section }}
+        showsVerticalScrollIndicator={false}
+      >
         <ReflexaoReader reflexao={reflexao} />
 
         {/* Quem chegou pelo link e nao tem conta: conversao sem paywall.
-            Nenhuma mencao a preco — no iOS isso e territorio do StoreKit. */}
+            Nenhuma mencao a preco — no iOS isso e territorio do StoreKit.
+            Bloco em pergaminho e nao card branco: e um convite ao fim de uma
+            leitura, nao um banner. */}
         {!sessao ? (
-          <View style={{ marginTop: 40, gap: 12 }}>
-            <Text variant="body" color={scheme.textSecondary}>
-              Uma exegese nova todo dia, com contexto histórico, análise no original e aplicação.
-            </Text>
-            <Button label="Criar uma conta" onPress={() => router.push('/(auth)/register')} />
+          <View style={{ marginTop: space.sm, alignItems: 'center' }}>
+            <GoldRule width="100%" />
+            <View
+              style={{
+                backgroundColor: scheme.canvasWarm,
+                alignSelf: 'stretch',
+                alignItems: 'center',
+                paddingHorizontal: space.xl,
+                paddingVertical: space.xxl,
+              }}
+            >
+              <Overline color={scheme.accent}>Exegese diária</Overline>
+              <Text variant="title" style={{ textAlign: 'center', marginTop: space.md }}>
+                Uma leitura assim, todo dia
+              </Text>
+              <Text
+                variant="bodySm"
+                color={scheme.textSecondary}
+                style={{ textAlign: 'center', marginTop: space.md, maxWidth: 300 }}
+              >
+                Contexto histórico, análise nas línguas originais e aplicação — sem
+                simplificações.
+              </Text>
+              <Button
+                label="Criar uma conta"
+                icon="arrow-forward"
+                onPress={() => router.push('/(auth)/register')}
+                style={{ marginTop: space.xl, alignSelf: 'stretch' }}
+              />
+            </View>
+            <GoldRule width="100%" />
           </View>
         ) : null}
       </ScrollView>

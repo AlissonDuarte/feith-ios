@@ -3,11 +3,18 @@ import '../global.css';
 // Importadas por SUBPATH, uma a uma, e nao da raiz do pacote.
 // `@expo-google-fonts/inter` reexporta os 18 pesos; importar de la coloca ~12MB
 // de TTF no app para usar cinco faces. Confirmado com `npx expo export`.
+//
+// O Cormorant entra em quatro cortes porque a identidade editorial vive no
+// peso BAIXO da serifada (o `font-light` de todos os titulos da landing) e na
+// italica das citacoes e numerais. Sem o 300 e o italico, o Cormorant vira
+// apenas "uma serifada", e era isso que a tela parecia.
+import { CormorantGaramond_300Light } from '@expo-google-fonts/cormorant-garamond/300Light';
+import { CormorantGaramond_400Regular } from '@expo-google-fonts/cormorant-garamond/400Regular';
+import { CormorantGaramond_400Regular_Italic } from '@expo-google-fonts/cormorant-garamond/400Regular_Italic';
 import { CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond/600SemiBold';
-import { CormorantGaramond_700Bold } from '@expo-google-fonts/cormorant-garamond/700Bold';
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
-import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -31,6 +38,30 @@ const schemeAtual = schemes.light;
  * exige.
  */
 const ROTAS_PUBLICAS = ['r', 'politicas'];
+
+/**
+ * Header nativo no estilo editorial, para as telas fora das abas.
+ *
+ * Titulo em Cormorant e nao em Inter — a serifada e quem nomeia no app
+ * inteiro, e a barra de navegacao e onde o nome da reflexao aparece. O
+ * `headerShadowVisible: false` tira a linha cinza que o iOS desenha por
+ * padrao: sobre creme ela le como sujeira, e o proprio conteudo ja separa.
+ */
+function header({ title, voltar }: { title?: string; voltar: string }) {
+  return {
+    headerShown: true,
+    ...(title ? { title } : {}),
+    headerBackTitle: voltar,
+    headerShadowVisible: false,
+    headerTintColor: schemeAtual.accent,
+    headerStyle: { backgroundColor: schemeAtual.canvas },
+    headerTitleStyle: {
+      fontFamily: fonts.serifSemi,
+      fontSize: 20,
+      color: schemeAtual.textPrimary,
+    },
+  } as const;
+}
 
 /**
  * Guard central de rota.
@@ -81,52 +112,13 @@ function RouteGuard() {
   // politicas) precisam de header nativo, botao de voltar e do gesto de
   // arrastar da borda. Com Slot elas apareceriam sem nenhuma forma de sair.
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: schemeAtual.canvas } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="leitura/[key]"
-        options={{
-          headerShown: true,
-          headerBackTitle: 'Voltar',
-          headerTintColor: schemeAtual.accent,
-          headerStyle: { backgroundColor: schemeAtual.canvas },
-          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
-        }}
-      />
-      <Stack.Screen
-        name="politicas"
-        options={{
-          headerShown: true,
-          title: 'Privacidade',
-          headerBackTitle: 'Voltar',
-          headerTintColor: schemeAtual.accent,
-          headerStyle: { backgroundColor: schemeAtual.canvas },
-          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
-        }}
-      />
-      <Stack.Screen
-        name="perfil/editar"
-        options={{
-          headerShown: true,
-          title: 'Editar perfil',
-          headerBackTitle: 'Perfil',
-          headerTintColor: schemeAtual.accent,
-          headerStyle: { backgroundColor: schemeAtual.canvas },
-          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
-        }}
-      />
-      <Stack.Screen
-        name="perfil/notificacoes"
-        options={{
-          headerShown: true,
-          title: 'Lembretes',
-          headerBackTitle: 'Perfil',
-          headerTintColor: schemeAtual.accent,
-          headerStyle: { backgroundColor: schemeAtual.canvas },
-          headerTitleStyle: { fontFamily: fonts.bodySemi, color: schemeAtual.textPrimary },
-        }}
-      />
+      <Stack.Screen name="leitura/[key]" options={header({ voltar: 'Voltar' })} />
+      <Stack.Screen name="politicas" options={header({ title: 'Privacidade', voltar: 'Voltar' })} />
+      <Stack.Screen name="perfil/editar" options={header({ title: 'Editar perfil', voltar: 'Perfil' })} />
+      <Stack.Screen name="perfil/notificacoes" options={header({ title: 'Lembretes', voltar: 'Perfil' })} />
       <Stack.Screen name="r/[token]" options={{ headerShown: false }} />
       {/* Sem gesto de voltar: sair pelo swipe deixaria a pessoa numa tela
           logada com o onboarding pendente, e o guard a traria de volta. */}
@@ -137,11 +129,13 @@ function RouteGuard() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
+    CormorantGaramond_300Light,
+    CormorantGaramond_400Regular,
+    CormorantGaramond_400Regular_Italic,
     CormorantGaramond_600SemiBold,
-    CormorantGaramond_700Bold,
     Inter_400Regular,
+    Inter_500Medium,
     Inter_600SemiBold,
-    Inter_700Bold,
   });
 
   useEffect(() => {
@@ -159,7 +153,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="auto" />
+        {/* `dark` e nao `auto`: as telas sao creme em qualquer modo do
+            sistema, entao deixar o iOS decidir pelo tema do aparelho
+            produziria icones brancos sobre papel no modo escuro. */}
+        <StatusBar style="dark" />
         <RouteGuard />
       </AuthProvider>
     </SafeAreaProvider>

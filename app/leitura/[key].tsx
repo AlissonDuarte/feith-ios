@@ -1,17 +1,29 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
+import { formatRelativePT } from '../../src/api/dates';
 import { mensagemDe } from '../../src/api/errors';
 import type { Reflection, ReflectionNote } from '../../src/api/types';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
-import { Button, Card, EmptyState, Text, scheme } from '../../src/components/ui';
-import { formatRelativePT } from '../../src/api/dates';
+import {
+  Button,
+  Card,
+  EmptyState,
+  GoldRule,
+  IconButton,
+  Loading,
+  Overline,
+  Text,
+  scheme,
+} from '../../src/components/ui';
+import { radius, shadow, space } from '../../src/theme/tokens';
 
 /**
  * Leitura de uma reflexao por uuid.
@@ -72,18 +84,17 @@ export default function Leitura() {
 
   if (carregando) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={scheme.accent} />
-        </View>
+      <SafeAreaView style={estilos.tela}>
+        <Loading />
       </SafeAreaView>
     );
   }
 
   if (erro || !reflexao) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
+      <SafeAreaView style={estilos.tela}>
         <EmptyState
+          icone="cloud-offline-outline"
           titulo="Não foi possível abrir"
           descricao={erro ?? undefined}
           acao={<Button label="Tentar de novo" onPress={() => void carregar()} />}
@@ -93,38 +104,47 @@ export default function Leitura() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: scheme.canvas }}>
+    <View style={estilos.tela}>
       <Stack.Screen
         options={{
+          // A barra de navegacao ja carrega a referencia; o leitor a repete em
+          // serifada grande logo abaixo, e e assim que deve ser: o titulo da
+          // barra e para quem esta a meio da rolagem.
           title: reflexao.scripture_reference,
           headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
               <BotaoFavorito
                 reflectionUuid={reflexao.uuid}
                 favoritado={reflexao.bookmarked}
                 onMudou={(v) => setReflexao((r) => (r ? { ...r, bookmarked: v } : r))}
-                tamanho={22}
+                tamanho={19}
               />
-              <Pressable onPress={compartilhar} hitSlop={12} accessibilityLabel="Compartilhar">
-                <Ionicons name="share-outline" size={22} color={scheme.textSecondary} />
-              </Pressable>
+              <IconButton
+                name="share-outline"
+                label="Compartilhar"
+                onPress={compartilhar}
+                size={18}
+              />
             </View>
           ),
         }}
       />
 
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 96 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: 112 }}
+        showsVerticalScrollIndicator={false}
+      >
         <ReflexaoReader reflexao={reflexao} />
 
         {notas.length > 0 ? (
-          <View style={{ marginTop: 40 }}>
-            <Text variant="title" display weight="bold">
-              Suas anotações
-            </Text>
+          <View style={{ marginTop: space.sm }}>
+            <Overline>Suas anotações</Overline>
+            <GoldRule align="left" width={40} style={{ marginTop: space.md }} />
+
             {notas.map((n) => (
-              <Card key={n.note_uuid} style={{ marginTop: 12 }}>
+              <Card key={n.note_uuid} style={{ marginTop: space.lg }}>
                 <Text variant="body">{n.note}</Text>
-                <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 8 }}>
+                <Text variant="micro" color={scheme.textGhost} style={{ marginTop: space.md }}>
                   {formatRelativePT(n.createdAt)}
                 </Text>
               </Card>
@@ -135,24 +155,23 @@ export default function Leitura() {
 
       {/* Botao fixo, e nao o FAB arrastavel da web: arrastar briga com o gesto
           de voltar do iOS e com o scroll. */}
-      <View style={{ position: 'absolute', right: 24, bottom: 32 }}>
+      <View style={estilos.ancora} pointerEvents="box-none">
         <Pressable
-          onPress={() => setEscrevendo(true)}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setEscrevendo(true);
+          }}
           accessibilityRole="button"
           accessibilityLabel="Escrever anotação"
           style={({ pressed }) => [
-            {
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: scheme.accent,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.8 : 1,
-            },
+            estilos.fab,
+            { backgroundColor: pressed ? scheme.accentPressed : scheme.accent },
           ]}
         >
-          <Ionicons name="create-outline" size={26} color="#FFFFFF" />
+          <Ionicons name="create-outline" size={17} color={scheme.onAccent} />
+          <Text variant="micro" font="bodySemi" color={scheme.onAccent} style={{ letterSpacing: 2 }}>
+            ANOTAR
+          </Text>
         </Pressable>
       </View>
 
@@ -168,3 +187,21 @@ export default function Leitura() {
     </View>
   );
 }
+
+const estilos = StyleSheet.create({
+  tela: { flex: 1, backgroundColor: scheme.canvas },
+  ancora: {
+    position: 'absolute',
+    right: space.gutter,
+    bottom: 36,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 46,
+    paddingHorizontal: 18,
+    borderRadius: radius.sharp,
+    ...shadow.raised,
+  },
+});

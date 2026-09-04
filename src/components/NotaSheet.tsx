@@ -3,8 +3,8 @@
  *
  * Porte de modal/WriteNote.svelte, com tres correcoes:
  *
- * 1. `alert()` do minimo de palavras vira texto de ajuda inline. Um alerta
- *    modal para validacao de campo interrompe sem necessidade.
+ * 1. `alert()` do minimo de palavras vira contador inline. Um alerta modal
+ *    para validacao de campo interrompe sem necessidade.
  * 2. `confirm()` ao descartar vira Alert.alert nativo, e so aparece quando ha
  *    rascunho de verdade.
  * 3. O teclado nao cobre mais o campo (KeyboardAvoidingView).
@@ -14,21 +14,14 @@
  * de arrastar para fechar incluido, e sem mais uma dependencia nativa.
  */
 import { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../api/client';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
-import { radius } from '../theme/tokens';
-import { Button, Text, scheme } from './ui';
+import { fonts, space } from '../theme/tokens';
+import { Button, GoldRule, Overline, Text, scheme } from './ui';
 
 /** Mesmo minimo da web (WriteNote.svelte): tres palavras. */
 const MINIMO_PALAVRAS = 3;
@@ -105,45 +98,61 @@ export function NotaSheet({ visivel, reflectionUuid, onFechar, onSalvou }: Props
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={{ flex: 1, padding: 24 }}>
-            <Text variant="title" display weight="bold">
+          <View style={{ flex: 1, paddingHorizontal: space.gutter, paddingTop: space.xl }}>
+            <Overline>Seu caderno</Overline>
+            <Text variant="display" style={{ marginTop: 6 }}>
               Nova anotação
             </Text>
+            <GoldRule align="left" width={48} style={{ marginTop: space.md }} />
 
+            {/* Sem moldura: a folha inteira e o papel. Uma caixa com borda
+                dentro de uma folha ja branca so desenha uma caixa. */}
             <TextInput
               value={texto}
               onChangeText={setTexto}
               placeholder="O que esta reflexão te disse?"
-              placeholderTextColor={scheme.textMuted}
+              placeholderTextColor={scheme.textGhost}
               multiline
               autoFocus
               textAlignVertical="top"
               editable={!salvando}
               style={{
                 flex: 1,
-                marginTop: 16,
-                padding: 16,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: scheme.border,
-                backgroundColor: scheme.surface,
-                fontFamily: 'Inter_400Regular',
+                marginTop: space.xl,
+                paddingVertical: space.md,
+                fontFamily: fonts.body,
                 fontSize: 17,
-                lineHeight: 26,
+                lineHeight: 28,
                 color: scheme.textPrimary,
               }}
             />
 
-            {curtaDemais ? (
-              <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 8 }}>
-                Escreva ao menos {MINIMO_PALAVRAS} palavras.
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: space.md,
+                borderTopWidth: 1,
+                borderTopColor: scheme.borderSoft,
+              }}
+            >
+              <Text
+                variant="micro"
+                color={curtaDemais ? scheme.accent : scheme.textGhost}
+              >
+                {curtaDemais
+                  ? `Escreva ao menos ${MINIMO_PALAVRAS} palavras`
+                  : palavras > 0
+                    ? `${palavras} ${palavras === 1 ? 'palavra' : 'palavras'}`
+                    : ''}
               </Text>
-            ) : null}
+            </View>
 
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+            <View style={{ flexDirection: 'row', gap: space.md, paddingBottom: space.lg }}>
               <Button
                 label="Cancelar"
-                variant="ghost"
+                variant="quiet"
                 onPress={tentarFechar}
                 disabled={salvando}
                 style={{ flex: 1 }}
@@ -153,7 +162,7 @@ export function NotaSheet({ visivel, reflectionUuid, onFechar, onSalvou }: Props
                 onPress={salvar}
                 loading={salvando}
                 disabled={!podeSalvar}
-                style={{ flex: 1 }}
+                style={{ flex: 2 }}
               />
             </View>
           </View>
