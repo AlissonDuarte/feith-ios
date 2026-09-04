@@ -106,6 +106,20 @@ const config: ExpoConfig = {
     // Sem condicional, diferente do Google: nao ha client ID para configurar, e
     // a disponibilidade e decidida em runtime por isAvailableAsync().
     'expo-apple-authentication',
+    // Player do audio da reflexao (exclusivo de apoiador). O modo de audio em
+    // si — tocar no silencioso, seguir em background — e configurado em runtime
+    // por setAudioModeAsync (src/player/useAudioReflexao.ts); o que o plugin faz
+    // e entrar no prebuild. O UIBackgroundModes: ['audio'] la em cima ja estava
+    // declarado esperando por isto.
+    //
+    // O modulo tambem grava audio, e por padrao pede microfone nas duas
+    // plataformas. O app so TOCA: uma permissao que nunca sera usada e um
+    // pedido a mais na App Review e um aviso de privacidade a mais para quem
+    // instala, sem nada em troca.
+    [
+      'expo-audio',
+      { microphonePermission: false, recordAudioAndroid: false },
+    ] as [string, Record<string, unknown>],
     // Registra o app no APNs e entrega o device token. Sem
     // enableBackgroundRemoteNotifications: as notificacoes sao puramente de
     // alerta, o app nao roda codigo em background ao receber uma.

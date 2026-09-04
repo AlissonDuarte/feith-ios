@@ -104,6 +104,15 @@ function porStatusECaminho(status: number, path: string): string | null {
     }
   }
 
+  // 404 no audio nao e "nao encontramos o que voce procura": e uma reflexao
+  // que existe e simplesmente nao tem mp3 no bucket. O backend passou a
+  // devolver isso em vez de assinar uma URL para um objeto inexistente
+  // (transcription_service.py), que era o que fazia o player aparecer e nunca
+  // tocar. Separado do 403 acima, que e "voce nao e apoiador".
+  if (status === 404 && path.includes('/transcriptions/transcript')) {
+    return 'O áudio desta reflexão ainda não está disponível.';
+  }
+
   if (status === 410) return 'Este link expirou.';
 
   return null;

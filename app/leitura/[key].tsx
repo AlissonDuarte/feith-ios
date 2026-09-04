@@ -9,6 +9,7 @@ import { api } from '../../src/api/client';
 import { formatRelativePT } from '../../src/api/dates';
 import { mensagemDe } from '../../src/api/errors';
 import type { Reflection, ReflectionNote } from '../../src/api/types';
+import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
@@ -23,6 +24,7 @@ import {
   Text,
   scheme,
 } from '../../src/components/ui';
+import { PlayerAudio } from '../../src/player/PlayerAudio';
 import { radius, shadow, space } from '../../src/theme/tokens';
 
 /**
@@ -34,6 +36,7 @@ import { radius, shadow, space } from '../../src/theme/tokens';
  */
 export default function Leitura() {
   const { key } = useLocalSearchParams<{ key: string }>();
+  const { isSupporter } = useAuth();
 
   const [reflexao, setReflexao] = useState<Reflection | null>(null);
   const [notas, setNotas] = useState<ReflectionNote[]>([]);
@@ -131,7 +134,12 @@ export default function Leitura() {
       />
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: 112 }}
+        // 112 cobria so o FAB. Com o player empilhado acima dele, as anotacoes
+        // do fim da tela ficariam encobertas.
+        contentContainerStyle={{
+          paddingHorizontal: space.gutter,
+          paddingBottom: isSupporter ? 112 + 46 + space.md : 112,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <ReflexaoReader reflexao={reflexao} />
@@ -156,6 +164,15 @@ export default function Leitura() {
       {/* Botao fixo, e nao o FAB arrastavel da web: arrastar briga com o gesto
           de voltar do iOS e com o scroll. */}
       <View style={estilos.ancora} pointerEvents="box-none">
+        {/* Mesma montagem da aba Hoje: o audio do acervo vale tanto quanto o do
+            dia para quem apoia. */}
+        {isSupporter ? (
+          <PlayerAudio
+            reflectionUuid={reflexao.uuid}
+            referencia={reflexao.scripture_reference}
+          />
+        ) : null}
+
         <Pressable
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -194,6 +211,9 @@ const estilos = StyleSheet.create({
     position: 'absolute',
     right: space.gutter,
     bottom: 36,
+    // Player e ANOTAR empilhados, alinhados a direita.
+    alignItems: 'flex-end',
+    gap: space.md,
   },
   fab: {
     flexDirection: 'row',

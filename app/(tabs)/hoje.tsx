@@ -21,12 +21,13 @@ import {
   scheme,
   useEspacoTabBar,
 } from '../../src/components/ui';
+import { PlayerAudio } from '../../src/player/PlayerAudio';
 import { radius, shadow, space } from '../../src/theme/tokens';
 
 export default function Hoje() {
   // O streak vem do summary do AuthContext, que ja e compartilhado por todas
   // as telas — buscar /streaks/me aqui seria a mesma duplicacao que a web faz.
-  const { summary, refreshSummary } = useAuth();
+  const { summary, refreshSummary, isSupporter } = useAuth();
   const { altura: alturaTabBar, respiro } = useEspacoTabBar();
 
   const [reflexao, setReflexao] = useState<Reflection | null>(null);
@@ -153,7 +154,10 @@ export default function Hoje() {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: space.gutter,
-          paddingBottom: respiro,
+          // O `respiro` cobre a tab bar e o FAB. Com o player empilhado por
+          // cima do FAB, o fim da oracao ficaria atras dele — dai a altura da
+          // pilula (46) mais o gap.
+          paddingBottom: isSupporter ? respiro + 46 + space.md : respiro,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -173,6 +177,15 @@ export default function Hoje() {
           o produto quer estimular, e um icone de lapis sozinho nao a promete
           para quem nunca a usou. */}
       <View style={[estilos.ancora, { bottom: alturaTabBar + space.lg }]} pointerEvents="box-none">
+        {/* Player acima do ANOTAR, na mesma coluna ancorada: os dois sao acoes
+            sobre a reflexao aberta, e empilha-los evita disputar o canto. */}
+        {isSupporter ? (
+          <PlayerAudio
+            reflectionUuid={reflexao.uuid}
+            referencia={reflexao.scripture_reference}
+          />
+        ) : null}
+
         <Pressable
           onPress={() => {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -228,6 +241,10 @@ const estilos = StyleSheet.create({
   ancora: {
     position: 'absolute',
     right: space.gutter,
+    // Player e ANOTAR empilhados, alinhados a direita: o card do player e mais
+    // largo que a pilula, e sem isto ele empurraria o ANOTAR para o centro.
+    alignItems: 'flex-end',
+    gap: space.md,
   },
   fab: {
     flexDirection: 'row',
