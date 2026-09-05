@@ -211,7 +211,7 @@ export default function AssinaturaModal() {
         <View style={{ gap: space.md, marginTop: space.lg }}>
           <Button
             label={comprando ? 'Processando na App Store...' : `Assinar por ${precoFormatado}/mês`}
-            variant="primary"
+            variant="quiet"
             loading={comprando}
             disabled={comprando || restaurando}
             onPress={handleAssinar}
