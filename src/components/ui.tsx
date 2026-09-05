@@ -226,11 +226,13 @@ export function ScreenHeader({
 // ── Botoes ───────────────────────────────────────────────────────────────────
 
 /**
- * `primary` e o oxblood solido; `secondary` o contorno oxblood; `quiet` um
- * contorno neutro para a acao que acompanha uma primaria sem competir com ela
- * (o "Cancelar" ao lado do "Salvar"); `ghost` e um link de texto.
+ * O "G" oficial do Google, em SVG.
+ *
+ * Exportado porque quem o desenha e o GoogleButton de SocialAuth.tsx: a marca e
+ * obrigatoria e nao pode ser recolorida, entao vive como asset e nao como
+ * Ionicon monocromatico.
  */
-function GoogleLogo({ size = 18 }: { size?: number }) {
+export function GoogleLogo({ size = 18 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path
@@ -253,7 +255,15 @@ function GoogleLogo({ size = 18 }: { size?: number }) {
   );
 }
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'quiet' | 'apple' | 'google';
+/**
+ * `primary` e o oxblood solido; `secondary` o contorno oxblood; `quiet` um
+ * contorno neutro para a acao que acompanha uma primaria sem competir com ela
+ * (o "Cancelar" ao lado do "Salvar"); `ghost` e um link de texto.
+ *
+ * Google e Apple nao sao variantes daqui: as marcas deles tem regras proprias,
+ * e moram em SocialAuth.tsx.
+ */
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'quiet';
 
 interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> {
   label: string;
@@ -261,7 +271,7 @@ interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> {
   loading?: boolean;
   /** Icone a direita do rotulo, como a seta do CTA da landing. */
   icon?: keyof typeof Ionicons.glyphMap;
-  /** Icone a esquerda — para as marcas do Google e da Apple no login. */
+  /** Icone a esquerda do rotulo. */
   iconLeft?: keyof typeof Ionicons.glyphMap;
   size?: 'md' | 'sm';
   style?: StyleProp<ViewStyle>;
@@ -281,19 +291,14 @@ export function Button({
   const inativo = disabled || loading;
   const solido = variant === 'primary';
   const comoLink = variant === 'ghost';
-  const isApple = variant === 'apple';
-  const isGoogle = variant === 'google';
-  const isSocial = isApple || isGoogle;
 
-  const corDoRotulo = solido || isApple
+  const corDoRotulo = solido
     ? scheme.onAccent
-    : isGoogle
-      ? scheme.textPrimary
-      : variant === 'quiet'
-        ? scheme.textMuted
-        : comoLink
-          ? scheme.textSecondary
-          : scheme.accent;
+    : variant === 'quiet'
+      ? scheme.textMuted
+      : comoLink
+        ? scheme.textSecondary
+        : scheme.accent;
 
   return (
     <Pressable
@@ -316,18 +321,6 @@ export function Button({
           borderColor: scheme.border,
           backgroundColor: pressed ? scheme.surface : 'transparent',
         },
-        isApple && {
-          backgroundColor: pressed ? '#1A1A1A' : '#000000',
-          borderRadius: radius.sm,
-        },
-        isApple && !inativo && shadow.card,
-        isGoogle && {
-          backgroundColor: pressed ? scheme.canvasWarm : scheme.surface,
-          borderWidth: 1,
-          borderColor: scheme.border,
-          borderRadius: radius.sm,
-        },
-        isGoogle && !inativo && shadow.card,
         comoLink && pressed && { opacity: 0.55 },
         inativo && { opacity: 0.45 },
         style,
@@ -335,21 +328,19 @@ export function Button({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={solido || isApple ? scheme.onAccent : isGoogle ? scheme.textPrimary : scheme.accent} />
+        <ActivityIndicator color={solido ? scheme.onAccent : scheme.accent} />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {isGoogle ? <GoogleLogo size={18} /> : null}
-          {isApple ? <Ionicons name="logo-apple" size={18} color="#FFFFFF" /> : null}
-          {!isSocial && iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
+          {iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
           <Text
-            variant={comoLink || isSocial ? 'bodySm' : 'micro'}
-            font={comoLink ? 'bodyMedium' : isSocial ? 'bodySemi' : 'bodySemi'}
+            variant={comoLink ? 'bodySm' : 'micro'}
+            font={comoLink ? 'bodyMedium' : 'bodySemi'}
             color={corDoRotulo}
-            style={comoLink || isSocial ? undefined : styles.buttonLabel}
+            style={comoLink ? undefined : styles.buttonLabel}
           >
-            {comoLink || isSocial ? label : label.toUpperCase()}
+            {comoLink ? label : label.toUpperCase()}
           </Text>
-          {icon ? <Ionicons name={icon} size={comoLink || isSocial ? 14 : 13} color={corDoRotulo} /> : null}
+          {icon ? <Ionicons name={icon} size={comoLink ? 14 : 13} color={corDoRotulo} /> : null}
         </View>
       )}
     </Pressable>

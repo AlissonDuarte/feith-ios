@@ -9,28 +9,11 @@ import { isAppleSignInAvailable, signInWithApple } from '../../src/auth/appleSig
 import { useAuth } from '../../src/auth/AuthContext';
 import { googleSignInAvailable, signInWithGoogle } from '../../src/auth/googleSignIn';
 import { AccentHalo } from '../../src/components/ornaments';
+import { AppleButton, GoogleButton, Separador } from '../../src/components/SocialAuth';
 import { Button, Field, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
 import { fonts, space } from '../../src/theme/tokens';
 
 type Metodo = 'email' | 'google' | 'apple' | null;
-
-/**
- * Separador "ou" entre o login por e-mail e os provedores.
- *
- * Sem ele os cinco botoes empilhados parecem cinco alternativas de igual peso;
- * com ele fica claro que ha um caminho principal e dois atalhos.
- */
-function Separador({ children }: { children: string }) {
-  return (
-    <View style={estilos.separador}>
-      <View style={estilos.fio} />
-      <Text variant="overline" color={scheme.textGhost} style={{ textTransform: 'uppercase' }}>
-        {children}
-      </Text>
-      <View style={estilos.fio} />
-    </View>
-  );
-}
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -167,9 +150,7 @@ export default function Login() {
           {/* O botao do Google so aparece com os dois client IDs configurados:
               melhor nenhum botao do que um que so falharia ao ser tocado. */}
           {googleSignInAvailable ? (
-            <Button
-              label="Continuar com o Google"
-              variant="google"
+            <GoogleButton
               onPress={comGoogle}
               loading={carregando === 'google'}
               disabled={ocupado}
@@ -179,9 +160,7 @@ export default function Login() {
           {/* Obrigatorio pela Guideline 4.8 sempre que ha login social de
               terceiro. A disponibilidade e decidida pelo sistema. */}
           {appleDisponivel ? (
-            <Button
-              label="Continuar com a Apple"
-              variant="apple"
+            <AppleButton
               onPress={comApple}
               loading={carregando === 'apple'}
               disabled={ocupado}
@@ -211,16 +190,5 @@ const estilos = StyleSheet.create({
     letterSpacing: -1,
     color: scheme.textPrimary,
     marginTop: space.md,
-  },
-  separador: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginVertical: space.xxl,
-  },
-  fio: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: scheme.border,
   },
 });
