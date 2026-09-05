@@ -29,7 +29,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, Rect, Stop, LinearGradient as SvgGradient } from 'react-native-svg';
+import Svg, { Defs, Path, Rect, Stop, LinearGradient as SvgGradient } from 'react-native-svg';
 
 import { MAX_FONT_SCALE, fonts, radius, schemes, shadow, space, type } from '../theme/tokens';
 
@@ -230,7 +230,30 @@ export function ScreenHeader({
  * contorno neutro para a acao que acompanha uma primaria sem competir com ela
  * (o "Cancelar" ao lado do "Salvar"); `ghost` e um link de texto.
  */
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'quiet';
+function GoogleLogo({ size = 18 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        fill="#4285F4"
+        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+      />
+      <Path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+      />
+      <Path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+      />
+    </Svg>
+  );
+}
+
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'quiet' | 'apple' | 'google';
 
 interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> {
   label: string;
@@ -257,18 +280,20 @@ export function Button({
 }: ButtonProps) {
   const inativo = disabled || loading;
   const solido = variant === 'primary';
-
-  // `ghost` e um link de texto, nao um botao: caixa baixa, sem moldura. Os
-  // outros tres sao CTAs, e usam a maiuscula espacada da landing.
   const comoLink = variant === 'ghost';
+  const isApple = variant === 'apple';
+  const isGoogle = variant === 'google';
+  const isSocial = isApple || isGoogle;
 
-  const corDoRotulo = solido
+  const corDoRotulo = solido || isApple
     ? scheme.onAccent
-    : variant === 'quiet'
-      ? scheme.textMuted
-      : comoLink
-        ? scheme.textSecondary
-        : scheme.accent;
+    : isGoogle
+      ? scheme.textPrimary
+      : variant === 'quiet'
+        ? scheme.textMuted
+        : comoLink
+          ? scheme.textSecondary
+          : scheme.accent;
 
   return (
     <Pressable
@@ -291,7 +316,18 @@ export function Button({
           borderColor: scheme.border,
           backgroundColor: pressed ? scheme.surface : 'transparent',
         },
-        // Substitui o hover: da web. Sem isto o toque nao tem retorno nenhum.
+        isApple && {
+          backgroundColor: pressed ? '#1A1A1A' : '#000000',
+          borderRadius: radius.sm,
+        },
+        isApple && !inativo && shadow.card,
+        isGoogle && {
+          backgroundColor: pressed ? scheme.canvasWarm : scheme.surface,
+          borderWidth: 1,
+          borderColor: scheme.border,
+          borderRadius: radius.sm,
+        },
+        isGoogle && !inativo && shadow.card,
         comoLink && pressed && { opacity: 0.55 },
         inativo && { opacity: 0.45 },
         style,
@@ -299,19 +335,21 @@ export function Button({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={solido ? scheme.onAccent : scheme.accent} />
+        <ActivityIndicator color={solido || isApple ? scheme.onAccent : isGoogle ? scheme.textPrimary : scheme.accent} />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
+          {isGoogle ? <GoogleLogo size={18} /> : null}
+          {isApple ? <Ionicons name="logo-apple" size={18} color="#FFFFFF" /> : null}
+          {!isSocial && iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
           <Text
-            variant={comoLink ? 'bodySm' : 'micro'}
-            font={comoLink ? 'bodyMedium' : 'bodySemi'}
+            variant={comoLink || isSocial ? 'bodySm' : 'micro'}
+            font={comoLink ? 'bodyMedium' : isSocial ? 'bodySemi' : 'bodySemi'}
             color={corDoRotulo}
-            style={comoLink ? undefined : styles.buttonLabel}
+            style={comoLink || isSocial ? undefined : styles.buttonLabel}
           >
-            {comoLink ? label : label.toUpperCase()}
+            {comoLink || isSocial ? label : label.toUpperCase()}
           </Text>
-          {icon ? <Ionicons name={icon} size={comoLink ? 14 : 13} color={corDoRotulo} /> : null}
+          {icon ? <Ionicons name={icon} size={comoLink || isSocial ? 14 : 13} color={corDoRotulo} /> : null}
         </View>
       )}
     </Pressable>
@@ -508,6 +546,8 @@ export function ListRow({
   label,
   value,
   icon,
+  iconColor,
+  iconBg,
   onPress,
   destrutivo = false,
   ultimo = false,
@@ -515,9 +555,10 @@ export function ListRow({
   label: string;
   value?: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  iconBg?: string;
   onPress: () => void;
   destrutivo?: boolean;
-  /** Suprime o hairline inferior no ultimo item do grupo. */
   ultimo?: boolean;
 }) {
   const cor = destrutivo ? scheme.accent : scheme.textPrimary;
@@ -530,9 +571,22 @@ export function ListRow({
         style={({ pressed }) => [styles.row, pressed && { backgroundColor: scheme.canvasWarm }]}
       >
         {icon ? (
-          <Ionicons name={icon} size={17} color={destrutivo ? scheme.accent : scheme.textMuted} />
+          <View
+            style={[
+              styles.iconBadge,
+              {
+                backgroundColor: iconBg ?? (destrutivo ? '#FBF0EF' : scheme.canvasWarm),
+              },
+            ]}
+          >
+            <Ionicons
+              name={icon}
+              size={17}
+              color={iconColor ?? (destrutivo ? scheme.accent : scheme.textSecondary)}
+            />
+          </View>
         ) : null}
-        <Text variant="body" color={cor} style={{ flex: 1 }}>
+        <Text variant="body" font="bodyMedium" color={cor} style={{ flex: 1 }}>
           {label}
         </Text>
         {value ? (
@@ -542,7 +596,7 @@ export function ListRow({
         ) : null}
         <Ionicons name="chevron-forward" size={16} color={scheme.textGhost} />
       </Pressable>
-      {ultimo ? null : <Hairline inset={icon ? 47 : space.lg} />}
+      {ultimo ? null : <Hairline inset={icon ? 62 : space.lg} />}
     </>
   );
 }
@@ -690,12 +744,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    minHeight: 52,
+    minHeight: 56,
     paddingHorizontal: space.lg,
+  },
+  iconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowGroup: {
     backgroundColor: scheme.surface,
-    borderRadius: radius.md,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: scheme.borderSoft,
     overflow: 'hidden',

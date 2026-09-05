@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
@@ -6,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import { useAuth } from '../../src/auth/AuthContext';
+import { AccentHalo } from '../../src/components/ornaments';
 import {
   Card,
   GoldRule,
@@ -13,22 +15,12 @@ import {
   Overline,
   RowGroup,
   ScreenHeader,
-  Tag,
   Text,
   scheme,
   useEspacoTabBar,
 } from '../../src/components/ui';
 import { fonts, radius, space } from '../../src/theme/tokens';
 
-/**
- * Medidor de quota.
- *
- * A tela antiga dizia "3 de 20 favoritos" em texto corrido. O numero sozinho
- * nao responde a pergunta que a pessoa faz de fato — "quanto ainda me resta?" —
- * e o fio preenchido responde antes da leitura. Fica em ouro ate 85%, e vira
- * oxblood quando o limite esta perto: e o unico momento em que a cor de acao
- * tem algo a dizer aqui.
- */
 function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; limite: number }) {
   const razao = limite > 0 ? Math.min(1, usado / limite) : 0;
   const perto = razao >= 0.85;
@@ -36,11 +28,11 @@ function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; lim
   return (
     <View style={{ marginTop: space.lg }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Text variant="bodySm" color={scheme.textSecondary}>
+        <Text variant="bodySm" font="bodyMedium" color={scheme.textPrimary}>
           {rotulo}
         </Text>
-        <Text variant="micro" font="bodySemi" color={perto ? scheme.accent : scheme.textMuted}>
-          {usado} / {limite}
+        <Text variant="caption" font="bodySemi" color={perto ? scheme.accent : scheme.textSecondary}>
+          {usado} <Text variant="caption" color={scheme.textGhost}>/ {limite}</Text>
         </Text>
       </View>
       <View
@@ -53,7 +45,7 @@ function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; lim
             estilos.preenchimento,
             {
               width: `${Math.max(razao * 100, razao > 0 ? 3 : 0)}%`,
-              backgroundColor: perto ? scheme.accent : scheme.goldSoft,
+              backgroundColor: perto ? scheme.accent : scheme.gold,
             },
           ]}
         />
@@ -130,6 +122,7 @@ export default function Perfil() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
+      <AccentHalo height={380} opacity={0.65} />
       <ScreenHeader overline="Sua conta" title="Perfil" />
 
       <ScrollView
@@ -141,40 +134,35 @@ export default function Perfil() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Identidade ────────────────────────────────────────────────
-            Monograma em serifada no lugar de um avatar: o backend nao guarda
-            foto, e um placeholder cinza de pessoa e o detalhe que mais faz um
-            app parecer inacabado. */}
         <Card style={{ alignItems: 'center', paddingVertical: space.xxl }}>
           <View style={estilos.monograma}>
-            <Text
-              style={{ fontFamily: fonts.display, fontSize: 34, lineHeight: 44, color: scheme.gold }}
-            >
+            <Text style={estilos.monogramaTexto}>
               {inicial}
             </Text>
           </View>
 
-          <Text variant="title" style={{ marginTop: space.lg, textAlign: 'center' }}>
+          <Text style={estilos.nome}>
             {nome}
           </Text>
-          <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 4 }}>
+          <Text variant="bodySm" color={scheme.textMuted} style={{ marginTop: 2, textAlign: 'center' }}>
             {summary?.email ?? ''}
           </Text>
 
           <GoldRule width={48} style={{ marginVertical: space.xl }} />
 
-          <Tag
-            icon={isSupporter ? 'ribbon-outline' : undefined}
-            color={isSupporter ? scheme.gold : scheme.textMuted}
-            border={isSupporter ? scheme.goldSoft : scheme.border}
-            background={isSupporter ? scheme.goldSubtle : 'transparent'}
-          >
-            {isSupporter ? 'Apoiador' : 'Plano gratuito'}
-          </Tag>
+          <View style={[estilos.badge, isSupporter ? estilos.badgeApoiador : estilos.badgeGratuito]}>
+            {isSupporter ? <Ionicons name="ribbon-outline" size={14} color={scheme.gold} /> : null}
+            <Text
+              variant="micro"
+              font="bodySemi"
+              color={isSupporter ? scheme.gold : scheme.textSecondary}
+              style={{ letterSpacing: 1.2, textTransform: 'uppercase' }}
+            >
+              {isSupporter ? 'Apoiador Feith' : 'Plano Gratuito'}
+            </Text>
+          </View>
         </Card>
 
-        {/* Os limites vem do servidor, nunca de constantes no app: assim mudar
-            uma quota e editar o .env, e nao publicar versao nova na App Store. */}
         {!isSupporter && quotas ? (
           <Card>
             <Overline>Seu plano</Overline>
@@ -189,32 +177,38 @@ export default function Perfil() {
               limite={quotas.notes_limit}
             />
             {summary?.history_window_days ? (
-              <Text variant="caption" color={scheme.textGhost} style={{ marginTop: space.xl }}>
-                Histórico dos últimos {summary.history_window_days} dias.
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.xl }}>
+                <Ionicons name="time-outline" size={14} color={scheme.textGhost} />
+                <Text variant="caption" color={scheme.textGhost}>
+                  Histórico dos últimos {summary.history_window_days} dias.
+                </Text>
+              </View>
             ) : null}
           </Card>
         ) : null}
 
-        {/* Aviso de expiração: o app renova o token sozinho ao voltar para o
-            primeiro plano, então isto só aparece para quem ficou dias sem abrir. */}
         {diasParaExpirar !== null ? (
-          <Card quiet>
-            <Text variant="caption" color={scheme.textSecondary}>
+          <View style={estilos.bannerExpiracao}>
+            <Ionicons name="information-circle-outline" size={18} color={scheme.accent} />
+            <Text variant="caption" color={scheme.textSecondary} style={{ flex: 1 }}>
               Sua sessão expira em {diasParaExpirar}{' '}
               {diasParaExpirar === 1 ? 'dia' : 'dias'}.
             </Text>
-          </Card>
+          </View>
         ) : null}
 
         <RowGroup titulo="Preferências">
           <ListRow
             icon="person-outline"
+            iconBg="rgba(122,31,31,0.08)"
+            iconColor={scheme.accent}
             label="Editar perfil"
             onPress={() => router.push('/perfil/editar')}
           />
           <ListRow
             icon="notifications-outline"
+            iconBg="rgba(139,105,20,0.10)"
+            iconColor={scheme.gold}
             label="Lembretes"
             onPress={() => router.push('/perfil/notificacoes')}
             ultimo
@@ -223,17 +217,27 @@ export default function Perfil() {
 
         <RowGroup titulo="Sobre">
           <ListRow
-            icon="document-text-outline"
+            icon="shield-checkmark-outline"
+            iconBg={scheme.canvasWarm}
+            iconColor={scheme.textSecondary}
             label="Privacidade"
             onPress={() => router.push('/politicas')}
             ultimo
           />
         </RowGroup>
 
-        <RowGroup>
-          <ListRow icon="log-out-outline" label="Sair da conta" onPress={confirmarSaida} />
+        <RowGroup titulo="Conta">
+          <ListRow
+            icon="log-out-outline"
+            iconBg={scheme.canvasWarm}
+            iconColor={scheme.textSecondary}
+            label="Sair da conta"
+            onPress={confirmarSaida}
+          />
           <ListRow
             icon="trash-outline"
+            iconBg="#FBF0EF"
+            iconColor="#9B2C2C"
             label={excluindo ? 'Apagando…' : 'Apagar minha conta'}
             onPress={confirmarExclusao}
             destrutivo
@@ -241,13 +245,15 @@ export default function Perfil() {
           />
         </RowGroup>
 
-        <Text
-          variant="micro"
-          color={scheme.textGhost}
-          style={{ textAlign: 'center', letterSpacing: 3, textTransform: 'uppercase' }}
-        >
-          feith
-        </Text>
+        <View style={{ alignItems: 'center', paddingTop: space.xs, paddingBottom: space.md }}>
+          <Text
+            variant="micro"
+            color={scheme.textGhost}
+            style={{ textAlign: 'center', letterSpacing: 3, textTransform: 'uppercase' }}
+          >
+            feith • exegese diária
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -255,24 +261,67 @@ export default function Perfil() {
 
 const estilos = StyleSheet.create({
   monograma: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 1,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1.5,
     borderColor: scheme.goldSoft,
     backgroundColor: scheme.goldSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  trilho: {
-    height: 3,
+  monogramaTexto: {
+    fontFamily: fonts.display,
+    fontSize: 38,
+    lineHeight: 46,
+    color: scheme.gold,
+  },
+  nome: {
+    fontFamily: fonts.serif,
+    fontSize: 24,
+    lineHeight: 30,
+    color: scheme.textPrimary,
+    marginTop: space.md,
+    textAlign: 'center',
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: radius.pill,
-    backgroundColor: scheme.borderSoft,
+  },
+  badgeApoiador: {
+    backgroundColor: scheme.goldSubtle,
+    borderWidth: 1,
+    borderColor: scheme.goldSoft,
+  },
+  badgeGratuito: {
+    backgroundColor: scheme.canvasWarm,
+    borderWidth: 1,
+    borderColor: scheme.border,
+  },
+  trilho: {
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: scheme.canvasWarm,
     marginTop: space.sm,
     overflow: 'hidden',
   },
   preenchimento: {
-    height: 3,
+    height: 6,
     borderRadius: radius.pill,
+  },
+  bannerExpiracao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: radius.md,
+    backgroundColor: scheme.accentSubtle,
+    borderWidth: 1,
+    borderColor: 'rgba(122,31,31,0.15)',
   },
 });

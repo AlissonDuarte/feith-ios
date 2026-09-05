@@ -54,6 +54,7 @@ function Corpo({ texto, largura }: { texto: string; largura: number }) {
           link: scheme.accent,
           border: scheme.border,
           code: scheme.canvasWarm,
+          background: 'transparent',
         },
       }}
       flatListProps={{

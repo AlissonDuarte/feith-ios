@@ -169,8 +169,7 @@ export default function Login() {
           {googleSignInAvailable ? (
             <Button
               label="Continuar com o Google"
-              iconLeft="logo-google"
-              variant="secondary"
+              variant="google"
               onPress={comGoogle}
               loading={carregando === 'google'}
               disabled={ocupado}
@@ -182,12 +181,11 @@ export default function Login() {
           {appleDisponivel ? (
             <Button
               label="Continuar com a Apple"
-              iconLeft="logo-apple"
-              variant="secondary"
+              variant="apple"
               onPress={comApple}
               loading={carregando === 'apple'}
               disabled={ocupado}
-              style={{ marginTop: space.md }}
+              style={googleSignInAvailable ? { marginTop: space.md } : undefined}
             />
           ) : null}
 

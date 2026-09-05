@@ -180,9 +180,7 @@ export default function Onboarding() {
             disabled={concluindo}
             style={{ marginTop: space.sm, alignSelf: 'center' }}
           />
-        ) : (
-          <View style={{ height: 52 }} />
-        )}
+        ) : null}
       </View>
     </SafeAreaView>
   );
