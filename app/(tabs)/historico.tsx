@@ -9,6 +9,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { FeedList } from '../../src/components/FeedList';
 import {
+  Button,
   Card,
   GoldRule,
   Overline,
@@ -59,6 +60,14 @@ export default function Historico() {
               <Text variant="caption" color={scheme.textSecondary} style={{ marginTop: 6 }}>
                 O histórico mostra os últimos {janela} dias. Apoiadores veem o acervo completo.
               </Text>
+              <Button
+                label="Conhecer plano Apoiador"
+                variant="ghost"
+                size="sm"
+                icon="arrow-forward"
+                style={{ marginTop: space.sm, alignSelf: 'flex-start' }}
+                onPress={() => router.push('/assinatura')}
+              />
             </Card>
           ) : null
         }

@@ -23,6 +23,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
+import { IapProvider } from '../src/iap/IapContext';
 import { fonts, schemes } from '../src/theme/tokens';
 import { usePushNotifications } from '../src/push/usePushNotifications';
 
@@ -140,6 +141,13 @@ function RouteGuard() {
       <Stack.Screen name="politicas" options={header({ title: 'Privacidade', voltar: 'Voltar' })} />
       <Stack.Screen name="perfil/editar" options={header({ title: 'Editar perfil', voltar: 'Perfil' })} />
       <Stack.Screen name="perfil/notificacoes" options={header({ title: 'Lembretes', voltar: 'Perfil' })} />
+      <Stack.Screen
+        name="assinatura"
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
       <Stack.Screen name="r/[token]" options={{ headerShown: false }} />
       {/* Sem gesto de voltar: sair pelo swipe deixaria a pessoa numa tela
           logada com o onboarding pendente, e o guard a traria de volta. */}
@@ -175,11 +183,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        {/* `dark` e nao `auto`: as telas sao creme em qualquer modo do
-            sistema, entao deixar o iOS decidir pelo tema do aparelho
-            produziria icones brancos sobre papel no modo escuro. */}
-        <StatusBar style="dark" />
-        <RouteGuard />
+        <IapProvider>
+          {/* `dark` e nao `auto`: as telas sao creme em qualquer modo do
+              sistema, entao deixar o iOS decidir pelo tema do aparelho
+              produziria icones brancos sobre papel no modo escuro. */}
+          <StatusBar style="dark" />
+          <RouteGuard />
+        </IapProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

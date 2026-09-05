@@ -9,6 +9,7 @@ import { mensagemDe } from '../../src/api/errors';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AccentHalo } from '../../src/components/ornaments';
 import {
+  Button,
   Card,
   GoldRule,
   ListRow,
@@ -19,6 +20,7 @@ import {
   scheme,
   useEspacoTabBar,
 } from '../../src/components/ui';
+import { useIap } from '../../src/iap/IapContext';
 import { fonts, radius, space } from '../../src/theme/tokens';
 
 function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; limite: number }) {
@@ -56,6 +58,7 @@ function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; lim
 
 export default function Perfil() {
   const { summary, isSupporter, diasParaExpirar, signOut } = useAuth();
+  const { gerenciar } = useIap();
   const router = useRouter();
   const { respiro } = useEspacoTabBar();
   const [excluindo, setExcluindo] = useState(false);
@@ -184,7 +187,28 @@ export default function Perfil() {
                 </Text>
               </View>
             ) : null}
+
+            <Button
+              label="Tornar-se Apoiador"
+              variant="primary"
+              icon="arrow-forward"
+              style={{ marginTop: space.xl }}
+              onPress={() => router.push('/assinatura')}
+            />
           </Card>
+        ) : null}
+
+        {isSupporter && summary?.provider === 'apple' ? (
+          <RowGroup titulo="Assinatura">
+            <ListRow
+              icon="ribbon-outline"
+              iconBg="rgba(139,105,20,0.10)"
+              iconColor={scheme.gold}
+              label="Gerenciar na App Store"
+              onPress={() => void gerenciar()}
+              ultimo
+            />
+          </RowGroup>
         ) : null}
 
         {diasParaExpirar !== null ? (

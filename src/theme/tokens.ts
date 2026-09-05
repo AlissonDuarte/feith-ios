@@ -9,7 +9,7 @@
  * na secao 4 sem tocar em nenhuma tela.
  */
 
-import palette from './palette';
+import palette from './palette.js';
 
 export const colors = palette as Record<string, string>;
 

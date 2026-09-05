@@ -55,22 +55,22 @@ export function PlayerAudio({ reflectionUuid, referencia }: Props) {
         onPress={() => tocar(() => setAberto(true))}
         accessibilityRole="button"
         accessibilityLabel="Ouvir a reflexão"
-        style={({ pressed }) => [
-          estilos.pilula,
-          pressed && estilos.pilulaPressed,
-        ]}
+        hitSlop={4}
+        style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
       >
-        <Ionicons
-          name={audio.tocando ? 'pause' : 'headset-outline'}
-          size={16}
-          color={scheme.onAccent}
-        />
-        <Text variant="micro" font="bodySemi" color={scheme.onAccent} style={estilos.rotulo}>
-          {audio.erro ? 'ÁUDIO INDISPONÍVEL' : 'OUVIR'}
-        </Text>
-        {/* Fechado, o icone era identico com ou sem falha no player da web.
-            Este ponto e a pista antes de abrir. */}
-        {audio.erro ? <View style={estilos.pontoErro} /> : null}
+        <View style={estilos.pilula}>
+          <Ionicons
+            name={audio.tocando ? 'pause' : 'headset-outline'}
+            size={16}
+            color={scheme.goldSoft}
+          />
+          <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
+            {audio.erro ? 'ÁUDIO INDISPONÍVEL' : 'OUVIR'}
+          </Text>
+          {/* Fechado, o icone era identico com ou sem falha no player da web.
+              Este ponto e a pista antes de abrir. */}
+          {audio.erro ? <View style={estilos.pontoErro} /> : null}
+        </View>
       </Pressable>
     );
   }
@@ -154,23 +154,23 @@ export function PlayerAudio({ reflectionUuid, referencia }: Props) {
                 onPress={() => tocar(audio.alternar)}
                 accessibilityRole="button"
                 accessibilityLabel={audio.tocando ? 'Pausar' : 'Tocar'}
-                style={({ pressed }) => [
-                  estilos.botaoPrincipal,
-                  pressed && estilos.botaoPrincipalPressed,
-                ]}
+                hitSlop={8}
+                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
               >
-                {audio.bufferizando ? (
-                  <ActivityIndicator size="small" color={scheme.onAccent} />
-                ) : (
-                  <Ionicons
-                    name={audio.tocando ? 'pause' : 'play'}
-                    size={20}
-                    color={scheme.onAccent}
-                    // O triangulo do play tem peso visual a esquerda; sem este
-                    // empurrao ele parece descentralizado no circulo.
-                    style={audio.tocando ? undefined : { marginLeft: 2 }}
-                  />
-                )}
+                <View style={estilos.botaoPrincipal}>
+                  {audio.bufferizando ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons
+                      name={audio.tocando ? 'pause' : 'play'}
+                      size={20}
+                      color="#FFFFFF"
+                      // O triangulo do play tem peso visual a esquerda; sem este
+                      // empurrao ele parece descentralizado no circulo.
+                      style={audio.tocando ? undefined : { marginLeft: 2 }}
+                    />
+                  )}
+                </View>
               </Pressable>
 
               <Pressable

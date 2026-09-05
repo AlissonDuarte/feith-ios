@@ -322,6 +322,7 @@ export interface UserSummary {
   username: string;
   email: string;
   plan: Plan | string;
+  provider?: SubscriptionProvider;
   onboarding_completed: boolean;
   streak: number;
   read_today: boolean;

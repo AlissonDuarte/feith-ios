@@ -181,15 +181,15 @@ export default function Leitura() {
           }}
           accessibilityRole="button"
           accessibilityLabel="Escrever anotação"
-          style={({ pressed }) => [
-            estilos.fab,
-            pressed && estilos.fabPressed,
-          ]}
+          hitSlop={4}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
         >
-          <Ionicons name="create-outline" size={17} color={scheme.onAccent} />
-          <Text variant="micro" font="bodySemi" color={scheme.onAccent} style={{ letterSpacing: 2 }}>
-            ANOTAR
-          </Text>
+          <View style={estilos.fab}>
+            <Ionicons name="create-outline" size={17} color={scheme.goldSoft} />
+            <Text variant="micro" font="bodySemi" color="#FFFFFF" style={{ letterSpacing: 2 }}>
+              ANOTAR
+            </Text>
+          </View>
         </Pressable>
       </View>
 
