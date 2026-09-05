@@ -292,13 +292,27 @@ export function Button({
   const solido = variant === 'primary';
   const comoLink = variant === 'ghost';
 
-  const corDoRotulo = solido
-    ? scheme.onAccent
-    : variant === 'quiet'
-      ? scheme.textMuted
-      : comoLink
+  /**
+   * Um solido desabilitado nao pode ser "o mesmo botao com opacidade": oxblood
+   * a 45% sobre o creme da um rosa lavado que le como branco, e o rotulo branco
+   * junto quase some — era o "Salvar lembrete" sumindo quando nenhum dia estava
+   * marcado. Desabilitado ele vira corpo cinza-quente com rotulo escuro:
+   * continua visivel, e continua obviamente inerte.
+   *
+   * `loading` fica de fora: um botao ocupado nao esta indisponivel, e trocar a
+   * cor no meio do salvamento pareceria outro botao.
+   */
+  const solidoInerte = solido && !!disabled && !loading;
+
+  const corDoRotulo = solidoInerte
+    ? scheme.textSecondary
+    : solido
+      ? scheme.onAccent
+      : variant === 'quiet'
         ? scheme.textSecondary
-        : scheme.accent;
+        : comoLink
+          ? scheme.textSecondary
+          : scheme.accent;
 
   return (
     <Pressable
@@ -309,26 +323,36 @@ export function Button({
         styles.button,
         size === 'sm' && { minHeight: 44 },
         comoLink && styles.buttonLink,
-        solido && { backgroundColor: pressed ? scheme.accentPressed : scheme.accent },
+        solido && !solidoInerte && {
+          backgroundColor: pressed ? scheme.accentPressed : scheme.accent,
+        },
         solido && !inativo && shadow.card,
-        variant === 'secondary' && {
+        solidoInerte && {
+          backgroundColor: scheme.border,
           borderWidth: 1,
-          borderColor: pressed ? scheme.accent : 'rgba(122,31,31,0.28)',
-          backgroundColor: pressed ? scheme.accentSubtle : 'transparent',
+          borderColor: scheme.textGhost,
+        },
+        // Contorno e corpo cheios. Com fundo transparente e fio a 28% estes
+        // dois desapareciam sobre o creme — um botao que so existe quando a
+        // pessoa ja sabe onde ele fica nao e um botao.
+        variant === 'secondary' && {
+          borderWidth: 1.5,
+          borderColor: scheme.accent,
+          backgroundColor: pressed ? scheme.accentSubtle : scheme.surface,
         },
         variant === 'quiet' && {
           borderWidth: 1,
-          borderColor: scheme.border,
-          backgroundColor: pressed ? scheme.surface : 'transparent',
+          borderColor: scheme.textGhost,
+          backgroundColor: pressed ? scheme.border : scheme.canvasWarm,
         },
         comoLink && pressed && { opacity: 0.55 },
-        inativo && { opacity: 0.45 },
+        !solido && inativo && { opacity: 0.5 },
         style,
       ]}
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={solido ? scheme.onAccent : scheme.accent} />
+        <ActivityIndicator color={solido && !solidoInerte ? scheme.onAccent : scheme.accent} />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           {iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
@@ -691,7 +715,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: scheme.border,
-    backgroundColor: scheme.surface,
+    // Corpo quente, e nao branco: estes circulos vivem sobre o creme dos
+    // cabecalhos, e branco-sobre-creme com fio de 9% nao le como botao.
+    backgroundColor: scheme.canvasWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },

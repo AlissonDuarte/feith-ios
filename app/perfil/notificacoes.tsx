@@ -180,7 +180,7 @@ export default function Notificacoes() {
                     <Text
                       variant="caption"
                       font={ativo ? 'bodySemi' : 'body'}
-                      color={ativo ? scheme.onAccent : scheme.textMuted}
+                      color={ativo ? scheme.accent : scheme.textSecondary}
                     >
                       {d.rotulo}
                     </Text>
@@ -257,6 +257,15 @@ export default function Notificacoes() {
 }
 
 const estilos = StyleSheet.create({
+  /**
+   * Marcado e DESmarcado precisam ser legiveis nesta tela, nao so distintos.
+   *
+   * O par anterior era oxblood-solido-com-letra-branca contra branco-puro: o
+   * desmarcado sumia sobre o creme (branco em off-white, com fio a 9% e letra
+   * cinza-clara), e o marcado dependia de uma letra branca minuscula. Agora o
+   * desmarcado tem corpo quente e letra escura, e o marcado se anuncia por fio
+   * oxblood cheio + letra oxblood — sem branco em lugar nenhum.
+   */
   dia: {
     flex: 1,
     height: 46,
@@ -265,11 +274,12 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: scheme.border,
-    backgroundColor: scheme.surface,
+    backgroundColor: scheme.canvasWarm,
   },
   diaAtivo: {
+    borderWidth: 1.5,
     borderColor: scheme.accent,
-    backgroundColor: scheme.accent,
+    backgroundColor: scheme.accentSubtle,
   },
   hora: {
     flexDirection: 'row',
