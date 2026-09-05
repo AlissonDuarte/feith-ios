@@ -323,30 +323,14 @@ export function Button({
         styles.button,
         size === 'sm' && { minHeight: 44 },
         comoLink && styles.buttonLink,
-        solido && !solidoInerte && {
-          backgroundColor: pressed ? scheme.accentPressed : scheme.accent,
-        },
+        solido && !solidoInerte && (pressed ? styles.buttonPrimaryPressed : styles.buttonPrimary),
         solido && !inativo && shadow.card,
-        solidoInerte && {
-          backgroundColor: scheme.border,
-          borderWidth: 1,
-          borderColor: scheme.textGhost,
-        },
-        // Contorno e corpo cheios. Com fundo transparente e fio a 28% estes
-        // dois desapareciam sobre o creme — um botao que so existe quando a
-        // pessoa ja sabe onde ele fica nao e um botao.
-        variant === 'secondary' && {
-          borderWidth: 1.5,
-          borderColor: scheme.accent,
-          backgroundColor: pressed ? scheme.accentSubtle : scheme.surface,
-        },
-        variant === 'quiet' && {
-          borderWidth: 1,
-          borderColor: scheme.textGhost,
-          backgroundColor: pressed ? scheme.border : scheme.canvasWarm,
-        },
+        solidoInerte && styles.buttonInerte,
+        variant === 'secondary' &&
+          (pressed ? styles.buttonSecondaryPressed : styles.buttonSecondary),
+        variant === 'quiet' && (pressed ? styles.buttonQuietPressed : styles.buttonQuiet),
         comoLink && pressed && { opacity: 0.55 },
-        !solido && inativo && { opacity: 0.5 },
+        !solido && inativo && { opacity: 0.4 },
         style,
       ]}
       {...rest}
@@ -700,6 +684,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  buttonPrimary: {
+    backgroundColor: scheme.accent,
+  },
+  buttonPrimaryPressed: {
+    backgroundColor: scheme.accentPressed,
+  },
+  buttonQuiet: {
+    borderWidth: 1,
+    borderColor: scheme.textGhost,
+    backgroundColor: scheme.canvasWarm,
+  },
+  buttonQuietPressed: {
+    backgroundColor: scheme.border,
+  },
+  buttonSecondary: {
+    borderWidth: 1.5,
+    borderColor: scheme.accent,
+    backgroundColor: scheme.surface,
+  },
+  buttonSecondaryPressed: {
+    backgroundColor: scheme.accentSubtle,
+  },
+  buttonInerte: {
+    backgroundColor: scheme.border,
+    borderWidth: 1,
+    borderColor: scheme.textGhost,
   },
   buttonLink: {
     minHeight: 44,

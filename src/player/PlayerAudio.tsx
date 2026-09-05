@@ -57,7 +57,7 @@ export function PlayerAudio({ reflectionUuid, referencia }: Props) {
         accessibilityLabel="Ouvir a reflexão"
         style={({ pressed }) => [
           estilos.pilula,
-          { backgroundColor: pressed ? scheme.accentPressed : scheme.accent },
+          pressed && estilos.pilulaPressed,
         ]}
       >
         <Ionicons
@@ -95,7 +95,7 @@ export function PlayerAudio({ reflectionUuid, referencia }: Props) {
           accessibilityLabel="Fechar player"
           hitSlop={10}
         >
-          <Ionicons name="chevron-down" size={20} color={scheme.textGhost} />
+          <Ionicons name="chevron-down" size={20} color={scheme.textSecondary} />
         </Pressable>
       </View>
 
@@ -156,7 +156,7 @@ export function PlayerAudio({ reflectionUuid, referencia }: Props) {
                 accessibilityLabel={audio.tocando ? 'Pausar' : 'Tocar'}
                 style={({ pressed }) => [
                   estilos.botaoPrincipal,
-                  { backgroundColor: pressed ? scheme.accentPressed : scheme.accent },
+                  pressed && estilos.botaoPrincipalPressed,
                 ]}
               >
                 {audio.bufferizando ? (
@@ -201,7 +201,12 @@ const estilos = StyleSheet.create({
     height: 46,
     paddingHorizontal: 18,
     borderRadius: radius.sharp,
+    backgroundColor: scheme.accent,
     ...shadow.raised,
+  },
+  pilulaPressed: {
+    backgroundColor: scheme.accentPressed,
+    opacity: 0.9,
   },
   rotulo: { letterSpacing: 2 },
   pontoErro: {
@@ -246,7 +251,13 @@ const estilos = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: radius.pill,
+    backgroundColor: scheme.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadow.card,
+  },
+  botaoPrincipalPressed: {
+    backgroundColor: scheme.accentPressed,
+    opacity: 0.9,
   },
 });

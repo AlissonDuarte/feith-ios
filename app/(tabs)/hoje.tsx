@@ -199,7 +199,7 @@ export default function Hoje() {
           accessibilityLabel="Escrever anotação"
           style={({ pressed }) => [
             estilos.fab,
-            { backgroundColor: pressed ? scheme.accentPressed : scheme.accent },
+            pressed && estilos.fabPressed,
           ]}
         >
           <Ionicons name="create-outline" size={17} color={scheme.onAccent} />
@@ -259,6 +259,11 @@ const estilos = StyleSheet.create({
     height: 46,
     paddingHorizontal: 18,
     borderRadius: radius.sharp,
+    backgroundColor: scheme.accent,
     ...shadow.raised,
+  },
+  fabPressed: {
+    backgroundColor: scheme.accentPressed,
+    opacity: 0.9,
   },
 });
