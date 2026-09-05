@@ -134,6 +134,7 @@ export default function Leitura() {
       />
 
       <ScrollView
+        style={{ flex: 1 }}
         // 112 cobria so o FAB. Com o player empilhado acima dele, as anotacoes
         // do fim da tela ficariam encobertas.
         contentContainerStyle={{
@@ -161,7 +162,7 @@ export default function Leitura() {
         ) : null}
       </ScrollView>
 
-      {/* Botao fixo, e nao o FAB arrastavel da web: arrastar briga com o gesto
+      {/* Botao fixo, e nao o FAB arrastavel da web (Note.svelte): arrastar briga com o gesto
           de voltar do iOS e com o scroll. */}
       <View style={estilos.ancora} pointerEvents="box-none">
         {/* Mesma montagem da aba Hoje: o audio do acervo vale tanto quanto o do
@@ -214,6 +215,8 @@ const estilos = StyleSheet.create({
     // Player e ANOTAR empilhados, alinhados a direita.
     alignItems: 'flex-end',
     gap: space.md,
+    zIndex: 99,
+    elevation: 10,
   },
   fab: {
     flexDirection: 'row',

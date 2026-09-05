@@ -159,6 +159,38 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript, reflectionUuid, player]);
 
+  // Registra o player nativo na Central de Controle e Tela de Bloqueio do iOS.
+  useEffect(() => {
+    if (!transcript) return;
+
+    void configurarSessao().then(() => {
+      try {
+        player.setActiveForLockScreen(
+          true,
+          {
+            title: transcript.title,
+            artist: transcript.subtitle || 'Feith',
+            albumTitle: 'Reflexões Feith',
+          },
+          {
+            showSeekForward: true,
+            showSeekBackward: true,
+          },
+        );
+      } catch {
+        // Lock screen best-effort
+      }
+    });
+
+    return () => {
+      try {
+        player.clearLockScreenControls();
+      } catch {
+        // cleanup best-effort
+      }
+    };
+  }, [transcript, player]);
+
   const alternar = useCallback(() => {
     void configurarSessao().then(() => {
       if (player.playing) player.pause();

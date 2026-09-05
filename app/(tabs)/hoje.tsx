@@ -152,6 +152,7 @@ export default function Hoje() {
       </View>
 
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: space.gutter,
           // O `respiro` cobre a tab bar e o FAB. Com o player empilhado por
@@ -176,7 +177,10 @@ export default function Hoje() {
           Pilula com rotulo em vez de circulo com icone: "anotar" e a acao que
           o produto quer estimular, e um icone de lapis sozinho nao a promete
           para quem nunca a usou. */}
-      <View style={[estilos.ancora, { bottom: alturaTabBar + space.lg }]} pointerEvents="box-none">
+      <View
+        style={[estilos.ancora, { bottom: Math.max(96, alturaTabBar + space.lg) }]}
+        pointerEvents="box-none"
+      >
         {/* Player acima do ANOTAR, na mesma coluna ancorada: os dois sao acoes
             sobre a reflexao aberta, e empilha-los evita disputar o canto. */}
         {isSupporter ? (
@@ -245,6 +249,8 @@ const estilos = StyleSheet.create({
     // largo que a pilula, e sem isto ele empurraria o ANOTAR para o centro.
     alignItems: 'flex-end',
     gap: space.md,
+    zIndex: 99,
+    elevation: 10,
   },
   fab: {
     flexDirection: 'row',
