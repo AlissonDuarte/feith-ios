@@ -40,11 +40,33 @@ function Corpo({ texto, largura }: { texto: string; largura: number }) {
   return (
     <Markdown
       value={texto}
+      // O react-native-marked decide as cores por `useColorScheme()` do
+      // aparelho (lib/Markdown.js) — e este app e claro por escolha, nao por
+      // acidente: `scheme` la em cima e fixo em `schemes.light`. Sem fixar
+      // aqui tambem, num telefone no modo escuro a biblioteca montava a
+      // paleta escura enquanto os `styles` abaixo continuavam forcando a
+      // tinta escura: texto preto sobre fundo preto. Como o texto biblico e
+      // renderizado por um <Text> nosso, ele escapava — dai o primeiro bloco
+      // legivel e os cinco seguintes em caixa preta.
+      theme={{
+        colors: {
+          text: scheme.textPrimary,
+          link: scheme.accent,
+          border: scheme.border,
+          code: scheme.canvasWarm,
+        },
+      }}
       flatListProps={{
         // O leitor inteiro ja rola; esta lista so mede.
         scrollEnabled: false,
         initialNumToRender: 30,
         contentContainerStyle: { paddingHorizontal: 0 },
+        // A lista pinta o proprio fundo — #ffffff no claro, #000000 no escuro
+        // — e nenhum dos dois serve: as secoes correm sobre o papel creme
+        // (#FAF8F4), sem card. Branco puro dava um retangulo visivel sobre o
+        // creme mesmo no modo claro. Este `style` vem depois do default da
+        // biblioteca no spread, entao ele ganha.
+        style: { backgroundColor: 'transparent' },
       }}
       styles={{
         text: {

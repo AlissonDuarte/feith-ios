@@ -59,7 +59,24 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'feith',
-  userInterfaceStyle: 'automatic',
+  /**
+   * 'light', nao 'automatic'.
+   *
+   * O app e claro por escolha: `schemes.light` esta fixo em tokens/ui/
+   * ornaments/_layout/(tabs)/_layout e a StatusBar e "dark". Nao existe
+   * paleta escura ligada — `schemes.dark` esta definido mas ninguem o usa.
+   *
+   * Declarar 'automatic' dizia ao iOS o contrario: "esta app suporta modo
+   * escuro". Ai todo componente que consulta a trait collection do sistema
+   * virava sozinho enquanto a nossa paleta seguia clara. Foi assim que os
+   * blocos de Markdown do leitor sairam com fundo preto e tinta preta num
+   * telefone no escuro (ver ReflexaoReader.tsx) — e o mesmo valia para o
+   * teclado, os menus nativos e as folhas de acao.
+   *
+   * Quando houver modo escuro de verdade, isto volta a 'automatic' junto com
+   * a paleta — as duas coisas na mesma mudanca.
+   */
+  userInterfaceStyle: 'light',
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.feith.app',
