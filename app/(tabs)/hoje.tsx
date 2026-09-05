@@ -12,11 +12,14 @@ import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
+import { useRouter } from 'expo-router';
 import {
   Button,
+  Card,
   EmptyState,
   IconButton,
   Loading,
+  Overline,
   Text,
   scheme,
   useEspacoTabBar,
@@ -25,6 +28,7 @@ import { PlayerAudio } from '../../src/player/PlayerAudio';
 import { radius, shadow, space } from '../../src/theme/tokens';
 
 export default function Hoje() {
+  const router = useRouter();
   // O streak vem do summary do AuthContext, que ja e compartilhado por todas
   // as telas — buscar /streaks/me aqui seria a mesma duplicacao que a web faz.
   const { summary, refreshSummary, isSupporter } = useAuth();
@@ -129,16 +133,31 @@ export default function Hoje() {
           Sem titulo: o titulo da tela e a propria referencia biblica, logo
           abaixo. Repetir "Hoje" aqui gastaria a linha mais nobre da tela. */}
       <View style={estilos.barra}>
-        {streak > 0 ? (
-          <View style={estilos.streak}>
-            <Ionicons name="flame" size={12} color={scheme.gold} />
-            <Text variant="micro" font="bodySemi" color={scheme.gold}>
-              {streak} {streak === 1 ? 'dia' : 'dias'}
-            </Text>
-          </View>
-        ) : (
-          <View />
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          {streak > 0 ? (
+            <View style={estilos.streak}>
+              <Ionicons name="flame" size={12} color={scheme.gold} />
+              <Text variant="micro" font="bodySemi" color={scheme.gold}>
+                {streak} {streak === 1 ? 'dia' : 'dias'}
+              </Text>
+            </View>
+          ) : null}
+
+          {!isSupporter ? (
+            <Pressable
+              onPress={() => router.push('/assinatura')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Conhecer plano Apoiador"
+              style={({ pressed }) => [estilos.badgeApoiador, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="ribbon-outline" size={12} color={scheme.gold} />
+              <Text variant="micro" font="bodySemi" color={scheme.gold} style={{ letterSpacing: 1 }}>
+                APOIADOR
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
           <BotaoFavorito
@@ -170,6 +189,26 @@ export default function Hoje() {
         }
       >
         <ReflexaoReader reflexao={reflexao} />
+
+        {!isSupporter ? (
+          <Card quiet style={{ marginTop: space.xxl, marginBottom: space.lg, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Ionicons name="ribbon-outline" size={14} color={scheme.gold} />
+              <Overline color={scheme.gold}>Plano Apoiador</Overline>
+            </View>
+            <Text variant="caption" color={scheme.textSecondary} style={{ textAlign: 'center', marginTop: 2 }}>
+              Aprofunde seu momento diário com áudio narrado e acervo completo.
+            </Text>
+            <Button
+              label="Conhecer plano Apoiador"
+              variant="ghost"
+              size="sm"
+              icon="arrow-forward"
+              style={{ marginTop: space.sm }}
+              onPress={() => router.push('/assinatura')}
+            />
+          </Card>
+        ) : null}
       </ScrollView>
 
       {/* Botao fixo, e nao o FAB arrastavel da web (Note.svelte): arrastar
@@ -236,6 +275,17 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: scheme.goldSoft,
     backgroundColor: scheme.goldSubtle,
+    borderRadius: radius.sharp,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  badgeApoiador: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(139,105,20,0.30)',
+    backgroundColor: 'rgba(139,105,20,0.08)',
     borderRadius: radius.sharp,
     paddingHorizontal: 10,
     paddingVertical: 7,

@@ -189,8 +189,8 @@ export default function Perfil() {
             ) : null}
 
             <Button
-              label="Tornar-se Apoiador"
-              variant="primary"
+              label="Conhecer plano Apoiador"
+              variant="quiet"
               icon="arrow-forward"
               style={{ marginTop: space.xl }}
               onPress={() => router.push('/assinatura')}
@@ -198,8 +198,8 @@ export default function Perfil() {
           </Card>
         ) : null}
 
-        {isSupporter && summary?.provider === 'apple' ? (
-          <RowGroup titulo="Assinatura">
+        <RowGroup titulo="Assinatura">
+          {isSupporter ? (
             <ListRow
               icon="ribbon-outline"
               iconBg="rgba(139,105,20,0.10)"
@@ -208,8 +208,18 @@ export default function Perfil() {
               onPress={() => void gerenciar()}
               ultimo
             />
-          </RowGroup>
-        ) : null}
+          ) : (
+            <ListRow
+              icon="ribbon-outline"
+              iconBg="rgba(139,105,20,0.10)"
+              iconColor={scheme.gold}
+              label="Seja um Apoiador Feith"
+              value="R$ 9,90/mês"
+              onPress={() => router.push('/assinatura')}
+              ultimo
+            />
+          )}
+        </RowGroup>
 
         {diasParaExpirar !== null ? (
           <View style={estilos.bannerExpiracao}>
