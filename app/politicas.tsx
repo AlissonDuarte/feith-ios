@@ -18,7 +18,7 @@ import { space } from '../src/theme/tokens';
  * numeradas seguem a mesma gramatica visual do leitor de reflexoes.
  */
 
-const CONTATO = 'contato@mais-verbum.com';
+const CONTATO = 'suport@feith.space';
 
 interface Secao {
   titulo: string;
