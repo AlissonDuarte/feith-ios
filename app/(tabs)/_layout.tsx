@@ -78,7 +78,7 @@ export default function TabsLayout() {
           title: 'Anotações',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'create' : 'create-outline'}
+              name={focused ? 'document-text' : 'document-text-outline'}
               color={color}
               size={size - 1}
             />

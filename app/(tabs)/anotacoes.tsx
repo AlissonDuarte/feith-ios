@@ -61,7 +61,7 @@ export default function Anotacoes() {
         lista={lista}
         chave={(n) => n.note_uuid}
         placeholderBusca="Buscar nas anotações"
-        iconeVazio="create-outline"
+        iconeVazio="document-text-outline"
         tituloVazio="Nenhuma anotação ainda"
         descricaoVazia="Ao ler uma reflexão, toque em Anotar para guardar o que ela te disse."
         renderItem={(nota) => (
