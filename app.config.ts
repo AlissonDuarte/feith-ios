@@ -81,6 +81,11 @@ const config: ExpoConfig = {
     supportsTablet: true,
     bundleIdentifier: 'com.feith.app',
     appleTeamId: process.env.APPLE_TEAM_ID,
+    icon: {
+      light: './assets/icon.png',
+      dark: './assets/icon-dark.png',
+      tinted: './assets/icon-tinted.png',
+    },
     // Escreve o entitlement com.apple.developer.applesignin no prebuild. Sem
     // ele o botao da Apple aparece e o signInAsync falha na hora.
     usesAppleSignIn: true,
@@ -111,6 +116,11 @@ const config: ExpoConfig = {
   android: {
     package: 'com.feith.app',
     predictiveBackGestureEnabled: false,
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
+      backgroundColor: '#5C1D24',
+      monochromeImage: './assets/icon-tinted.png',
+    },
   },
   plugins: [
     'expo-router',
