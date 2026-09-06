@@ -176,6 +176,7 @@ export default function Onboarding() {
           <Button
             label="Pular apresentação"
             variant="ghost"
+            textColor={scheme.accent}
             onPress={concluir}
             disabled={concluindo}
             style={{ marginTop: space.sm, alignSelf: 'center' }}

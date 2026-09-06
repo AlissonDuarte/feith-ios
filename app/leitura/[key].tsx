@@ -1,8 +1,6 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
@@ -73,13 +71,20 @@ export default function Leitura() {
     if (!reflexao) return;
     try {
       const link = await api.createShareLink(reflexao.uuid);
-      // Share sheet nativo: um toque para WhatsApp, que e como
-      // compartilhamento acontece no Brasil. A web tem um modal com campo
-      // read-only e botao de copiar.
-      await Share.share({
-        message: `${reflexao.scripture_reference} — ${link.url}`,
-        url: link.url,
-      });
+      const trecho = reflexao.bible_text?.trim()
+        ? `"${reflexao.bible_text.length > 200 ? reflexao.bible_text.slice(0, 200).trim() + '...' : reflexao.bible_text.trim()}"\n\n`
+        : '';
+
+      await Share.share(
+        {
+          title: `${reflexao.scripture_reference} — feith`,
+          message: `📖 ${reflexao.scripture_reference}\n\n${trecho}Leia a reflexão e exegese completa no feith:\n${link.url}`,
+          url: link.url,
+        },
+        {
+          subject: `${reflexao.scripture_reference} — feith`,
+        },
+      );
     } catch (e) {
       setErro(mensagemDe(e));
     }
@@ -165,32 +170,11 @@ export default function Leitura() {
       {/* Botao fixo, e nao o FAB arrastavel da web (Note.svelte): arrastar briga com o gesto
           de voltar do iOS e com o scroll. */}
       <View style={estilos.ancora} pointerEvents="box-none">
-        {/* Mesma montagem da aba Hoje: o audio do acervo vale tanto quanto o do
-            dia para quem apoia. */}
-        {isSupporter ? (
-          <PlayerAudio
-            reflectionUuid={reflexao.uuid}
-            referencia={reflexao.scripture_reference}
-          />
-        ) : null}
-
-        <Pressable
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setEscrevendo(true);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Escrever anotação"
-          hitSlop={4}
-          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
-        >
-          <View style={estilos.fab}>
-            <Ionicons name="create-outline" size={17} color={scheme.goldSoft} />
-            <Text variant="micro" font="bodySemi" color="#FFFFFF" style={{ letterSpacing: 2 }}>
-              ANOTAR
-            </Text>
-          </View>
-        </Pressable>
+        <PlayerAudio
+          reflectionUuid={reflexao.uuid}
+          referencia={reflexao.scripture_reference}
+          onAnotar={() => setEscrevendo(true)}
+        />
       </View>
 
       <NotaSheet

@@ -274,6 +274,7 @@ interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> {
   /** Icone a esquerda do rotulo. */
   iconLeft?: keyof typeof Ionicons.glyphMap;
   size?: 'md' | 'sm';
+  textColor?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -284,6 +285,7 @@ export function Button({
   icon,
   iconLeft,
   size = 'md',
+  textColor,
   disabled,
   style,
   ...rest
@@ -304,15 +306,17 @@ export function Button({
    */
   const solidoInerte = solido && !!disabled && !loading;
 
-  const corDoRotulo = solidoInerte
-    ? scheme.textSecondary
-    : solido
-      ? scheme.onAccent
-      : variant === 'quiet'
-        ? scheme.textSecondary
-        : comoLink
+  const corDoRotulo = textColor
+    ? textColor
+    : solidoInerte
+      ? scheme.textSecondary
+      : solido
+        ? scheme.onAccent
+        : variant === 'quiet'
           ? scheme.textSecondary
-          : scheme.accent;
+          : comoLink
+            ? scheme.textSecondary
+            : scheme.accent;
 
   return (
     <Pressable

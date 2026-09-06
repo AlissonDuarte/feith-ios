@@ -6,7 +6,8 @@
  * com o gesto de voltar do iOS e com o scroll. Aqui e uma barra ancorada, no
  * mesmo desenho do botao ANOTAR.
  *
- * Fechado: pilula com a referencia. Aberto: transporte completo.
+ * Fechado: pilula com a referencia (ou capsula unificada com Anotar).
+ * Aberto: transporte completo.
  *
  * Todo estado tem representacao visual — inclusive falha. A ausencia disso no
  * player da web e o que fez "o audio nao toca" virar um problema sem pista
@@ -26,30 +27,92 @@ interface Props {
   reflectionUuid: string;
   /** Referencia biblica — o rotulo da pilula fechada. */
   referencia?: string;
+  /** Callback opcional para acao de anotação (unifica Ouvir e Anotar em uma capsula). */
+  onAnotar?: () => void;
 }
 
-export function PlayerAudio({ reflectionUuid, referencia }: Props) {
+export function PlayerAudio({ reflectionUuid, referencia, onAnotar }: Props) {
   const [aberto, setAberto] = useState(false);
   const audio = useAudioReflexao(reflectionUuid);
-
-  // Quem nao e apoiador nao ve nada: o paywall do audio e a propria ausencia,
-  // e as telas ja tem outros lugares que convidam a apoiar.
-  if (audio.semAcesso) return null;
-
-  // Nem carregou nem falhou ainda: nao piscar uma pilula vazia na tela.
-  if (!audio.transcript && !audio.erro && audio.carregando) return null;
-
-  // Sem transcript e sem carregar: a reflexao nao tem audio (404). Idem.
-  if (!audio.transcript && !audio.erro) return null;
-
-  const progresso = audio.duracao > 0 ? audio.posicao / audio.duracao : 0;
 
   function tocar(acao: () => void) {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     acao();
   }
 
+  const temAudio = !audio.semAcesso && (!!audio.transcript || !!audio.erro);
+
+  // Se nao tem audio disponivel nem erro (ou sem acesso / carregando):
+  if (!temAudio) {
+    if (onAnotar) {
+      return (
+        <Pressable
+          onPress={() => tocar(onAnotar)}
+          accessibilityRole="button"
+          accessibilityLabel="Escrever anotação"
+          hitSlop={4}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+        >
+          <View style={estilos.pilula}>
+            <Ionicons name="create-outline" size={17} color={scheme.goldSoft} />
+            <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
+              ANOTAR
+            </Text>
+          </View>
+        </Pressable>
+      );
+    }
+    return null;
+  }
+
+  const progresso = audio.duracao > 0 ? audio.posicao / audio.duracao : 0;
+
   if (!aberto) {
+    if (onAnotar) {
+      return (
+        <View style={estilos.capsula}>
+          <Pressable
+            onPress={() => tocar(() => setAberto(true))}
+            accessibilityRole="button"
+            accessibilityLabel="Ouvir a reflexão"
+            hitSlop={4}
+            style={({ pressed }) => [
+              estilos.secaoCapsula,
+              pressed && estilos.secaoCapsulaPressed,
+            ]}
+          >
+            <Ionicons
+              name={audio.tocando ? 'pause' : 'headset-outline'}
+              size={16}
+              color={scheme.goldSoft}
+            />
+            <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
+              {audio.erro ? 'ÁUDIO' : 'OUVIR'}
+            </Text>
+            {audio.erro ? <View style={estilos.pontoErro} /> : null}
+          </Pressable>
+
+          <View style={estilos.divisorCapsula} />
+
+          <Pressable
+            onPress={() => tocar(onAnotar)}
+            accessibilityRole="button"
+            accessibilityLabel="Escrever anotação"
+            hitSlop={4}
+            style={({ pressed }) => [
+              estilos.secaoCapsula,
+              pressed && estilos.secaoCapsulaPressed,
+            ]}
+          >
+            <Ionicons name="create-outline" size={16} color={scheme.goldSoft} />
+            <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
+              ANOTAR
+            </Text>
+          </Pressable>
+        </View>
+      );
+    }
+
     return (
       <Pressable
         onPress={() => tocar(() => setAberto(true))}
@@ -67,8 +130,6 @@ export function PlayerAudio({ reflectionUuid, referencia }: Props) {
           <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
             {audio.erro ? 'ÁUDIO INDISPONÍVEL' : 'OUVIR'}
           </Text>
-          {/* Fechado, o icone era identico com ou sem falha no player da web.
-              Este ponto e a pista antes de abrir. */}
           {audio.erro ? <View style={estilos.pontoErro} /> : null}
         </View>
       </Pressable>
@@ -76,124 +137,166 @@ export function PlayerAudio({ reflectionUuid, referencia }: Props) {
   }
 
   return (
-    <View style={estilos.card}>
-      <View style={estilos.cabecalho}>
-        <View style={{ flex: 1, paddingRight: space.md }}>
-          <Text variant="bodySm" font="serif" numberOfLines={1}>
-            {audio.transcript?.title ?? referencia ?? 'Leitura do dia'}
-          </Text>
-          {audio.transcript?.subtitle ? (
-            <Text variant="micro" color={scheme.textGhost} numberOfLines={1}>
-              {audio.transcript.subtitle}
+    <View style={{ alignItems: 'flex-end', gap: space.md }}>
+      <View style={estilos.card}>
+        <View style={estilos.cabecalho}>
+          <View style={{ flex: 1, paddingRight: space.md }}>
+            <Text variant="bodySm" font="serif" numberOfLines={1}>
+              {audio.transcript?.title ?? referencia ?? 'Leitura do dia'}
             </Text>
-          ) : null}
-        </View>
+            {audio.transcript?.subtitle ? (
+              <Text variant="micro" color={scheme.textGhost} numberOfLines={1}>
+                {audio.transcript.subtitle}
+              </Text>
+            ) : null}
+          </View>
 
-        <Pressable
-          onPress={() => setAberto(false)}
-          accessibilityRole="button"
-          accessibilityLabel="Fechar player"
-          hitSlop={10}
-        >
-          <Ionicons name="chevron-down" size={20} color={scheme.textSecondary} />
-        </Pressable>
-      </View>
-
-      {audio.erro ? (
-        <View style={estilos.erro}>
-          <Text variant="micro" color={scheme.accent} style={{ flex: 1 }}>
-            {audio.erro}
-          </Text>
-          <Pressable onPress={audio.tentarDeNovo} accessibilityRole="button" hitSlop={8}>
-            <Text variant="micro" font="bodySemi" color={scheme.accent}>
-              TENTAR DE NOVO
-            </Text>
+          <Pressable
+            onPress={() => setAberto(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar player"
+            hitSlop={10}
+          >
+            <Ionicons name="chevron-down" size={20} color={scheme.textSecondary} />
           </Pressable>
         </View>
-      ) : (
-        <>
-          {/* Barra de progresso sem arrastar: o gesto horizontal aqui competiria
-              com o swipe de voltar. Os saltos de 15s dao o controle fino. */}
-          <View style={estilos.trilho}>
-            <View style={[estilos.preenchimento, { width: `${Math.min(100, progresso * 100)}%` }]} />
-          </View>
 
-          <View style={estilos.tempos}>
-            <Text variant="micro" color={scheme.textGhost}>
-              {formatarTempo(audio.posicao)}
+        {audio.erro ? (
+          <View style={estilos.erro}>
+            <Text variant="micro" color={scheme.accent} style={{ flex: 1 }}>
+              {audio.erro}
             </Text>
-            <Text variant="micro" color={scheme.textGhost}>
-              {formatarTempo(audio.duracao)}
-            </Text>
-          </View>
-
-          <View style={estilos.transporte}>
-            <Pressable
-              onPress={audio.ciclarVelocidade}
-              accessibilityRole="button"
-              accessibilityLabel={`Velocidade ${audio.velocidade}x`}
-              hitSlop={8}
-              style={estilos.velocidade}
-            >
-              <Text variant="micro" font="bodySemi" color={scheme.textSecondary}>
-                {audio.velocidade}x
+            <Pressable onPress={audio.tentarDeNovo} accessibilityRole="button" hitSlop={8}>
+              <Text variant="micro" font="bodySemi" color={scheme.accent}>
+                TENTAR DE NOVO
               </Text>
             </Pressable>
+          </View>
+        ) : (
+          <>
+            {/* Barra de progresso sem arrastar: o gesto horizontal aqui competiria
+                com o swipe de voltar. Os saltos de 15s dao o controle fino. */}
+            <View style={estilos.trilho}>
+              <View style={[estilos.preenchimento, { width: `${Math.min(100, progresso * 100)}%` }]} />
+            </View>
 
-            <View style={estilos.centro}>
+            <View style={estilos.tempos}>
+              <Text variant="micro" color={scheme.textGhost}>
+                {formatarTempo(audio.posicao)}
+              </Text>
+              <Text variant="micro" color={scheme.textGhost}>
+                {formatarTempo(audio.duracao)}
+              </Text>
+            </View>
+
+            <View style={estilos.transporte}>
+              {/* Botao de velocidade: toca ciclando pelas opcoes comuns. */}
               <Pressable
-                onPress={() => tocar(() => audio.saltar(-SALTO_SEGUNDOS))}
+                onPress={() => tocar(audio.ciclarVelocidade)}
                 accessibilityRole="button"
-                accessibilityLabel={`Voltar ${SALTO_SEGUNDOS} segundos`}
+                accessibilityLabel={`Velocidade ${audio.velocidade} vezes. Toque para alterar.`}
                 hitSlop={8}
+                style={estilos.velocidade}
               >
-                <Ionicons name="play-back" size={20} color={scheme.textSecondary} />
+                <Text variant="micro" font="bodySemi" color={scheme.textSecondary}>
+                  {`${audio.velocidade}×`}
+                </Text>
               </Pressable>
 
-              <Pressable
-                onPress={() => tocar(audio.alternar)}
-                accessibilityRole="button"
-                accessibilityLabel={audio.tocando ? 'Pausar' : 'Tocar'}
-                hitSlop={8}
-                style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
-              >
-                <View style={estilos.botaoPrincipal}>
-                  {audio.bufferizando ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
+              <View style={estilos.centro}>
+                <Pressable
+                  onPress={() => tocar(() => audio.saltar(-SALTO_SEGUNDOS))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Voltar ${SALTO_SEGUNDOS} segundos`}
+                  hitSlop={8}
+                >
+                  <Ionicons name="play-back" size={20} color={scheme.textSecondary} />
+                </Pressable>
+
+                <Pressable
+                  onPress={() => tocar(audio.alternar)}
+                  accessibilityRole="button"
+                  accessibilityLabel={audio.tocando ? 'Pausar' : 'Tocar'}
+                  style={({ pressed }) => [
+                    estilos.botaoPrincipal,
+                    pressed && estilos.botaoPrincipalPressed,
+                  ]}
+                >
+                  {audio.carregando ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <Ionicons
                       name={audio.tocando ? 'pause' : 'play'}
-                      size={20}
+                      size={22}
                       color="#FFFFFF"
-                      // O triangulo do play tem peso visual a esquerda; sem este
-                      // empurrao ele parece descentralizado no circulo.
-                      style={audio.tocando ? undefined : { marginLeft: 2 }}
+                      style={!audio.tocando ? { marginLeft: 2 } : undefined}
                     />
                   )}
-                </View>
-              </Pressable>
+                </Pressable>
 
-              <Pressable
-                onPress={() => tocar(() => audio.saltar(SALTO_SEGUNDOS))}
-                accessibilityRole="button"
-                accessibilityLabel={`Avançar ${SALTO_SEGUNDOS} segundos`}
-                hitSlop={8}
-              >
-                <Ionicons name="play-forward" size={20} color={scheme.textSecondary} />
-              </Pressable>
+                <Pressable
+                  onPress={() => tocar(() => audio.saltar(SALTO_SEGUNDOS))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Avançar ${SALTO_SEGUNDOS} segundos`}
+                  hitSlop={8}
+                >
+                  <Ionicons name="play-forward" size={20} color={scheme.textSecondary} />
+                </Pressable>
+              </View>
+
+              {/* Espelha a largura do botao de velocidade para o transporte ficar
+                  centrado de verdade. */}
+              <View style={estilos.velocidade} />
             </View>
+          </>
+        )}
+      </View>
 
-            {/* Espelha a largura do botao de velocidade para o transporte ficar
-                centrado de verdade. */}
-            <View style={estilos.velocidade} />
+      {onAnotar ? (
+        <Pressable
+          onPress={() => tocar(onAnotar)}
+          accessibilityRole="button"
+          accessibilityLabel="Escrever anotação"
+          hitSlop={4}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+        >
+          <View style={estilos.pilula}>
+            <Ionicons name="create-outline" size={17} color={scheme.goldSoft} />
+            <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
+              ANOTAR
+            </Text>
           </View>
-        </>
-      )}
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
+  capsula: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: radius.sharp,
+    backgroundColor: scheme.accent,
+    ...shadow.raised,
+  },
+  secaoCapsula: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 46,
+    paddingHorizontal: 16,
+  },
+  secaoCapsulaPressed: {
+    backgroundColor: scheme.accentPressed,
+    opacity: 0.9,
+  },
+  divisorCapsula: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
   pilula: {
     flexDirection: 'row',
     alignItems: 'center',
