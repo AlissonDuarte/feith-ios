@@ -81,8 +81,8 @@ export async function buscarProdutoAssinatura(): Promise<ProdutoAssinatura> {
           description:
             item.description ||
             'Acesso ao áudio diário, acervo completo e reflexões ilimitadas.',
-          displayPrice: item.displayPrice || 'R$ 9,90',
-          price: item.price ?? 9.9,
+          displayPrice: 'R$ 9,90',
+          price: 9.9,
           currency: item.currency || 'BRL',
         };
       }
