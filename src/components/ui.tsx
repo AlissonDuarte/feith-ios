@@ -567,33 +567,43 @@ export function ListRow({
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        style={({ pressed }) => [styles.row, pressed && { backgroundColor: scheme.canvasWarm }]}
+        style={({ pressed }) => [
+          styles.rowPressable,
+          pressed && { backgroundColor: scheme.canvasWarm },
+        ]}
       >
-        {icon ? (
-          <View
-            style={[
-              styles.iconBadge,
-              {
-                backgroundColor: iconBg ?? (destrutivo ? '#FBF0EF' : scheme.canvasWarm),
-              },
-            ]}
+        <View style={styles.row}>
+          {icon ? (
+            <View
+              style={[
+                styles.iconBadge,
+                {
+                  backgroundColor: iconBg ?? (destrutivo ? '#FBF0EF' : scheme.canvasWarm),
+                },
+              ]}
+            >
+              <Ionicons
+                name={icon}
+                size={17}
+                color={iconColor ?? (destrutivo ? scheme.accent : scheme.textSecondary)}
+              />
+            </View>
+          ) : null}
+          <Text
+            variant="body"
+            font="bodyMedium"
+            color={cor}
+            style={[styles.rowLabel, !icon && { marginLeft: 0 }]}
           >
-            <Ionicons
-              name={icon}
-              size={17}
-              color={iconColor ?? (destrutivo ? scheme.accent : scheme.textSecondary)}
-            />
-          </View>
-        ) : null}
-        <Text variant="body" font="bodyMedium" color={cor} style={{ flex: 1 }}>
-          {label}
-        </Text>
-        {value ? (
-          <Text variant="bodySm" color={scheme.textMuted}>
-            {value}
+            {label}
           </Text>
-        ) : null}
-        <Ionicons name="chevron-forward" size={16} color={scheme.textGhost} />
+          {value ? (
+            <Text variant="bodySm" color={scheme.textMuted} style={styles.rowValue}>
+              {value}
+            </Text>
+          ) : null}
+          <Ionicons name="chevron-forward" size={16} color={scheme.textGhost} />
+        </View>
       </Pressable>
       {ultimo ? null : <Hairline inset={icon ? 62 : space.lg} />}
     </>
@@ -768,12 +778,22 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: scheme.textPrimary,
   },
+  rowPressable: {
+    width: '100%',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    width: '100%',
     minHeight: 56,
     paddingHorizontal: space.lg,
+  },
+  rowLabel: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  rowValue: {
+    marginRight: 8,
   },
   iconBadge: {
     width: 32,

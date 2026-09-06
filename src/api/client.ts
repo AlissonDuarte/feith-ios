@@ -99,16 +99,23 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
   let response: Response;
   try {
     response = await fetch(buildUrl(path, query), {
       ...rest,
       headers,
+      signal: controller.signal,
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
+    clearTimeout(timer);
     // Falha de rede nao tem status. Status 0 e a convencao interna para isso.
     throw new ApiError(0, null, path, mensagemDeErro(0, null, path));
+  } finally {
+    clearTimeout(timer);
   }
 
   const data = (await response.json().catch(() => null)) as ErrorPayload;

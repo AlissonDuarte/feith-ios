@@ -16,6 +16,7 @@ import React, {
 import { Alert, Platform } from 'react-native';
 import {
   ErrorCode,
+  getAvailablePurchases,
   purchaseErrorListener,
   purchaseUpdatedListener,
   type Purchase,
@@ -33,7 +34,7 @@ import {
   solicitarAssinatura,
   validarEFinalizarTransacao,
 } from './iapService';
-import type { ProdutoAssinatura } from './tipos';
+import { IAP_SKU, type ProdutoAssinatura } from './tipos';
 
 interface IapContextValue {
   produto: ProdutoAssinatura | null;
@@ -111,15 +112,23 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
     [refreshSummary],
   );
 
-  // Registra listeners globais do StoreKit
+  const processarTransacaoRef = useRef(processarTransacao);
+  useEffect(() => {
+    processarTransacaoRef.current = processarTransacao;
+  }, [processarTransacao]);
+
+  // Registra listeners globais do StoreKit apenas uma vez no ciclo de vida
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
 
     void conectarStoreKit();
 
-    const subAtualizacao = purchaseUpdatedListener((purchase: Purchase) => {
-      void processarTransacao(purchase);
-    });
+    const subAtualizacao = purchaseUpdatedListener(
+      (purchase: Purchase) => {
+        void processarTransacaoRef.current(purchase);
+      },
+      { dedupeTransactionIOS: false },
+    );
 
     const subErro = purchaseErrorListener((error: PurchaseError) => {
       setComprando(false);
@@ -137,7 +146,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       subErro.remove();
       void desconectarStoreKit();
     };
-  }, [processarTransacao]);
+  }, []);
 
   const assinar = useCallback(async (): Promise<boolean> => {
     if (isSupporter) {
@@ -148,7 +157,30 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
     try {
       setComprando(true);
       setErro(null);
+
+      // Trava de seguranca para liberar o botao caso o iOS nao dispare callbacks
+      const timerSeguranca = setTimeout(() => {
+        setComprando(false);
+      }, 20000);
+
       await solicitarAssinatura();
+
+      // Contingencia proativa: assim que o modal da Apple fecha com sucesso,
+      // busca transacoes ativas caso o listener nativo demore
+      setTimeout(async () => {
+        try {
+          const compras = await getAvailablePurchases({ onlyIncludeActiveItemsIOS: true });
+          const compraFeith = compras?.find((c) => c.productId === IAP_SKU);
+          if (compraFeith) {
+            await processarTransacao(compraFeith);
+          }
+        } catch (e) {
+          console.warn('[IAP] Checagem ativa pos-compra:', e);
+        } finally {
+          clearTimeout(timerSeguranca);
+        }
+      }, 1500);
+
       return true;
     } catch (e: unknown) {
       setComprando(false);
@@ -164,7 +196,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       setErro(msg);
       return false;
     }
-  }, [isSupporter]);
+  }, [isSupporter, processarTransacao]);
 
   const restaurar = useCallback(async (): Promise<boolean> => {
     try {
@@ -178,15 +210,14 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         return true;
       } else {
         Alert.alert(
-          'Nenhuma assinatura encontrada',
-          'Não encontramos uma assinatura ativa para esta conta da App Store.',
+          'Nenhuma assinatura ativa',
+          'Não encontramos uma assinatura de Apoiador ativa vinculada a este ID Apple.',
         );
         return false;
       }
     } catch (e) {
-      const msg = mensagemDe(e) || 'Não foi possível restaurar suas compras.';
+      const msg = mensagemDe(e) || 'Não foi possível restaurar suas compras no momento.';
       setErro(msg);
-      Alert.alert('Erro ao restaurar', msg);
       return false;
     } finally {
       setRestaurando(false);
@@ -194,26 +225,34 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSummary]);
 
   const gerenciar = useCallback(async (): Promise<void> => {
-    await abrirGerenciadorAssinaturas();
+    try {
+      await abrirGerenciadorAssinaturas();
+    } catch (e) {
+      console.warn('[IAP] Falha ao abrir gerenciador de assinaturas:', e);
+    }
   }, []);
 
   const limparErro = useCallback(() => {
     setErro(null);
   }, []);
 
-  const value = {
-    produto,
-    carregandoProduto,
-    comprando,
-    restaurando,
-    erro,
-    assinar,
-    restaurar,
-    gerenciar,
-    limparErro,
-  };
-
-  return <IapContext.Provider value={value}>{children}</IapContext.Provider>;
+  return (
+    <IapContext.Provider
+      value={{
+        produto,
+        carregandoProduto,
+        comprando,
+        restaurando,
+        erro,
+        assinar,
+        restaurar,
+        gerenciar,
+        limparErro,
+      }}
+    >
+      {children}
+    </IapContext.Provider>
+  );
 }
 
 export function useIap(): IapContextValue {
