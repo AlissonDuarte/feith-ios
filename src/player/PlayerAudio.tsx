@@ -18,10 +18,12 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
-import { Text, scheme } from '../components/ui';
-import { radius, shadow, space } from '../theme/tokens';
+import { Text } from '../components/ui';
+import { radius, schemes, shadow, space } from '../theme/tokens';
 import { formatarTempo } from './tempo';
 import { SALTO_SEGUNDOS, useAudioReflexao } from './useAudioReflexao';
+
+const scheme = schemes.light;
 
 interface Props {
   reflectionUuid: string;
@@ -217,20 +219,27 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar }: Props) {
                   onPress={() => tocar(audio.alternar)}
                   accessibilityRole="button"
                   accessibilityLabel={audio.tocando ? 'Pausar' : 'Tocar'}
-                  style={({ pressed }) => [
-                    estilos.botaoPrincipal,
-                    pressed && estilos.botaoPrincipalPressed,
-                  ]}
+                  hitSlop={8}
+                  style={({ pressed }) => [pressed && { transform: [{ scale: 0.96 }] }]}
                 >
-                  {audio.carregando ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <Ionicons
-                      name={audio.tocando ? 'pause' : 'play'}
-                      size={22}
-                      color="#FFFFFF"
-                      style={!audio.tocando ? { marginLeft: 2 } : undefined}
-                    />
+                  {({ pressed }) => (
+                    <View
+                      style={[
+                        estilos.botaoPrincipal,
+                        pressed && estilos.botaoPrincipalPressed,
+                      ]}
+                    >
+                      {audio.carregando ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                      ) : (
+                        <Ionicons
+                          name={audio.tocando ? 'pause' : 'play'}
+                          size={22}
+                          color="#FFFFFF"
+                          style={!audio.tocando ? { marginLeft: 2 } : undefined}
+                        />
+                      )}
+                    </View>
                   )}
                 </Pressable>
 
@@ -351,16 +360,16 @@ const estilos = StyleSheet.create({
   velocidade: { width: 40 },
   centro: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
   botaoPrincipal: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.pill,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: scheme.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadow.card,
+    ...shadow.raised,
   },
   botaoPrincipalPressed: {
     backgroundColor: scheme.accentPressed,
-    opacity: 0.9,
+    opacity: 0.92,
   },
 });
