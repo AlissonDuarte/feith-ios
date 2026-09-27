@@ -318,41 +318,87 @@ export function Button({
             ? scheme.textSecondary
             : scheme.accent;
 
+  const getContainerStyle = (pressed: boolean): ViewStyle => {
+    const s: ViewStyle = {
+      ...styles.button,
+    };
+
+    if (size === 'sm') {
+      s.minHeight = 44;
+    }
+
+    if (comoLink) {
+      return {
+        ...s,
+        ...styles.buttonLink,
+        opacity: pressed ? 0.55 : inativo ? 0.4 : 1,
+      };
+    }
+
+    if (solido) {
+      if (solidoInerte) {
+        return {
+          ...s,
+          ...styles.buttonInerte,
+        };
+      }
+      return {
+        ...s,
+        backgroundColor: pressed ? scheme.accentPressed : scheme.accent,
+        ...(inativo ? {} : shadow.card),
+      };
+    }
+
+    if (variant === 'secondary') {
+      return {
+        ...s,
+        ...(pressed ? styles.buttonSecondaryPressed : styles.buttonSecondary),
+        ...(inativo ? { opacity: 0.4 } : {}),
+      };
+    }
+
+    if (variant === 'quiet') {
+      return {
+        ...s,
+        ...(pressed ? styles.buttonQuietPressed : styles.buttonQuiet),
+        ...(inativo ? { opacity: 0.4 } : {}),
+      };
+    }
+
+    return s;
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!inativo, busy: loading }}
       disabled={inativo}
       style={({ pressed }) => [
-        styles.button,
-        size === 'sm' && { minHeight: 44 },
-        comoLink && styles.buttonLink,
-        solido && !solidoInerte && (pressed ? styles.buttonPrimaryPressed : styles.buttonPrimary),
-        solido && !inativo && shadow.card,
-        solidoInerte && styles.buttonInerte,
-        variant === 'secondary' &&
-          (pressed ? styles.buttonSecondaryPressed : styles.buttonSecondary),
-        variant === 'quiet' && (pressed ? styles.buttonQuietPressed : styles.buttonQuiet),
+        { width: comoLink ? undefined : '100%' },
         comoLink && pressed && { opacity: 0.55 },
         !solido && inativo && { opacity: 0.4 },
         style,
       ]}
       {...rest}
     >
-      {loading ? (
-        <ActivityIndicator color={solido && !solidoInerte ? scheme.onAccent : scheme.accent} />
-      ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
-          <Text
-            variant={comoLink ? 'bodySm' : 'micro'}
-            font={comoLink ? 'bodyMedium' : 'bodySemi'}
-            color={corDoRotulo}
-            style={comoLink ? undefined : styles.buttonLabel}
-          >
-            {comoLink ? label : label.toUpperCase()}
-          </Text>
-          {icon ? <Ionicons name={icon} size={comoLink ? 14 : 13} color={corDoRotulo} /> : null}
+      {({ pressed }) => (
+        <View style={getContainerStyle(pressed)}>
+          {loading ? (
+            <ActivityIndicator color={solido && !solidoInerte ? scheme.onAccent : scheme.accent} />
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              {iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
+              <Text
+                variant={comoLink ? 'bodySm' : 'micro'}
+                font={comoLink ? 'bodyMedium' : 'bodySemi'}
+                color={corDoRotulo}
+                style={comoLink ? undefined : styles.buttonLabel}
+              >
+                {comoLink ? label : label.toUpperCase()}
+              </Text>
+              {icon ? <Ionicons name={icon} size={comoLink ? 14 : 13} color={corDoRotulo} /> : null}
+            </View>
+          )}
         </View>
       )}
     </Pressable>

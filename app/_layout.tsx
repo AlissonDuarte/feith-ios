@@ -22,6 +22,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { startMetaSdk } from '../src/ads/metaSdk';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { IapProvider } from '../src/iap/IapContext';
 import { fonts, schemes } from '../src/theme/tokens';
@@ -172,7 +173,11 @@ export default function RootLayout() {
     // Some com a splash mesmo se uma fonte falhar — melhor um fallback de
     // sistema do que um app travado na splash.
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => undefined);
+      SplashScreen.hideAsync()
+        .catch(() => undefined)
+        // Depois da splash e nao antes: a pergunta do ATT por cima da splash
+        // parece o app travado pedindo algo antes de mostrar o que e.
+        .then(() => startMetaSdk());
     }
   }, [fontsLoaded, fontError]);
 

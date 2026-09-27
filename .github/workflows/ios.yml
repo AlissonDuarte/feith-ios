@@ -42,6 +42,10 @@ jobs:
       # scheme do callback) e no bundle JS. Vazios = botao escondido.
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}
+      # SDK da Meta (medicao dos anuncios). Precisam existir no `expo prebuild`
+      # (vao para o Info.plist) e o app ID tambem no bundle JS.
+      EXPO_PUBLIC_META_APP_ID: ${{ secrets.EXPO_PUBLIC_META_APP_ID }}
+      META_CLIENT_TOKEN: ${{ secrets.META_CLIENT_TOKEN }}
       # Product ID da assinatura no App Store Connect.
       EXPO_PUBLIC_IAP_SKU: ${{ secrets.EXPO_PUBLIC_IAP_SKU }}
       # Vira o entitlement aps-environment no prebuild. Sem isto o default do
@@ -103,7 +107,10 @@ jobs:
       - name: Conferir configuracao do login social
         run: |
           fail=0
-          for var in EXPO_PUBLIC_API_URL EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID; do
+          # Os da Meta entram pelo mesmo motivo: sem eles o build sai verde e as
+          # instalacoes dos anuncios param de ser contadas sem aviso nenhum.
+          for var in EXPO_PUBLIC_API_URL EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID \
+                     EXPO_PUBLIC_META_APP_ID META_CLIENT_TOKEN; do
             if [ -z "${!var}" ]; then
               echo "::error::Secret $var vazio ou ausente nas configuracoes do repositorio."
               fail=1
@@ -161,6 +168,13 @@ jobs:
 
           grep -q "com.googleusercontent.apps" "$PLIST" \
             || { echo "::error::URL scheme do Google ausente do Info.plist."; exit 1; }
+
+          grep -q "<key>FacebookAppID</key>" "$PLIST" \
+            || { echo "::error::FacebookAppID ausente do Info.plist — anuncios sem medicao."; exit 1; }
+
+          # Sem o texto do ATT o iOS mata o app no primeiro pedido de permissao.
+          grep -q "NSUserTrackingUsageDescription" "$PLIST" \
+            || { echo "::error::NSUserTrackingUsageDescription ausente do Info.plist."; exit 1; }
 
           grep -q "com.apple.developer.applesignin" "$ENT" \
             || { echo "::error::Entitlement do Sign in with Apple ausente."; exit 1; }

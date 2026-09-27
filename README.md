@@ -246,6 +246,8 @@ a única janela em que existem, e quem persiste é o backend.
 | `EXPO_PUBLIC_WEB_URL` | `https://feith.space` |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | client OAuth **web** (o mesmo do site) |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | client OAuth **iOS** do bundle `com.feith.app` |
+| `EXPO_PUBLIC_META_APP_ID` | App ID do app na Meta (developers.facebook.com > Configurações > Básico) |
+| `META_CLIENT_TOKEN` | Client Token do mesmo app (Configurações > Avançado) |
 | `EXPO_PUBLIC_IAP_SKU` | `com.feith.app.supporter.monthly` |
 | `APPLE_TEAM_ID` | Team ID da conta Apple Developer |
 | `ASC_KEY_ID` / `ASC_ISSUER_ID` | App Store Connect API Key |

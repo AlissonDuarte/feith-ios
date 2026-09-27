@@ -171,6 +171,7 @@ export default function Onboarding() {
           onPress={avancar}
           loading={concluindo}
           disabled={concluindo}
+          style={{ backgroundColor: scheme.accent }}
         />
         {!ultimo ? (
           <Button

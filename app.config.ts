@@ -49,6 +49,17 @@ const googleIosUrlScheme = googleIosClientId.endsWith('.apps.googleusercontent.c
  * so funciona com o apple-app-site-association servido em
  * https://feith.space/.well-known/ (ver front_fide/static/).
  */
+/**
+ * SDK da Meta, para medir instalacoes vindas dos anuncios (ver
+ * src/ads/metaSdk.ts). Mesmo esquema do Google: sem app ID e client token o
+ * plugin nao entra e o build segue sem medicao. O app ID e EXPO_PUBLIC porque
+ * o JS tambem precisa saber se o SDK existe; o client token so vai para o
+ * Info.plist.
+ */
+const metaAppId = process.env.EXPO_PUBLIC_META_APP_ID ?? '';
+const metaClientToken = process.env.META_CLIENT_TOKEN ?? '';
+const metaEnabled = Boolean(metaAppId && metaClientToken);
+
 const webUrl = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://feith.space';
 const webHost = webUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
@@ -169,6 +180,40 @@ const config: ExpoConfig = {
       ? ([
           ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }],
         ] as [string, Record<string, string>][])
+      : []),
+    ...(metaEnabled
+      ? ([
+          [
+            'react-native-fbsdk-next',
+            {
+              appID: metaAppId,
+              clientToken: metaClientToken,
+              displayName: 'feith',
+              scheme: `fb${metaAppId}`,
+              // O SDK so inicia depois da pergunta do ATT, pelo JS. Iniciar
+              // sozinho na abertura leria o ATT antes de a pessoa responder.
+              isAutoInitEnabled: false,
+              // E isto que registra a instalacao/abertura sem codigo nenhum.
+              autoLogAppEventsEnabled: true,
+              // O IDFA so sai do aparelho se a pessoa tocar em Permitir; negar
+              // zera o identificador no proprio iOS.
+              advertiserIDCollectionEnabled: true,
+              // O texto do ATT fica com o plugin do expo-tracking-transparency,
+              // abaixo. Dois plugins escrevendo a mesma chave e o ultimo ganha.
+              iosUserTrackingPermission: false,
+            },
+          ],
+          [
+            'expo-tracking-transparency',
+            {
+              // Aparece no alerta do iOS logo abaixo de "Permitir que o feith
+              // rastreie...". A App Review reprova texto vago ou que prometa
+              // beneficio em troca do sim.
+              userTrackingPermission:
+                'Usamos isso para saber quais anúncios do feith trazem novas pessoas ao app. Seus estudos e anotações nunca são compartilhados.',
+            },
+          ],
+        ] as [string, Record<string, unknown>][])
       : []),
   ],
   experiments: { typedRoutes: true },

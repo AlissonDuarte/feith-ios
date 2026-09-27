@@ -66,6 +66,11 @@ const SECOES: Secao[] = [
         termo: 'Melhorar o aplicativo',
         texto: 'Para analisar o uso e desenvolver novos recursos e melhorias.',
       },
+      {
+        termo: 'Medir nossos anúncios',
+        texto:
+          'Para saber quais anúncios do feith no Facebook e no Instagram levaram pessoas a instalar e abrir o aplicativo.',
+      },
     ],
   },
   {
@@ -78,6 +83,7 @@ const SECOES: Secao[] = [
     titulo: 'Não compartilhamento de dados com terceiros',
     paragrafos: [
       'A sua confiança é fundamental para nós. O feith não vende, aluga ou compartilha suas informações pessoais com terceiros para fins comerciais. Seus dados são usados exclusivamente para os propósitos descritos nesta política, como aprimorar sua experiência de estudo dentro do aplicativo.',
+      'A única exceção é a medição de anúncios: o aplicativo usa o SDK da Meta (Facebook e Instagram), que recebe eventos de instalação e abertura do app e informações do dispositivo. O identificador de publicidade do iPhone só é enviado se você autorizar no aviso de rastreamento do iOS, e você pode mudar essa escolha a qualquer momento em Ajustes > Privacidade e Segurança > Rastreamento. Seus estudos, anotações e dados de conta nunca são enviados à Meta.',
     ],
   },
   {
