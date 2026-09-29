@@ -51,3 +51,5 @@ yarn-error.*
 
 # ferramentas locais
 .claude
+
+google-services.json

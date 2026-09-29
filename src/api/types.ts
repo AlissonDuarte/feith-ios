@@ -289,7 +289,7 @@ export interface SharedLink {
  * evita oferecer um caminho que levaria para fora do app.
  */
 // stripe-ok: valor que o backend devolve, nao um caminho de pagamento no app.
-export type SubscriptionProvider = 'stripe' | 'apple' | 'none'; // stripe-ok: idem
+export type SubscriptionProvider = 'stripe' | 'apple' | 'google' | 'none'; // stripe-ok: idem
 
 export interface SubscriptionStatus {
   has_active_subscription: boolean;

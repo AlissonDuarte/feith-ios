@@ -21,6 +21,7 @@ import {
   useEspacoTabBar,
 } from '../../src/components/ui';
 import { useIap } from '../../src/iap/IapContext';
+import { NOME_LOJA } from '../../src/iap/tipos';
 import { fonts, radius, space } from '../../src/theme/tokens';
 
 function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; limite: number }) {
@@ -204,7 +205,7 @@ export default function Perfil() {
               icon="ribbon-outline"
               iconBg="rgba(139,105,20,0.10)"
               iconColor={scheme.gold}
-              label="Gerenciar na App Store"
+              label={`Gerenciar na ${NOME_LOJA}`}
               onPress={() => void gerenciar()}
               ultimo
             />

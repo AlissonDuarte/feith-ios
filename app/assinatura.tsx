@@ -16,6 +16,7 @@ import { useEffect } from 'react';
 import {
   ActivityIndicator,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -34,6 +35,7 @@ import {
   scheme,
 } from '../src/components/ui';
 import { useIap } from '../src/iap/IapContext';
+import { NOME_LOJA } from '../src/iap/tipos';
 import { radius, space } from '../src/theme/tokens';
 
 const APPLE_STANDARD_EULA =
@@ -97,6 +99,11 @@ export default function AssinaturaModal() {
   }
 
   function abrirTermos() {
+    // A EULA padrao da Apple so vale para compras na App Store.
+    if (Platform.OS === 'android') {
+      router.push('/politicas');
+      return;
+    }
     void Linking.openURL(APPLE_STANDARD_EULA);
   }
 
@@ -210,7 +217,7 @@ export default function AssinaturaModal() {
         {/* Botoes de Acao */}
         <View style={{ gap: space.md, marginTop: space.lg }}>
           <Button
-            label={comprando ? 'Processando na App Store...' : `Assinar por ${precoFormatado}/mês`}
+            label={comprando ? `Processando na ${NOME_LOJA}...` : `Assinar por ${precoFormatado}/mês`}
             variant="quiet"
             loading={comprando}
             disabled={comprando || restaurando}
@@ -229,10 +236,9 @@ export default function AssinaturaModal() {
         {/* Termos Legais Obrigatorios pela Diretriz 3.1.2 da Apple */}
         <View style={estilos.containerLegal}>
           <Text variant="micro" color={scheme.textGhost} style={estilos.textoLegal}>
-            O pagamento de {precoFormatado} será cobrado na sua conta do ID Apple após a confirmação.
-            A assinatura é renovada automaticamente a cada mês, exceto se cancelada pelo menos 24
-            horas antes do encerramento do ciclo vigente. Você pode gerenciar ou cancelar sua
-            assinatura a qualquer momento nos Ajustes do seu iPhone.
+            {Platform.OS === 'android'
+              ? `O pagamento de ${precoFormatado} será cobrado na sua conta Google Play após a confirmação. A assinatura é renovada automaticamente a cada mês até ser cancelada. Você pode gerenciar ou cancelar sua assinatura a qualquer momento em Pagamentos e assinaturas, na Play Store.`
+              : `O pagamento de ${precoFormatado} será cobrado na sua conta do ID Apple após a confirmação. A assinatura é renovada automaticamente a cada mês, exceto se cancelada pelo menos 24 horas antes do encerramento do ciclo vigente. Você pode gerenciar ou cancelar sua assinatura a qualquer momento nos Ajustes do seu iPhone.`}
           </Text>
 
           <View style={estilos.linksLegais}>

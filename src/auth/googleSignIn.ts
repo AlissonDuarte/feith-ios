@@ -14,6 +14,7 @@
  *
  * O modulo e NATIVO: nao funciona no Expo Go. Use o development build.
  */
+import { Platform } from 'react-native';
 import {
   GoogleSignin,
   isErrorWithCode,
@@ -24,7 +25,7 @@ const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
 const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
 
 /** Lido pela tela de login para decidir se mostra o botao. */
-export const googleSignInAvailable = Boolean(webClientId && iosClientId);
+export const googleSignInAvailable = Boolean(webClientId && (Platform.OS !== 'ios' || iosClientId));
 
 export class GoogleSignInError extends Error {}
 
@@ -37,7 +38,7 @@ function ensureConfigured(): void {
     // manda o client web e o app manda o client iOS, e por isso o backend
     // precisa aceitar OS DOIS como audiencia (item B4 do plano).
     webClientId,
-    iosClientId,
+    ...(Platform.OS === 'ios' ? { iosClientId } : {}),
   });
   configured = true;
 }

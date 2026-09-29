@@ -1,0 +1,144 @@
+name: Android — build e Play Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Destino do .aab'
+        required: true
+        default: artefato
+        type: choice
+        options:
+          - artefato
+          - internal
+
+concurrency:
+  group: android-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+      EXPO_PUBLIC_WEB_URL: ${{ secrets.EXPO_PUBLIC_WEB_URL }}
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      EXPO_PUBLIC_META_APP_ID: ${{ secrets.EXPO_PUBLIC_META_APP_ID }}
+      META_CLIENT_TOKEN: ${{ secrets.META_CLIENT_TOKEN }}
+      EXPO_PUBLIC_IAP_SKU: ${{ secrets.EXPO_PUBLIC_IAP_SKU }}
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guarda anti-Stripe
+        run: |
+          if grep -rniE 'stripe\.com|checkout\.stripe|checkout_url|subscriptions/(checkout|change-plan|cancel|reactivate|pause)' app/ src/; then
+            echo "::error::Caminho de pagamento externo encontrado. No Android a cobranca e so Play Billing."
+            exit 1
+          fi
+          if grep -rni 'stripe' app/ src/ | grep -v 'stripe-ok:'; then
+            echo "::error::Mencao a Stripe sem justificativa. Se for legitima, marque a MESMA linha com 'stripe-ok: <motivo>'."
+            exit 1
+          fi
+
+      - name: Conferir secrets
+        run: |
+          fail=0
+          for var in EXPO_PUBLIC_API_URL EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID EXPO_PUBLIC_META_APP_ID META_CLIENT_TOKEN \
+                     ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Secret $var vazio ou ausente nas configuracoes do repositorio."
+              fail=1
+            fi
+          done
+          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "::warning::GOOGLE_SERVICES_JSON_BASE64 ausente: o build sai sem push (FCM)."
+          fi
+          [ "$fail" = 0 ]
+
+      - name: Gravar keystore e google-services.json
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
+            echo "GOOGLE_SERVICES_JSON=./google-services.json" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Instalar dependencias JS
+        run: npm ci
+
+      - name: Checar tipos
+        run: npx tsc --noEmit
+
+      - name: Gerar projeto Android (expo prebuild)
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Conferir configuracao nativa
+        run: |
+          grep -q "versionCode $ANDROID_VERSION_CODE" android/app/build.gradle \
+            || { echo "::error::versionCode nao e $ANDROID_VERSION_CODE."; exit 1; }
+          grep -q "com.facebook.sdk.ApplicationId" android/app/src/main/AndroidManifest.xml \
+            || { echo "::error::SDK da Meta ausente do AndroidManifest."; exit 1; }
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            test -f android/app/google-services.json \
+              || { echo "::error::google-services.json nao foi copiado para android/app."; exit 1; }
+          fi
+
+      - name: Build do .aab assinado
+        working-directory: android
+        run: |
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$ANDROID_KEYSTORE_FILE" \
+            -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
+
+      - name: Conferir assinatura
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          keytool -printcert -jarfile "$AAB" | tee cert.txt
+          if grep -q "CN=Android Debug" cert.txt; then
+            echo "::error::O .aab saiu assinado com a chave de debug."
+            exit 1
+          fi
+          unzip -p "$AAB" base/manifest/AndroidManifest.xml | grep -aq "com.android.vending.BILLING" \
+            || { echo "::error::Permissao BILLING ausente do .aab."; exit 1; }
+
+      - name: Guardar o .aab
+        uses: actions/upload-artifact@v4
+        with:
+          name: feith-android-${{ github.run_number }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 7
+
+      - name: Enviar para o teste interno
+        if: inputs.track == 'internal'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.feith.app
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft

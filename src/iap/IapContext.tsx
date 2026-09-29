@@ -34,7 +34,7 @@ import {
   solicitarAssinatura,
   validarEFinalizarTransacao,
 } from './iapService';
-import { IAP_SKU, type ProdutoAssinatura } from './tipos';
+import { IAP_SKU, NOME_LOJA, type ProdutoAssinatura } from './tipos';
 
 interface IapContextValue {
   produto: ProdutoAssinatura | null;
@@ -117,11 +117,31 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
     processarTransacaoRef.current = processarTransacao;
   }, [processarTransacao]);
 
-  // Registra listeners globais do StoreKit apenas uma vez no ciclo de vida
+  // Registra listeners globais da loja apenas uma vez no ciclo de vida
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') return;
 
-    void conectarStoreKit();
+    void conectarStoreKit().then(async (conectado) => {
+      // O StoreKit reentrega pelo listener as transacoes nao finalizadas; o Play
+      // Billing nao. Uma compra paga cujo verify falhou (rede caiu) ficaria sem
+      // acknowledge e o Google estornaria em 3 dias — entao reprocessa aqui.
+      if (!conectado || Platform.OS !== 'android') return;
+      try {
+        const compras = await getAvailablePurchases();
+        const pendentes = compras?.filter(
+          (c) =>
+            c.productId === IAP_SKU &&
+            c.purchaseState === 'purchased' &&
+            'isAcknowledgedAndroid' in c &&
+            c.isAcknowledgedAndroid === false,
+        );
+        for (const compra of pendentes ?? []) {
+          await processarTransacaoRef.current(compra);
+        }
+      } catch (e) {
+        console.warn('[IAP] Falha ao recuperar compras sem acknowledge:', e);
+      }
+    });
 
     const subAtualizacao = purchaseUpdatedListener(
       (purchase: Purchase) => {
@@ -192,7 +212,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       ) {
         return false;
       }
-      const msg = mensagemDe(e) || 'Não foi possível iniciar a assinatura na App Store.';
+      const msg = mensagemDe(e) || `Não foi possível iniciar a assinatura na ${NOME_LOJA}.`;
       setErro(msg);
       return false;
     }
@@ -211,7 +231,9 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       } else {
         Alert.alert(
           'Nenhuma assinatura ativa',
-          'Não encontramos uma assinatura de Apoiador ativa vinculada a este ID Apple.',
+          Platform.OS === 'android'
+            ? 'Não encontramos uma assinatura de Apoiador ativa vinculada a esta conta Google.'
+            : 'Não encontramos uma assinatura de Apoiador ativa vinculada a este ID Apple.',
         );
         return false;
       }

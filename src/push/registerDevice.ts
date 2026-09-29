@@ -19,6 +19,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 import { api } from '../api/client';
 
@@ -47,6 +48,14 @@ const LEGACY_PREF_KEY = 'fidio_push_pref';
  */
 function supported(): boolean {
   return Device.isDevice;
+}
+
+async function ensureAndroidChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync('default', {
+    name: 'Lembretes',
+    importance: Notifications.AndroidImportance.HIGH,
+  });
 }
 
 async function currentStatus(): Promise<PushStatus> {
@@ -97,6 +106,7 @@ export async function registerForPush({
   if (!supported()) return 'unsupported';
   if (!force && (await optedOut())) return currentStatus();
 
+  await ensureAndroidChannel();
   let status = await currentStatus();
 
   if (status === 'undetermined') {

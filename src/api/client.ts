@@ -17,6 +17,8 @@
  * onde acontecem: os dois endpoints que mentem no codigo HTTP, o envelope de
  * paginacao que falta um campo, e as datas que nao sao ISO.
  */
+import { Platform } from 'react-native';
+
 import { parseDateBR, parseDateTimeBR, parseExpiresBR } from './dates';
 import { mensagemDeErro } from './errors';
 import {
@@ -414,11 +416,22 @@ export const api = {
       body: { jws },
     }),
 
+  /**
+   * Equivalente Android: o backend consulta o purchaseToken na Google Play
+   * Developer API. Mesma regra — o finishTransaction (que no Android faz o
+   * acknowledge) so depois do 200.
+   */
+  verifyGooglePurchase: (purchaseToken: string, productId: string) =>
+    request<SubscriptionStatus>('/subscriptions/google/verify', {
+      method: 'POST',
+      body: { purchase_token: purchaseToken, product_id: productId },
+    }),
+
   // Push
   registerDeviceToken: (token: string, environment: 'sandbox' | 'production') =>
     request<unknown>('/push/device', {
       method: 'POST',
-      body: { token, platform: 'ios', environment },
+      body: { token, platform: Platform.OS === 'android' ? 'android' : 'ios', environment },
     }),
 
   unregisterDeviceToken: (token: string) =>

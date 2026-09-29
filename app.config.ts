@@ -60,6 +60,8 @@ const metaAppId = process.env.EXPO_PUBLIC_META_APP_ID ?? '';
 const metaClientToken = process.env.META_CLIENT_TOKEN ?? '';
 const metaEnabled = Boolean(metaAppId && metaClientToken);
 
+const googleServicesFile = process.env.GOOGLE_SERVICES_JSON ?? '';
+
 const webUrl = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://feith.space';
 const webHost = webUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
@@ -126,6 +128,8 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.feith.app',
+    versionCode: Number(process.env.ANDROID_VERSION_CODE) || 1,
+    ...(googleServicesFile ? { googleServicesFile } : {}),
     predictiveBackGestureEnabled: false,
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
