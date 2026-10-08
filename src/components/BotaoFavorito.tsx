@@ -25,7 +25,6 @@ import { Alert, Pressable, StyleSheet } from 'react-native';
 import { api } from '../api/client';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
-import { posthog } from '../config/posthog';
 import { radius } from '../theme/tokens';
 import { scheme } from './ui';
 
@@ -59,10 +58,8 @@ export function BotaoFavorito({
     try {
       if (anterior) {
         await api.removeBookmark(reflectionUuid);
-        posthog?.capture('bookmark_removed');
       } else {
         await api.toggleBookmark(reflectionUuid);
-        posthog?.capture('bookmark_added');
       }
       // O contador de quota vive no summary; sem isto a tela de perfil ficaria
       // mostrando um numero velho.
