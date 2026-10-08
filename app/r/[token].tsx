@@ -9,6 +9,7 @@ import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
 import { Button, EmptyState, GoldRule, Loading, Overline, Text, scheme } from '../../src/components/ui';
 import { useAuth } from '../../src/auth/AuthContext';
+import { posthog } from '../../src/config/posthog';
 import { space } from '../../src/theme/tokens';
 
 /**
@@ -35,13 +36,19 @@ export default function LinkCompartilhado() {
 
     api
       .getSharedReflection(token)
-      .then(setReflexao)
+      .then((r) => {
+        setReflexao(r);
+        posthog?.capture('shared_link_opened', { result: 'ok', logged_in: !!sessao });
+      })
       .catch((e: unknown) => {
         // Os tres estados terminais do backend, cada um com significado
         // proprio (shared_link_service.py). A web ja os distingue e o app
         // precisa fazer o mesmo: um 429 aqui nao e "erro", e o limite de 3
         // leituras do link, que e regra de produto.
         const status = e instanceof ApiError ? e.status : 0;
+        const resultado =
+          status === 410 ? 'expired' : status === 429 ? 'read_limit' : status === 404 ? 'not_found' : 'error';
+        posthog?.capture('shared_link_opened', { result: resultado, logged_in: !!sessao });
         if (status === 410) {
           setFalha({
             titulo: 'Este link expirou',
@@ -132,7 +139,10 @@ export default function LinkCompartilhado() {
               <Button
                 label="Criar uma conta"
                 icon="arrow-forward"
-                onPress={() => router.push('/(auth)/register')}
+                onPress={() => {
+                  posthog?.capture('shared_link_signup_clicked');
+                  router.push('/(auth)/register');
+                }}
                 style={{ marginTop: space.xl, alignSelf: 'stretch' }}
               />
             </View>

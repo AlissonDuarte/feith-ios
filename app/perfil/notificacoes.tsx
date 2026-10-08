@@ -10,6 +10,7 @@ import { mensagemDe } from '../../src/api/errors';
 import type { WeekdayCode } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Card, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
+import { posthog } from '../../src/config/posthog';
 import { disablePush, getPushState, registerForPush, type PushStatus } from '../../src/push/registerDevice';
 import { fonts, radius, space } from '../../src/theme/tokens';
 
@@ -114,6 +115,10 @@ export default function Notificacoes() {
         },
       });
       await refreshSummary();
+      posthog?.capture('reminder_preferences_saved', {
+        selected_day_count: dias.length,
+        reminders_enabled: ligado,
+      });
     } catch (e) {
       setErro(mensagemDe(e));
     } finally {

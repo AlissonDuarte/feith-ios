@@ -9,6 +9,7 @@ import { isAppleSignInAvailable, signInWithApple } from '../../src/auth/appleSig
 import { useAuth } from '../../src/auth/AuthContext';
 import { googleSignInAvailable, signInWithGoogle } from '../../src/auth/googleSignIn';
 import { AccentHalo } from '../../src/components/ornaments';
+import { posthog } from '../../src/config/posthog';
 import { AppleButton, GoogleButton, Separador } from '../../src/components/SocialAuth';
 import { Button, Field, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
 import { fonts, space } from '../../src/theme/tokens';
@@ -48,6 +49,7 @@ export default function Login() {
     entrar('email', async () => {
       const resposta = await api.login({ email: email.trim(), password: senha });
       await signIn(resposta);
+      posthog?.capture('login_completed', { authentication_method: 'email' });
     });
 
   const comGoogle = () =>
@@ -56,6 +58,7 @@ export default function Login() {
       // Cancelar nao e erro: sai em silencio.
       if (!idToken) return;
       await signIn(await api.googleLogin(idToken));
+      posthog?.capture('login_completed', { authentication_method: 'google' });
     });
 
   const comApple = () =>
@@ -64,6 +67,7 @@ export default function Login() {
       if (!credencial) return;
       const { identityToken, ...perfil } = credencial;
       await signIn(await api.appleLogin(identityToken, perfil));
+      posthog?.capture('login_completed', { authentication_method: 'apple' });
     });
 
   const ocupado = carregando !== null;

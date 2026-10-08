@@ -25,6 +25,7 @@ import {
 
 import { mensagemDe } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
+import { posthog, posthogLog } from '../config/posthog';
 import {
   abrirGerenciadorAssinaturas,
   buscarProdutoAssinatura,
@@ -101,8 +102,11 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
 
         await validarEFinalizarTransacao(purchase);
         await refreshSummary();
+        posthog?.capture('subscription_purchase_completed');
+        posthogLog.info('subscription purchase completed', { result: 'validated' });
       } catch (e) {
         console.warn('[IAP] Erro ao validar transacao:', e);
+        posthog?.capture('subscription_purchase_failed', { stage: 'validation' });
         setErro(mensagemDe(e) || 'Não foi possível confirmar sua assinatura com o servidor.');
       } finally {
         transacoesEmProcessamento.current.delete(idTransacao);
@@ -111,6 +115,15 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
     },
     [refreshSummary],
   );
+
+  // O cancelamento pode chegar pelos dois caminhos (rejeicao do request e
+  // purchaseErrorListener); sem a janela, um cancelamento contaria duas vezes.
+  const ultimoCancelamento = useRef(0);
+  const registrarCancelamento = useCallback(() => {
+    if (Date.now() - ultimoCancelamento.current < 3000) return;
+    ultimoCancelamento.current = Date.now();
+    posthog?.capture('subscription_purchase_cancelled');
+  }, []);
 
   const processarTransacaoRef = useRef(processarTransacao);
   useEffect(() => {
@@ -154,10 +167,12 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       setComprando(false);
       // Usuario cancelou no modal nativo da Apple: comportamento normal, nao expor erro
       if (error.code === ErrorCode.UserCancelled) {
+        registrarCancelamento();
         return;
       }
 
       console.warn('[IAP] Erro no fluxo do StoreKit:', error);
+      posthog?.capture('subscription_purchase_failed', { stage: 'store', error_code: String(error.code) });
       setErro('A compra não foi concluída. Tente novamente.');
     });
 
@@ -177,6 +192,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
     try {
       setComprando(true);
       setErro(null);
+      posthog?.capture('subscription_purchase_started');
 
       // Trava de seguranca para liberar o botao caso o iOS nao dispare callbacks
       const timerSeguranca = setTimeout(() => {
@@ -210,13 +226,15 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         err.code === 'user-cancelled' ||
         err.code === 'E_USER_CANCELLED'
       ) {
+        registrarCancelamento();
         return false;
       }
+      posthog?.capture('subscription_purchase_failed', { stage: 'request', error_code: err.code ?? 'unknown' });
       const msg = mensagemDe(e) || `Não foi possível iniciar a assinatura na ${NOME_LOJA}.`;
       setErro(msg);
       return false;
     }
-  }, [isSupporter, processarTransacao]);
+  }, [isSupporter, processarTransacao, registrarCancelamento]);
 
   const restaurar = useCallback(async (): Promise<boolean> => {
     try {
@@ -226,6 +244,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       const recuperou = await restaurarCompras();
       if (recuperou) {
         await refreshSummary();
+        posthog?.capture('subscription_restored');
         Alert.alert('Sucesso', 'Sua assinatura foi restaurada com sucesso!');
         return true;
       } else {
@@ -247,6 +266,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSummary]);
 
   const gerenciar = useCallback(async (): Promise<void> => {
+    posthog?.capture('subscription_manage_opened');
     try {
       await abrirGerenciadorAssinaturas();
     } catch (e) {

@@ -19,12 +19,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { PostHogProvider } from 'posthog-react-native';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startMetaSdk } from '../src/ads/metaSdk';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { IapProvider } from '../src/iap/IapContext';
+import { posthog } from '../src/config/posthog';
+import { useRastreioDeTelas } from '../src/config/useRastreioDeTelas';
 import { fonts, schemes } from '../src/theme/tokens';
 import { usePushNotifications } from '../src/push/usePushNotifications';
 
@@ -82,6 +85,7 @@ function RouteGuard() {
   // Aqui dentro por dois motivos: precisa do AuthProvider acima (o registro so
   // vale com sessao) e do router, para o toque na notificacao navegar.
   usePushNotifications();
+  useRastreioDeTelas();
 
   useEffect(() => {
     if (loading) return;
@@ -185,17 +189,40 @@ export default function RootLayout() {
     return null;
   }
 
+  const conteudo = (
+    <AuthProvider>
+      <IapProvider>
+        {/* `dark` e nao `auto`: as telas sao creme em qualquer modo do
+            sistema, entao deixar o iOS decidir pelo tema do aparelho
+            produziria icones brancos sobre papel no modo escuro. */}
+        <StatusBar style="dark" />
+        <RouteGuard />
+      </IapProvider>
+    </AuthProvider>
+  );
+
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <IapProvider>
-          {/* `dark` e nao `auto`: as telas sao creme em qualquer modo do
-              sistema, entao deixar o iOS decidir pelo tema do aparelho
-              produziria icones brancos sobre papel no modo escuro. */}
-          <StatusBar style="dark" />
-          <RouteGuard />
-        </IapProvider>
-      </AuthProvider>
+      {posthog ? (
+        // captureScreens desligado: com expo-router as telas sao registradas
+        // por useRastreioDeTelas. captureTouches registra os toques como
+        // `$autocapture`, nomeados pelo accessibilityLabel do elemento.
+        // `propsToCapture` sem `children`: o padrao do SDK envia o texto do
+        // elemento tocado, e tocar numa anotacao mandaria o que a pessoa
+        // escreveu.
+        <PostHogProvider
+          client={posthog}
+          autocapture={{
+            captureScreens: false,
+            captureTouches: true,
+            propsToCapture: ['testID', 'accessibilityLabel', 'ph-label'],
+          }}
+        >
+          {conteudo}
+        </PostHogProvider>
+      ) : (
+        conteudo
+      )}
     </SafeAreaProvider>
   );
 }

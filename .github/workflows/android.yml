@@ -28,6 +28,8 @@ jobs:
       EXPO_PUBLIC_META_APP_ID: ${{ secrets.EXPO_PUBLIC_META_APP_ID }}
       META_CLIENT_TOKEN: ${{ secrets.META_CLIENT_TOKEN }}
       EXPO_PUBLIC_IAP_SKU: ${{ secrets.EXPO_PUBLIC_IAP_SKU }}
+      EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+      EXPO_PUBLIC_POSTHOG_HOST: ${{ secrets.EXPO_PUBLIC_POSTHOG_HOST }}
       ANDROID_VERSION_CODE: ${{ github.run_number }}
       GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -66,10 +68,12 @@ jobs:
 
       - name: Gravar keystore e google-services.json
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/upload.jks" \
+            || { echo "::error::ANDROID_KEYSTORE_BASE64 nao e um base64 valido. Gere de novo com: base64 -w0 feith-upload.jks > keystore.b64"; exit 1; }
           echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
           if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
-            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > google-services.json
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 -d > google-services.json \
+              || { echo "::error::GOOGLE_SERVICES_JSON_BASE64 nao e um base64 valido."; exit 1; }
             echo "GOOGLE_SERVICES_JSON=./google-services.json" >> "$GITHUB_ENV"
           fi
 

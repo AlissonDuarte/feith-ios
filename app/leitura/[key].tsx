@@ -11,6 +11,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
+import { posthog } from '../../src/config/posthog';
 import {
   Button,
   Card,
@@ -85,6 +86,7 @@ export default function Leitura() {
           subject: `${reflexao.scripture_reference} — feith`,
         },
       );
+      posthog?.capture('reflection_shared', { source: 'reflection_reader' });
     } catch (e) {
       setErro(mensagemDe(e));
     }

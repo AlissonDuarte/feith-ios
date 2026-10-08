@@ -20,6 +20,7 @@ import {
   scheme,
   useEspacoTabBar,
 } from '../../src/components/ui';
+import { posthog } from '../../src/config/posthog';
 import { useIap } from '../../src/iap/IapContext';
 import { NOME_LOJA } from '../../src/iap/tipos';
 import { fonts, radius, space } from '../../src/theme/tokens';
@@ -68,7 +69,14 @@ export default function Perfil() {
     // `confirm()` da web (Sidebar.svelte:54) nao existe no RN.
     Alert.alert('Sair da conta', 'Você precisará entrar novamente.', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => void signOut() },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: () => {
+          posthog?.capture('logged_out');
+          void signOut();
+        },
+      },
     ]);
   }
 

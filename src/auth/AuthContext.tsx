@@ -25,6 +25,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 
 import { api, setToken, setUnauthorizedHandler } from '../api/client';
 import type { AuthResponse, Plan, UserSummary } from '../api/types';
+import { posthog, posthogLog } from '../config/posthog';
 import { signOutFromGoogle } from './googleSignIn';
 import { unregisterFromPush } from '../push/registerDevice';
 import { clearSession, jwtExpiresAt, loadSession, saveSummary, saveToken } from './tokenStore';
@@ -77,6 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Limpa a identidade persistida antes de a sessao local ser removida para
+    // que o proximo usuario comece com um novo perfil anonimo.
+    posthog?.reset();
+
     // Antes de limpar a sessao, enquanto o Bearer ainda vale: sem isto o
     // aparelho continua recebendo os lembretes do dono anterior.
     await unregisterFromPush();
@@ -118,6 +123,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(
     async (response: AuthResponse) => {
       await aplicarToken(response.access_token, response.expires_in);
+
+      // `user_uuid` e o identificador estavel devolvido pelo backend em todos
+      // os fluxos de autenticacao; e usado em vez de e-mail ou nome de usuario.
+      posthog?.identify(response.user_uuid);
+      posthogLog.info('authentication completed', { result: 'success' });
+
       await refreshSummary();
       if (mounted.current) {
         setState((s) => ({ ...s, loading: false }));

@@ -7,6 +7,7 @@ import { api } from '../src/api/client';
 import { useAuth } from '../src/auth/AuthContext';
 import { AccentHalo } from '../src/components/ornaments';
 import { Button, GoldRule, Overline, Text, scheme } from '../src/components/ui';
+import { posthog, posthogLog } from '../src/config/posthog';
 import { fonts, radius, space } from '../src/theme/tokens';
 
 /**
@@ -85,7 +86,13 @@ export default function Onboarding() {
     setConcluindo(true);
     try {
       await api.completeOnboarding();
+      posthogLog.info('onboarding completed', {
+        completion_method: ultimo ? 'completed' : 'skipped',
+      });
       await refreshSummary();
+      posthog?.capture('onboarding_completed', {
+        completion_method: ultimo ? 'completed' : 'skipped',
+      });
     } catch {
       // Falhar aqui nao pode prender a pessoa na abertura do app: ela segue
       // para a leitura, e o onboarding reaparece na proxima vez.

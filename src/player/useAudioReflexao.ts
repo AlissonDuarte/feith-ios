@@ -18,6 +18,7 @@ import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-au
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { api } from '../api/client';
+import { posthog } from '../config/posthog';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import type { Transcript } from '../api/types';
 
@@ -191,12 +192,38 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
     };
   }, [transcript, player]);
 
+  // Uma vez por reflexao concluida: `didJustFinish` fica true por mais de um
+  // tick de status.
+  const concluiuRegistrado = useRef(false);
+  useEffect(() => {
+    concluiuRegistrado.current = false;
+  }, [reflectionUuid]);
+  useEffect(() => {
+    if (!status.didJustFinish || concluiuRegistrado.current) return;
+    concluiuRegistrado.current = true;
+    posthog?.capture('audio_completed', {
+      reflection_uuid: reflectionUuid ?? null,
+      duration_seconds: Math.round(status.duration || 0),
+    });
+  }, [status.didJustFinish, status.duration, reflectionUuid]);
+
   const alternar = useCallback(() => {
     void configurarSessao().then(() => {
-      if (player.playing) player.pause();
-      else player.play();
+      if (player.playing) {
+        player.pause();
+        posthog?.capture('audio_paused', {
+          reflection_uuid: reflectionUuid ?? null,
+          position_seconds: Math.round(player.currentTime),
+        });
+      } else {
+        player.play();
+        posthog?.capture('audio_played', {
+          reflection_uuid: reflectionUuid ?? null,
+          position_seconds: Math.round(player.currentTime),
+        });
+      }
     });
-  }, [player]);
+  }, [player, reflectionUuid]);
 
   const irPara = useCallback(
     (segundos: number) => {

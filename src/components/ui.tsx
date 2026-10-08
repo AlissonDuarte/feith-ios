@@ -371,6 +371,8 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      // Tambem e o nome do toque no PostHog (autocapture le o accessibilityLabel).
+      accessibilityLabel={label}
       accessibilityState={{ disabled: !!inativo, busy: loading }}
       disabled={inativo}
       style={({ pressed }) => [

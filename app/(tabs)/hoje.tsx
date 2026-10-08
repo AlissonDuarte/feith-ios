@@ -11,6 +11,7 @@ import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
+import { posthog } from '../../src/config/posthog';
 import { useRouter } from 'expo-router';
 import {
   Button,
@@ -77,6 +78,7 @@ export default function Hoje() {
           subject: `${reflexao.scripture_reference} — feith`,
         },
       );
+      posthog?.capture('reflection_shared', { source: 'daily_reflection' });
     } catch (e) {
       setErro(mensagemDe(e));
     }

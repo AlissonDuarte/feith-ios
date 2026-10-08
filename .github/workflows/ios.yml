@@ -48,6 +48,9 @@ jobs:
       META_CLIENT_TOKEN: ${{ secrets.META_CLIENT_TOKEN }}
       # Product ID da assinatura no App Store Connect.
       EXPO_PUBLIC_IAP_SKU: ${{ secrets.EXPO_PUBLIC_IAP_SKU }}
+      # PostHog (analytics). Entram no bundle JS; vazios = app sem analytics.
+      EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+      EXPO_PUBLIC_POSTHOG_HOST: ${{ secrets.EXPO_PUBLIC_POSTHOG_HOST }}
       # Vira o entitlement aps-environment no prebuild. Sem isto o default do
       # app.config.ts e 'development', e um TestFlight assinado assim registra
       # no APNs, recebe device token e nunca entrega nada — sem erro nenhum.
