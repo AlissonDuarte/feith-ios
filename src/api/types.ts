@@ -257,6 +257,17 @@ export interface Streak {
   read_today: boolean;
 }
 
+export interface VersaoPlataforma {
+  min_version: string;
+  latest_version: string;
+  store_url: string;
+}
+
+export interface AppVersionPolicy {
+  ios: VersaoPlataforma;
+  android: VersaoPlataforma;
+}
+
 export interface SharedLinkResponse {
   /** Token opaco. */
   short_link: string;

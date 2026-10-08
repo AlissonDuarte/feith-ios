@@ -24,6 +24,7 @@ import { mensagemDeErro } from './errors';
 import {
   ApiError,
   type AppleProfile,
+  type AppVersionPolicy,
   type AuthResponse,
   type BookmarkItem,
   type BookmarkToggleResponse,
@@ -426,6 +427,8 @@ export const api = {
       method: 'POST',
       body: { purchase_token: purchaseToken, product_id: productId },
     }),
+
+  getAppVersionPolicy: () => publicRequest<AppVersionPolicy>('/app/version'),
 
   // Push
   registerDeviceToken: (token: string, environment: 'sandbox' | 'production') =>

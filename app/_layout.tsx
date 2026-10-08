@@ -30,6 +30,8 @@ import { posthog } from '../src/config/posthog';
 import { useRastreioDeTelas } from '../src/config/useRastreioDeTelas';
 import { fonts, schemes } from '../src/theme/tokens';
 import { usePushNotifications } from '../src/push/usePushNotifications';
+import { AtualizacaoObrigatoria } from '../src/update/AtualizacaoObrigatoria';
+import { useAtualizacao } from '../src/update/useAtualizacao';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -172,6 +174,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
   });
+  const atualizacao = useAtualizacao();
 
   useEffect(() => {
     // Some com a splash mesmo se uma fonte falhar — melhor um fallback de
@@ -189,7 +192,9 @@ export default function RootLayout() {
     return null;
   }
 
-  const conteudo = (
+  const conteudo = atualizacao.situacao === 'obrigatoria' ? (
+    <AtualizacaoObrigatoria storeUrl={atualizacao.storeUrl} />
+  ) : (
     <AuthProvider>
       <IapProvider>
         {/* `dark` e nao `auto`: as telas sao creme em qualquer modo do
