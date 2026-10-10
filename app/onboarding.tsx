@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, useWindowDimensions, View, type ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +8,8 @@ import { useAuth } from '../src/auth/AuthContext';
 import { AccentHalo } from '../src/components/ornaments';
 import { Button, GoldRule, Overline, Text, scheme } from '../src/components/ui';
 import { posthog, posthogLog } from '../src/config/posthog';
+import { getPushState } from '../src/push/registerDevice';
+import { ativarLembretes, registrarExibicao, registrarRecusa } from '../src/push/useConviteLembrete';
 import { fonts, radius, space } from '../src/theme/tokens';
 
 /**
@@ -31,6 +33,7 @@ interface Passo {
   corpo: string;
   itens?: { rotulo: string; desc: string }[];
   detalhe: string;
+  lembrete?: boolean;
 }
 
 const PASSOS: Passo[] = [
@@ -66,16 +69,37 @@ const PASSOS: Passo[] = [
   },
 ];
 
+const PASSO_LEMBRETE: Passo = {
+  titulo: 'Receba a reflexão todo dia',
+  corpo: 'Um lembrete diário às 8h para manter sua leitura em dia, sem precisar lembrar de abrir o app.',
+  detalhe: 'Você pode mudar o horário ou desligar quando quiser em Perfil › Lembretes.',
+  lembrete: true,
+};
+
 export default function Onboarding() {
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { refreshSummary } = useAuth();
 
+  const [passos, setPassos] = useState<Passo[]>(PASSOS);
   const [indice, setIndice] = useState(0);
   const [concluindo, setConcluindo] = useState(false);
   const listaRef = useRef<FlatList<Passo>>(null);
 
-  const ultimo = indice === PASSOS.length - 1;
+  const ultimo = indice === passos.length - 1;
+  const passoLembrete = !!passos[indice]?.lembrete;
+
+  useEffect(() => {
+    void getPushState()
+      .then(({ status }) => {
+        if (status === 'undetermined') setPassos([...PASSOS, PASSO_LEMBRETE]);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (passoLembrete) registrarExibicao('onboarding');
+  }, [passoLembrete]);
 
   const aoVerItens = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const primeiro = viewableItems[0];
@@ -102,6 +126,19 @@ export default function Onboarding() {
     }
   }
 
+  async function ativarEConcluir() {
+    setConcluindo(true);
+    try {
+      await ativarLembretes('onboarding');
+    } catch {}
+    await concluir();
+  }
+
+  async function recusarEConcluir() {
+    await registrarRecusa('onboarding');
+    await concluir();
+  }
+
   function avancar() {
     if (ultimo) return void concluir();
     listaRef.current?.scrollToIndex({ index: indice + 1, animated: true });
@@ -113,7 +150,7 @@ export default function Onboarding() {
 
       <FlatList
         ref={listaRef}
-        data={PASSOS}
+        data={passos}
         keyExtractor={(p) => p.titulo}
         horizontal
         pagingEnabled
@@ -161,31 +198,32 @@ export default function Onboarding() {
         {/* Progresso como fio continuo, e nao pontos: e o mesmo fio de ouro
             que separa as secoes do app inteiro. */}
         <View style={estilos.progresso}>
-          <Overline>{`Passo ${indice + 1} de ${PASSOS.length}`}</Overline>
+          <Overline>{`Passo ${indice + 1} de ${passos.length}`}</Overline>
           <View style={estilos.trilho}>
             <View
               style={[
                 estilos.avanco,
-                { width: `${((indice + 1) / PASSOS.length) * 100}%` },
+                { width: `${((indice + 1) / passos.length) * 100}%` },
               ]}
             />
           </View>
         </View>
 
         <Button
-          label={ultimo ? 'Começar a ler' : 'Continuar'}
-          icon="arrow-forward"
-          onPress={avancar}
+          label={passoLembrete ? 'Ativar lembretes' : ultimo ? 'Começar a ler' : 'Continuar'}
+          icon={passoLembrete ? undefined : 'arrow-forward'}
+          iconLeft={passoLembrete ? 'notifications-outline' : undefined}
+          onPress={passoLembrete ? ativarEConcluir : avancar}
           loading={concluindo}
           disabled={concluindo}
           style={{ backgroundColor: scheme.accent }}
         />
-        {!ultimo ? (
+        {passoLembrete ? (
           <Button
-            label="Pular apresentação"
+            label="Agora não"
             variant="ghost"
             textColor={scheme.accent}
-            onPress={concluir}
+            onPress={recusarEConcluir}
             disabled={concluindo}
             style={{ marginTop: space.sm, alignSelf: 'center' }}
           />

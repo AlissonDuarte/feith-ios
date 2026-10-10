@@ -12,6 +12,7 @@ import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
 import { posthog } from '../../src/config/posthog';
+import { useRastreioDeLeitura } from '../../src/config/useRastreioDeLeitura';
 import {
   Button,
   Card,
@@ -42,6 +43,7 @@ export default function Leitura() {
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [escrevendo, setEscrevendo] = useState(false);
+  const rastreio = useRastreioDeLeitura(reflexao, 'leitura');
 
   const carregarNotas = useCallback(async () => {
     if (!key) return;
@@ -149,8 +151,12 @@ export default function Leitura() {
           paddingBottom: isSupporter ? 112 + 46 + space.md : 112,
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={rastreio.onScroll}
+        scrollEventThrottle={rastreio.scrollEventThrottle}
       >
-        <ReflexaoReader reflexao={reflexao} />
+        <View onLayout={rastreio.onLayoutTexto}>
+          <ReflexaoReader reflexao={reflexao} />
+        </View>
 
         {notas.length > 0 ? (
           <View style={{ marginTop: space.sm }}>

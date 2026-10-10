@@ -72,10 +72,11 @@ async function currentStatus(): Promise<PushStatus> {
   }
   if (status === Notifications.IosAuthorizationStatus.DENIED) return 'denied';
   if (status === Notifications.IosAuthorizationStatus.NOT_DETERMINED) return 'undetermined';
-  return settings.granted ? 'granted' : 'denied';
+  if (settings.granted) return 'granted';
+  return settings.canAskAgain ? 'undetermined' : 'denied';
 }
 
-async function optedOut(): Promise<boolean> {
+export async function optedOut(): Promise<boolean> {
   const pref = (await AsyncStorage.getItem(PREF_KEY)) || (await AsyncStorage.getItem(LEGACY_PREF_KEY));
   return pref === 'off';
 }

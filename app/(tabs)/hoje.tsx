@@ -12,6 +12,7 @@ import { NotaSheet } from '../../src/components/NotaSheet';
 import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
 import { posthog } from '../../src/config/posthog';
+import { useRastreioDeLeitura } from '../../src/config/useRastreioDeLeitura';
 import { useRouter } from 'expo-router';
 import {
   Button,
@@ -25,6 +26,7 @@ import {
   useEspacoTabBar,
 } from '../../src/components/ui';
 import { PlayerAudio } from '../../src/player/PlayerAudio';
+import { ConviteLembrete } from '../../src/push/ConviteLembrete';
 import { radius, shadow, space } from '../../src/theme/tokens';
 
 export default function Hoje() {
@@ -39,6 +41,7 @@ export default function Hoje() {
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [escrevendo, setEscrevendo] = useState(false);
+  const rastreio = useRastreioDeLeitura(reflexao, 'hoje');
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -189,6 +192,8 @@ export default function Hoje() {
           paddingBottom: isSupporter ? respiro + 46 + space.md : respiro,
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={rastreio.onScroll}
+        scrollEventThrottle={rastreio.scrollEventThrottle}
         refreshControl={
           <RefreshControl
             refreshing={atualizando}
@@ -197,7 +202,14 @@ export default function Hoje() {
           />
         }
       >
-        <ReflexaoReader reflexao={reflexao} />
+        <View onLayout={rastreio.onLayoutTexto}>
+          <ReflexaoReader reflexao={reflexao} />
+        </View>
+
+        <ConviteLembrete
+          streak={streak}
+          hora={(summary?.notification_schedule as { time?: string } | undefined)?.time || '08:00'}
+        />
 
         {!isSupporter ? (
           <Card quiet style={{ marginTop: space.xxl, marginBottom: space.lg, alignItems: 'center' }}>

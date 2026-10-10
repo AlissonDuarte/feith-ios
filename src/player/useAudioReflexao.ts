@@ -192,20 +192,51 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
     };
   }, [transcript, player]);
 
-  // Uma vez por reflexao concluida: `didJustFinish` fica true por mais de um
-  // tick de status.
+  const ouvido = useRef({ segundos: 0, ultimaPosicao: 0, maxPosicao: 0, duracao: 0 });
   const concluiuRegistrado = useRef(false);
+
   useEffect(() => {
+    const o = ouvido.current;
+    const posicao = status.currentTime || 0;
+    const delta = posicao - o.ultimaPosicao;
+    if (status.playing && delta > 0 && delta < 5) o.segundos += delta;
+    o.ultimaPosicao = posicao;
+    o.maxPosicao = Math.max(o.maxPosicao, posicao);
+    if (status.duration) o.duracao = status.duration;
+  }, [status.currentTime, status.playing, status.duration]);
+
+  const resumoOuvido = useCallback(() => {
+    const o = ouvido.current;
+    return {
+      listened_seconds: Math.round(o.segundos),
+      duration_seconds: Math.round(o.duracao),
+      percent_listened: o.duracao ? Math.min(100, Math.round((o.segundos / o.duracao) * 100)) : 0,
+    };
+  }, []);
+
+  useEffect(() => {
+    ouvido.current = { segundos: 0, ultimaPosicao: 0, maxPosicao: 0, duracao: 0 };
     concluiuRegistrado.current = false;
-  }, [reflectionUuid]);
+    return () => {
+      const o = ouvido.current;
+      if (o.segundos < 1) return;
+      posthog?.capture('audio_session_ended', {
+        reflection_uuid: reflectionUuid ?? null,
+        ...resumoOuvido(),
+        max_position_seconds: Math.round(o.maxPosicao),
+        completed: concluiuRegistrado.current,
+      });
+    };
+  }, [reflectionUuid, resumoOuvido]);
+
   useEffect(() => {
     if (!status.didJustFinish || concluiuRegistrado.current) return;
     concluiuRegistrado.current = true;
     posthog?.capture('audio_completed', {
       reflection_uuid: reflectionUuid ?? null,
-      duration_seconds: Math.round(status.duration || 0),
+      ...resumoOuvido(),
     });
-  }, [status.didJustFinish, status.duration, reflectionUuid]);
+  }, [status.didJustFinish, reflectionUuid, resumoOuvido]);
 
   const alternar = useCallback(() => {
     void configurarSessao().then(() => {
@@ -214,6 +245,7 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
         posthog?.capture('audio_paused', {
           reflection_uuid: reflectionUuid ?? null,
           position_seconds: Math.round(player.currentTime),
+          ...resumoOuvido(),
         });
       } else {
         player.play();
@@ -223,7 +255,7 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
         });
       }
     });
-  }, [player, reflectionUuid]);
+  }, [player, reflectionUuid, resumoOuvido]);
 
   const irPara = useCallback(
     (segundos: number) => {

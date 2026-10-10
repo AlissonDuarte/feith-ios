@@ -87,7 +87,13 @@ export default function Notificacoes() {
           'Você precisa permitir notificações nos Ajustes do iPhone para receber os lembretes.',
           [
             { text: 'Agora não', style: 'cancel' },
-            { text: 'Abrir Ajustes', onPress: () => void Linking.openSettings() },
+            {
+              text: 'Abrir Ajustes',
+              onPress: () => {
+                posthog?.capture('push_settings_opened', { moment: 'perfil' });
+                void Linking.openSettings();
+              },
+            },
           ],
         );
       }
