@@ -28,7 +28,14 @@ import type { AuthResponse, Plan, UserSummary } from '../api/types';
 import { posthog, posthogLog } from '../config/posthog';
 import { signOutFromGoogle } from './googleSignIn';
 import { unregisterFromPush } from '../push/registerDevice';
-import { clearSession, jwtExpiresAt, loadSession, saveSummary, saveToken } from './tokenStore';
+import {
+  clearSession,
+  jwtExpiresAt,
+  jwtUserUuid,
+  loadSession,
+  saveSummary,
+  saveToken,
+} from './tokenStore';
 
 /**
  * A partir de quanto tempo restante o app tenta renovar o token.
@@ -162,6 +169,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setToken(session.token);
+      const userUuid = jwtUserUuid(session.token);
+      if (userUuid && posthog?.getDistinctId() !== userUuid) {
+        posthog?.identify(userUuid);
+      }
       if (mounted.current) {
         setState({
           summary: session.summary,

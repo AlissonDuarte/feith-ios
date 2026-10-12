@@ -40,19 +40,27 @@ export interface StoredSession {
  * O payload e base64url; o atob do Hermes nao aceita `-` e `_`, entao a
  * conversao e explicita.
  */
-export function jwtExpiresAt(token: string): number | null {
+function jwtPayload(token: string): { exp?: unknown; uuid?: unknown } | null {
   try {
     const payload = token.split('.')[1];
     if (!payload) return null;
 
     const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
     const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-    const json = JSON.parse(globalThis.atob(padded)) as { exp?: number };
-
-    return typeof json.exp === 'number' ? json.exp * 1000 : null;
+    return JSON.parse(globalThis.atob(padded)) as { exp?: unknown; uuid?: unknown };
   } catch {
     return null;
   }
+}
+
+export function jwtExpiresAt(token: string): number | null {
+  const exp = jwtPayload(token)?.exp;
+  return typeof exp === 'number' ? exp * 1000 : null;
+}
+
+export function jwtUserUuid(token: string): string | null {
+  const uuid = jwtPayload(token)?.uuid;
+  return typeof uuid === 'string' && uuid ? uuid : null;
 }
 
 export async function loadSession(): Promise<StoredSession> {
