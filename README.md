@@ -32,7 +32,7 @@ LAN e adicione esse IP ao CORS do backend (`fide-backend/main.py:45-50`).
 
 O `app.config.ts` injeta a exceção de App Transport Security
 (`NSAllowsLocalNetworking`) automaticamente **apenas** quando a URL configurada
-é `http://`. Um build apontando para `https://api.feith.space/api` sai sem
+é `http://`. Um build apontando para `https://feith.space/api` sai sem
 nenhuma brecha de cleartext.
 
 ## Estrutura
@@ -242,7 +242,7 @@ a única janela em que existem, e quem persiste é o backend.
 
 | Secret | O que é |
 |---|---|
-| `EXPO_PUBLIC_API_URL` | `https://api.feith.space/api` |
+| `EXPO_PUBLIC_API_URL` | `https://feith.space/api` |
 | `EXPO_PUBLIC_WEB_URL` | `https://feith.space` |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | client OAuth **web** (o mesmo do site) |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | client OAuth **iOS** do bundle `com.feith.app` |
