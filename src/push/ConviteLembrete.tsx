@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { View } from 'react-native';
 
-import { Button, Card, Overline, Text, scheme } from '../components/ui';
+import { Button, Card, Overline, Text } from '../components/ui';
+import { useTheme } from '../theme/ThemeContext';
 import { space } from '../theme/tokens';
 import { useConviteLembrete } from './useConviteLembrete';
 
@@ -25,6 +26,7 @@ function textos(momento: 'pos_leitura' | 'sequencia' | 'ajustes', streak: number
 }
 
 export function ConviteLembrete({ streak, hora }: { streak: number; hora: string }) {
+  const { scheme } = useTheme();
   const { momento, ativando, ativar, recusar, ajustes } = useConviteLembrete(streak);
 
   if (!momento || momento === 'onboarding') return null;

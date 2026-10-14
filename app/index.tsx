@@ -12,9 +12,11 @@
  */
 import { View } from 'react-native';
 
-import { Loading, scheme } from '../src/components/ui';
+import { Loading } from '../src/components/ui';
+import { useTheme } from '../src/theme/ThemeContext';
 
 export default function Index() {
+  const { scheme } = useTheme();
   return (
     <View style={{ flex: 1, backgroundColor: scheme.canvas }}>
       <Loading />

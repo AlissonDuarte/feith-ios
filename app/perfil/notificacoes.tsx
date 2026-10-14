@@ -1,6 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,10 +9,11 @@ import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import type { WeekdayCode } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
+import { Button, Card, GoldRule, Overline, Text } from '../../src/components/ui';
 import { posthog } from '../../src/config/posthog';
 import { disablePush, getPushState, registerForPush, type PushStatus } from '../../src/push/registerDevice';
-import { fonts, radius, space } from '../../src/theme/tokens';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { fonts, radius, space, type Scheme } from '../../src/theme/tokens';
 
 const DIAS: { codigo: WeekdayCode; rotulo: string; nome: string }[] = [
   { codigo: 'seg', rotulo: 'S', nome: 'Segunda' },
@@ -37,6 +38,8 @@ function dataParaHora(d: Date): string {
 }
 
 export default function Notificacoes() {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { summary, refreshSummary } = useAuth();
 
   const agendamento = summary?.notification_schedule as
@@ -267,7 +270,8 @@ export default function Notificacoes() {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   /**
    * Marcado e DESmarcado precisam ser legiveis nesta tela, nao so distintos.
    *
@@ -310,4 +314,5 @@ const estilos = StyleSheet.create({
     lineHeight: 38,
     color: scheme.textPrimary,
   },
-});
+  });
+}

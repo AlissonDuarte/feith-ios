@@ -11,10 +11,9 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { fonts, schemes, space } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
+import { fonts, space } from '../theme/tokens';
 import { Text } from './ui';
-
-const scheme = schemes.light;
 
 /**
  * Halo radial de oxblood atras do bloco de abertura.
@@ -24,6 +23,7 @@ const scheme = schemes.light;
  * alvo.
  */
 export function AccentHalo({ height = 320, opacity = 1 }: { height?: number; opacity?: number }) {
+  const { scheme } = useTheme();
   return (
     <View
       pointerEvents="none"
@@ -50,6 +50,7 @@ export function AccentHalo({ height = 320, opacity = 1 }: { height?: number; opa
  * so atrapalha.
  */
 export function QuoteMark({ size = 64, style }: { size?: number; style?: StyleProp<ViewStyle> }) {
+  const { scheme } = useTheme();
   return (
     <View
       accessibilityElementsHidden
@@ -77,6 +78,7 @@ export function QuoteMark({ size = 64, style }: { size?: number; style?: StylePr
  * do TextReader da web, com o ambar trocado pelo ouro da marca.
  */
 export function SectionNumeral({ n, size = 34 }: { n: number; size?: number }) {
+  const { scheme } = useTheme();
   return (
     <View
       accessibilityElementsHidden
@@ -111,6 +113,7 @@ export function SectionNumeral({ n, size = 34 }: { n: number; size?: number }) {
  * parar — o equivalente ao colofao de um livro impresso.
  */
 export function EndMark({ style }: { style?: StyleProp<ViewStyle> }) {
+  const { scheme } = useTheme();
   return (
     <View style={[{ alignItems: 'center', paddingTop: space.section }, style]}>
       <Text

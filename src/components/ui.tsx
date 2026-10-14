@@ -13,7 +13,7 @@
  * folha de estilo.
  */
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -31,9 +31,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Path, Rect, Stop, LinearGradient as SvgGradient } from 'react-native-svg';
 
-import { MAX_FONT_SCALE, fonts, radius, schemes, shadow, space, type } from '../theme/tokens';
-
-const scheme = schemes.light;
+import { useTheme } from '../theme/ThemeContext';
+import { MAX_FONT_SCALE, fonts, radius, shadow, space, type, type Scheme } from '../theme/tokens';
 
 // ── Texto ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +66,7 @@ interface TextProps extends RNTextProps {
 }
 
 export function Text({ variant = 'body', font, color, style, ...rest }: TextProps) {
+  const { scheme } = useTheme();
   return (
     <RNText
       // Num app de leitura diaria, ignorar o tamanho de texto acessivel do
@@ -91,15 +91,16 @@ export function Text({ variant = 'body', font, color, style, ...rest }: TextProp
  */
 export function Overline({
   children,
-  color = scheme.textGhost,
+  color,
   style,
 }: {
   children: string;
   color?: string;
   style?: StyleProp<TextStyle>;
 }) {
+  const { scheme } = useTheme();
   return (
-    <Text variant="overline" color={color} style={[{ textTransform: 'uppercase' }, style]}>
+    <Text variant="overline" color={color ?? scheme.textGhost} style={[{ textTransform: 'uppercase' }, style]}>
       {children}
     </Text>
   );
@@ -135,7 +136,7 @@ const ALTURA_TAB_BAR = 49;
 export function GoldRule({
   width = 60,
   align = 'center',
-  color = scheme.gold,
+  color,
   style,
 }: {
   width?: number | `${number}%`;
@@ -143,6 +144,8 @@ export function GoldRule({
   color?: string;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { scheme } = useTheme();
+  const corFinal = color ?? scheme.gold;
   const id = align === 'center' ? 'ruleC' : 'ruleL';
 
   // Array e nao Fragment: `<LinearGradient>` do react-native-svg tipa os
@@ -150,13 +153,13 @@ export function GoldRule({
   const paradas =
     align === 'center'
       ? [
-          <Stop key="0" offset="0" stopColor={color} stopOpacity={0} />,
-          <Stop key="1" offset="0.5" stopColor={color} stopOpacity={0.85} />,
-          <Stop key="2" offset="1" stopColor={color} stopOpacity={0} />,
+          <Stop key="0" offset="0" stopColor={corFinal} stopOpacity={0} />,
+          <Stop key="1" offset="0.5" stopColor={corFinal} stopOpacity={0.85} />,
+          <Stop key="2" offset="1" stopColor={corFinal} stopOpacity={0} />,
         ]
       : [
-          <Stop key="0" offset="0" stopColor={color} stopOpacity={0.85} />,
-          <Stop key="1" offset="1" stopColor={color} stopOpacity={0} />,
+          <Stop key="0" offset="0" stopColor={corFinal} stopOpacity={0.85} />,
+          <Stop key="1" offset="1" stopColor={corFinal} stopOpacity={0} />,
         ];
 
   return (
@@ -177,6 +180,7 @@ export function GoldRule({
 
 /** Hairline neutro, para separar itens dentro de um mesmo bloco. */
 export function Hairline({ inset = 0, style }: { inset?: number; style?: StyleProp<ViewStyle> }) {
+  const { scheme } = useTheme();
   return (
     <View
       style={[
@@ -290,6 +294,8 @@ export function Button({
   style,
   ...rest
 }: ButtonProps) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   const inativo = disabled || loading;
   const solido = variant === 'primary';
   const comoLink = variant === 'ghost';
@@ -417,7 +423,7 @@ export function IconButton({
   name,
   onPress,
   label,
-  color = scheme.textSecondary,
+  color,
   size = 20,
   ativo = false,
   disabled,
@@ -431,6 +437,9 @@ export function IconButton({
   ativo?: boolean;
   disabled?: boolean;
 }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
+  const corFinal = color ?? scheme.textSecondary;
   return (
     <Pressable
       onPress={onPress}
@@ -446,7 +455,7 @@ export function IconButton({
         disabled && { opacity: 0.4 },
       ]}
     >
-      <Ionicons name={name} size={size} color={ativo ? scheme.gold : color} />
+      <Ionicons name={name} size={size} color={ativo ? scheme.gold : corFinal} />
     </Pressable>
   );
 }
@@ -463,6 +472,8 @@ export function Card({
   style?: StyleProp<ViewStyle>;
   quiet?: boolean;
 }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <View style={[quiet ? styles.cardQuiet : styles.card, style]}>{children}</View>
   );
@@ -485,6 +496,8 @@ export function TouchableCard({
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <Pressable
       onPress={onPress}
@@ -510,8 +523,8 @@ export function TouchableCard({
 export function Tag({
   children,
   icon,
-  color = scheme.textSecondary,
-  border = scheme.border,
+  color,
+  border,
   background = 'transparent',
 }: {
   children: string;
@@ -520,10 +533,14 @@ export function Tag({
   border?: string;
   background?: string;
 }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
+  const corFinal = color ?? scheme.textSecondary;
+  const borderFinal = border ?? scheme.border;
   return (
-    <View style={[styles.tag, { borderColor: border, backgroundColor: background }]}>
-      {icon ? <Ionicons name={icon} size={11} color={color} /> : null}
-      <Text variant="overline" font="bodySemi" color={color} style={{ textTransform: 'uppercase' }}>
+    <View style={[styles.tag, { borderColor: borderFinal, backgroundColor: background }]}>
+      {icon ? <Ionicons name={icon} size={11} color={corFinal} /> : null}
+      <Text variant="overline" font="bodySemi" color={corFinal} style={{ textTransform: 'uppercase' }}>
         {children}
       </Text>
     </View>
@@ -550,6 +567,8 @@ interface FieldProps extends TextInputProps {
  * campos do cadastro parecem igualmente inertes.
  */
 export function Field({ label, erro, ajuda, containerStyle, style, ...rest }: FieldProps) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   const [focado, setFocado] = useState(false);
 
   return (
@@ -612,6 +631,8 @@ export function ListRow({
   destrutivo?: boolean;
   ultimo?: boolean;
 }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   const cor = destrutivo ? scheme.accent : scheme.textPrimary;
 
   return (
@@ -672,6 +693,8 @@ export function RowGroup({
   titulo?: string;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <View style={style}>
       {titulo ? (
@@ -703,6 +726,8 @@ export function EmptyState({
   acao?: React.ReactNode;
   icone?: keyof typeof Ionicons.glyphMap;
 }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <View style={styles.empty}>
       {icone ? (
@@ -730,6 +755,7 @@ export function EmptyState({
 
 /** Spinner centrado no canvas, para a primeira carga de uma tela. */
 export function Loading() {
+  const { scheme } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={scheme.accent} />
@@ -737,149 +763,151 @@ export function Loading() {
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    minHeight: 54,
-    // Canto reto: `border-radius: 0` da `.cta-gold` da landing, com 2px para
-    // a aresta nao ficar agressiva sob o dedo.
-    borderRadius: radius.sharp,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  buttonPrimary: {
-    backgroundColor: scheme.accent,
-  },
-  buttonPrimaryPressed: {
-    backgroundColor: scheme.accentPressed,
-  },
-  buttonQuiet: {
-    borderWidth: 1,
-    borderColor: scheme.textGhost,
-    backgroundColor: scheme.canvasWarm,
-  },
-  buttonQuietPressed: {
-    backgroundColor: scheme.border,
-  },
-  buttonSecondary: {
-    borderWidth: 1.5,
-    borderColor: scheme.accent,
-    backgroundColor: scheme.surface,
-  },
-  buttonSecondaryPressed: {
-    backgroundColor: scheme.accentSubtle,
-  },
-  buttonInerte: {
-    backgroundColor: scheme.border,
-    borderWidth: 1,
-    borderColor: scheme.textGhost,
-  },
-  buttonLink: {
-    minHeight: 44,
-    borderRadius: radius.sm,
-  },
-  buttonLabel: {
-    // `letter-spacing: 0.25em` da landing, no tamanho do rotulo.
-    letterSpacing: 2.4,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: scheme.border,
-    // Corpo quente, e nao branco: estes circulos vivem sobre o creme dos
-    // cabecalhos, e branco-sobre-creme com fio de 9% nao le como botao.
-    backgroundColor: scheme.canvasWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: scheme.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: scheme.borderSoft,
-    padding: 20,
-    ...shadow.card,
-  },
-  cardQuiet: {
-    backgroundColor: scheme.canvasWarm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: scheme.border,
-    padding: 16,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderWidth: 1,
-    borderRadius: radius.sharp,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  field: {
-    minHeight: 54,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: scheme.border,
-    backgroundColor: scheme.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontFamily: fonts.body,
-    fontSize: 17,
-    color: scheme.textPrimary,
-  },
-  rowPressable: {
-    width: '100%',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    minHeight: 56,
-    paddingHorizontal: space.lg,
-  },
-  rowLabel: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  rowValue: {
-    marginRight: 8,
-  },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowGroup: {
-    backgroundColor: scheme.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: scheme.borderSoft,
-    overflow: 'hidden',
-    ...shadow.card,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-    paddingVertical: 56,
-  },
-  emptyIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: scheme.goldSoft,
-    backgroundColor: scheme.goldSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.xl,
-  },
-});
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
+    button: {
+      minHeight: 54,
+      // Canto reto: `border-radius: 0` da `.cta-gold` da landing, com 2px para
+      // a aresta nao ficar agressiva sob o dedo.
+      borderRadius: radius.sharp,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+    },
+    buttonPrimary: {
+      backgroundColor: scheme.accent,
+    },
+    buttonPrimaryPressed: {
+      backgroundColor: scheme.accentPressed,
+    },
+    buttonQuiet: {
+      borderWidth: 1,
+      borderColor: scheme.textGhost,
+      backgroundColor: scheme.canvasWarm,
+    },
+    buttonQuietPressed: {
+      backgroundColor: scheme.border,
+    },
+    buttonSecondary: {
+      borderWidth: 1.5,
+      borderColor: scheme.accent,
+      backgroundColor: scheme.surface,
+    },
+    buttonSecondaryPressed: {
+      backgroundColor: scheme.accentSubtle,
+    },
+    buttonInerte: {
+      backgroundColor: scheme.border,
+      borderWidth: 1,
+      borderColor: scheme.textGhost,
+    },
+    buttonLink: {
+      minHeight: 44,
+      borderRadius: radius.sm,
+    },
+    buttonLabel: {
+      // `letter-spacing: 0.25em` da landing, no tamanho do rotulo.
+      letterSpacing: 2.4,
+    },
+    iconButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: scheme.border,
+      // Corpo quente, e nao branco: estes circulos vivem sobre o creme dos
+      // cabecalhos, e branco-sobre-creme com fio de 9% nao le como botao.
+      backgroundColor: scheme.canvasWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    card: {
+      backgroundColor: scheme.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: scheme.borderSoft,
+      padding: 20,
+      ...shadow.card,
+    },
+    cardQuiet: {
+      backgroundColor: scheme.canvasWarm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: scheme.border,
+      padding: 16,
+    },
+    tag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      borderWidth: 1,
+      borderRadius: radius.sharp,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+    },
+    field: {
+      minHeight: 54,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: scheme.border,
+      backgroundColor: scheme.surface,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontFamily: fonts.body,
+      fontSize: 17,
+      color: scheme.textPrimary,
+    },
+    rowPressable: {
+      width: '100%',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      minHeight: 56,
+      paddingHorizontal: space.lg,
+    },
+    rowLabel: {
+      flex: 1,
+      marginLeft: 14,
+    },
+    rowValue: {
+      marginRight: 8,
+    },
+    iconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowGroup: {
+      backgroundColor: scheme.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: scheme.borderSoft,
+      overflow: 'hidden',
+      ...shadow.card,
+    },
+    empty: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 40,
+      paddingVertical: 56,
+    },
+    emptyIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      borderWidth: 1,
+      borderColor: scheme.goldSoft,
+      backgroundColor: scheme.goldSubtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: space.xl,
+    },
+  });
+}
 
-export { scheme };
+export { useTheme };

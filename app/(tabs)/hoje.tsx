@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,16 +24,18 @@ import {
   Loading,
   Overline,
   Text,
-  scheme,
   useEspacoTabBar,
 } from '../../src/components/ui';
 import { PlayerAudio } from '../../src/player/PlayerAudio';
 import { ConviteLembrete } from '../../src/push/ConviteLembrete';
-import { radius, shadow, space } from '../../src/theme/tokens';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
 
 const TOUR_HOJE_KEY = 'feith.tour.hoje.v1';
 
 export default function Hoje() {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const router = useRouter();
   // O streak vem do summary do AuthContext, que ja e compartilhado por todas
   // as telas — buscar /streaks/me aqui seria a mesma duplicacao que a web faz.
@@ -306,7 +308,8 @@ export default function Hoje() {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   tela: { flex: 1, backgroundColor: scheme.canvas },
   barra: {
     flexDirection: 'row',
@@ -364,4 +367,5 @@ const estilos = StyleSheet.create({
     backgroundColor: scheme.accentPressed,
     opacity: 0.9,
   },
-});
+  });
+}

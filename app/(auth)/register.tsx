@@ -11,7 +11,8 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { googleSignInAvailable, signInWithGoogle } from '../../src/auth/googleSignIn';
 import { AccentHalo } from '../../src/components/ornaments';
 import { AppleButton, GoogleButton, Separador } from '../../src/components/SocialAuth';
-import { Button, Field, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
+import { Button, Field, GoldRule, Overline, Text } from '../../src/components/ui';
+import { useTheme } from '../../src/theme/ThemeContext';
 import { space } from '../../src/theme/tokens';
 
 /**
@@ -38,6 +39,7 @@ const REGRAS: { texto: string; ok: (s: string) => boolean }[] = [
 ];
 
 function Regra({ texto, atendida }: { texto: string; atendida: boolean }) {
+  const { scheme } = useTheme();
   return (
     <View style={estilos.regra}>
       <Ionicons
@@ -53,6 +55,7 @@ function Regra({ texto, atendida }: { texto: string; atendida: boolean }) {
 }
 
 export default function Register() {
+  const { scheme } = useTheme();
   const { signIn } = useAuth();
   const router = useRouter();
 

@@ -22,7 +22,7 @@
  * Os dois compartilham ALTURA e canto para empilharem sem degrau.
  */
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -32,8 +32,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { space } from '../theme/tokens';
-import { GoogleLogo, Text, scheme } from './ui';
+import { useTheme } from '../theme/ThemeContext';
+import { space, type Scheme } from '../theme/tokens';
+import { GoogleLogo, Text } from './ui';
 
 /**
  * Altura dos dois botoes.
@@ -72,6 +73,7 @@ export function GoogleButton({
   loading = false,
   style,
 }: SocialButtonProps) {
+  const { scheme } = useTheme();
   const [pressionado, setPressionado] = useState(false);
   const inativo = disabled || loading;
 
@@ -197,6 +199,8 @@ export function AppleButton({
  * tela, para login e registro nao divergirem.
  */
 export function Separador({ children = 'ou' }: { children?: string }) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <View style={estilos.separador}>
       <View style={estilos.fio} />
@@ -208,16 +212,18 @@ export function Separador({ children = 'ou' }: { children?: string }) {
   );
 }
 
-const estilos = StyleSheet.create({
-  separador: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginVertical: space.xxl,
-  },
-  fio: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: scheme.border,
-  },
-});
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
+    separador: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      marginVertical: space.xxl,
+    },
+    fio: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: scheme.border,
+    },
+  });
+}

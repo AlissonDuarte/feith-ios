@@ -1,13 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccentHalo } from '../components/ornaments';
-import { Button, GoldRule, Text, scheme } from '../components/ui';
-import { space } from '../theme/tokens';
+import { Button, GoldRule, Text } from '../components/ui';
+import { useTheme } from '../theme/ThemeContext';
+import { space, type Scheme } from '../theme/tokens';
 import { abrirLoja } from './useAtualizacao';
 
 export function AtualizacaoObrigatoria({ storeUrl }: { storeUrl: string | null }) {
+  const { scheme } = useTheme();
+  const styles = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <SafeAreaView style={styles.tela}>
       <AccentHalo />
@@ -27,18 +31,20 @@ export function AtualizacaoObrigatoria({ storeUrl }: { storeUrl: string | null }
   );
 }
 
-const styles = StyleSheet.create({
-  tela: {
-    flex: 1,
-    backgroundColor: scheme.canvas,
-    paddingHorizontal: space.xl,
-    paddingBottom: space.xl,
-  },
-  conteudo: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.lg,
-  },
-  centro: { textAlign: 'center' },
-});
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
+    tela: {
+      flex: 1,
+      backgroundColor: scheme.canvas,
+      paddingHorizontal: space.xl,
+      paddingBottom: space.xl,
+    },
+    conteudo: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space.lg,
+    },
+    centro: { textAlign: 'center' },
+  });
+}

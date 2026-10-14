@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,10 +22,10 @@ import {
   Loading,
   Overline,
   Text,
-  scheme,
 } from '../../src/components/ui';
 import { PlayerAudio } from '../../src/player/PlayerAudio';
-import { radius, shadow, space } from '../../src/theme/tokens';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
 
 /**
  * Leitura de uma reflexao por uuid.
@@ -35,6 +35,8 @@ import { radius, shadow, space } from '../../src/theme/tokens';
  * duplicando o mesmo componente.
  */
 export default function Leitura() {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { key } = useLocalSearchParams<{ key: string }>();
   const { isSupporter } = useAuth();
 
@@ -198,7 +200,8 @@ export default function Leitura() {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   tela: { flex: 1, backgroundColor: scheme.canvas },
   ancora: {
     position: 'absolute',
@@ -224,4 +227,5 @@ const estilos = StyleSheet.create({
     backgroundColor: scheme.accentPressed,
     opacity: 0.9,
   },
-});
+  });
+}

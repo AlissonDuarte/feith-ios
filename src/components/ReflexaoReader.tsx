@@ -20,11 +20,10 @@ import Markdown from 'react-native-marked';
 
 import { formatLongPT } from '../api/dates';
 import type { Reflection, SharedReflection } from '../api/types';
-import { REFLECTION_SECTIONS, fonts, schemes, space, type } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
+import { REFLECTION_SECTIONS, fonts, space, type } from '../theme/tokens';
 import { EndMark, QuoteMark, SectionNumeral } from './ornaments';
 import { GoldRule, Overline, Text } from './ui';
-
-const scheme = schemes.light;
 
 /** Aceita tanto a reflexao completa quanto a versao publica do link curto. */
 type Lida = Reflection | SharedReflection;
@@ -37,17 +36,17 @@ type Lida = Reflection | SharedReflection;
  * os paragrafos colapsam para a largura da palavra mais longa.
  */
 function Corpo({ texto, largura }: { texto: string; largura: number }) {
+  const { scheme } = useTheme();
   return (
     <Markdown
       value={texto}
       // O react-native-marked decide as cores por `useColorScheme()` do
-      // aparelho (lib/Markdown.js) — e este app e claro por escolha, nao por
-      // acidente: `scheme` la em cima e fixo em `schemes.light`. Sem fixar
-      // aqui tambem, num telefone no modo escuro a biblioteca montava a
-      // paleta escura enquanto os `styles` abaixo continuavam forcando a
-      // tinta escura: texto preto sobre fundo preto. Como o texto biblico e
-      // renderizado por um <Text> nosso, ele escapava — dai o primeiro bloco
-      // legivel e os cinco seguintes em caixa preta.
+      // aparelho (lib/Markdown.js), independente do nosso `scheme`. Por isso
+      // toda cor e passada explicita aqui (vinda de `useTheme()`, entao
+      // sempre o mesmo tema que o resto da tela) e o fundo da lista interna
+      // fica forcado a `transparent` logo abaixo — sem isso, um `scheme`
+      // divergente do palpite da biblioteca produz texto escuro sobre fundo
+      // escuro ou vice-versa.
       theme={{
         colors: {
           text: scheme.textPrimary,
@@ -115,6 +114,7 @@ export function ReflexaoReader({
   reflexao: Lida;
   largura?: number;
 }) {
+  const { scheme } = useTheme();
   const { width } = useWindowDimensions();
   const coluna = largura ?? width - space.gutter * 2;
 

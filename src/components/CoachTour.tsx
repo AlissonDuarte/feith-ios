@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Modal, StyleSheet, View, type View as RNView } from 'react-native';
 import Svg, { Defs, Mask, Rect } from 'react-native-svg';
 
-import { radius, schemes, shadow, space } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
+import { radius, shadow, space, type Scheme } from '../theme/tokens';
 import { Button, Card, GoldRule, Overline, Text } from './ui';
-
-const scheme = schemes.light;
 
 const PADDING_RECORTE = 10;
 
@@ -38,6 +37,8 @@ interface Props {
  * transparente), nao com 4 retangulos manuais.
  */
 export function CoachTour({ visivel, passos, onConcluir }: Props) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const [indice, setIndice] = useState(0);
   const [retangulo, setRetangulo] = useState<Retangulo | null>(null);
   const { width: larguraTela, height: alturaTela } = Dimensions.get('window');
@@ -199,7 +200,8 @@ export function CoachTour({ visivel, passos, onConcluir }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   anelRecorte: {
     position: 'absolute',
     borderWidth: 2,
@@ -227,4 +229,5 @@ const estilos = StyleSheet.create({
     width: undefined,
     minWidth: 120,
   },
-});
+  });
+}

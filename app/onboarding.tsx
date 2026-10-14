@@ -1,16 +1,17 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, useWindowDimensions, View, type ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../src/api/client';
 import { useAuth } from '../src/auth/AuthContext';
 import { AccentHalo } from '../src/components/ornaments';
-import { Button, GoldRule, Overline, Text, scheme } from '../src/components/ui';
+import { Button, GoldRule, Overline, Text } from '../src/components/ui';
 import { posthog, posthogLog } from '../src/config/posthog';
 import { getPushState } from '../src/push/registerDevice';
 import { ativarLembretes, registrarExibicao, registrarRecusa } from '../src/push/useConviteLembrete';
-import { fonts, radius, space } from '../src/theme/tokens';
+import { useTheme } from '../src/theme/ThemeContext';
+import { fonts, radius, space, type Scheme } from '../src/theme/tokens';
 
 /**
  * Onboarding em tela cheia.
@@ -61,6 +62,8 @@ const PASSO_LEMBRETE: Passo = {
 };
 
 export default function Onboarding() {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { refreshSummary } = useAuth();
@@ -217,7 +220,8 @@ export default function Onboarding() {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   numeral: {
     fontFamily: fonts.display,
     fontSize: 76,
@@ -252,4 +256,5 @@ const estilos = StyleSheet.create({
     backgroundColor: scheme.gold,
     borderRadius: radius.pill,
   },
-});
+  });
+}

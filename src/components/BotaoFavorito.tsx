@@ -19,14 +19,14 @@
  */
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet } from 'react-native';
 
 import { api } from '../api/client';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
-import { radius } from '../theme/tokens';
-import { scheme } from './ui';
+import { useTheme } from '../theme/ThemeContext';
+import { radius, type Scheme } from '../theme/tokens';
 
 interface Props {
   reflectionUuid: string;
@@ -44,6 +44,8 @@ export function BotaoFavorito({
   tamanho = 20,
   emMoldura = false,
 }: Props) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { summary, refreshSummary } = useAuth();
   const [ocupado, setOcupado] = useState(false);
 
@@ -106,19 +108,21 @@ export function BotaoFavorito({
   );
 }
 
-const estilos = StyleSheet.create({
-  moldura: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: scheme.border,
-    backgroundColor: scheme.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  molduraAtiva: {
-    borderColor: scheme.goldSoft,
-    backgroundColor: scheme.goldSubtle,
-  },
-});
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
+    moldura: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: scheme.border,
+      backgroundColor: scheme.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    molduraAtiva: {
+      borderColor: scheme.goldSoft,
+      backgroundColor: scheme.goldSubtle,
+    },
+  });
+}

@@ -28,14 +28,13 @@ import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { IapProvider } from '../src/iap/IapContext';
 import { posthog } from '../src/config/posthog';
 import { useRastreioDeTelas } from '../src/config/useRastreioDeTelas';
-import { fonts, schemes } from '../src/theme/tokens';
+import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
+import { fonts, type Scheme } from '../src/theme/tokens';
 import { usePushNotifications } from '../src/push/usePushNotifications';
 import { AtualizacaoObrigatoria } from '../src/update/AtualizacaoObrigatoria';
 import { useAtualizacao } from '../src/update/useAtualizacao';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
-
-const schemeAtual = schemes.light;
 
 /**
  * Rotas que funcionam sem sessao.
@@ -55,18 +54,18 @@ const ROTAS_PUBLICAS = ['r', 'politicas'];
  * `headerShadowVisible: false` tira a linha cinza que o iOS desenha por
  * padrao: sobre creme ela le como sujeira, e o proprio conteudo ja separa.
  */
-function header({ title, voltar }: { title?: string; voltar: string }) {
+function header({ title, voltar, scheme }: { title?: string; voltar: string; scheme: Scheme }) {
   return {
     headerShown: true,
     ...(title ? { title } : {}),
     headerBackTitle: voltar,
     headerShadowVisible: false,
-    headerTintColor: schemeAtual.accent,
-    headerStyle: { backgroundColor: schemeAtual.canvas },
+    headerTintColor: scheme.accent,
+    headerStyle: { backgroundColor: scheme.canvas },
     headerTitleStyle: {
       fontFamily: fonts.serifSemi,
       fontSize: 20,
-      color: schemeAtual.textPrimary,
+      color: scheme.textPrimary,
     },
   } as const;
 }
@@ -80,6 +79,7 @@ function header({ title, voltar }: { title?: string; voltar: string }) {
  */
 function RouteGuard() {
   const { token, loading, summary } = useAuth();
+  const { scheme } = useTheme();
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
@@ -141,13 +141,23 @@ function RouteGuard() {
   // politicas) precisam de header nativo, botao de voltar e do gesto de
   // arrastar da borda. Com Slot elas apareceriam sem nenhuma forma de sair.
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: schemeAtual.canvas } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: scheme.canvas } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="leitura/[key]" options={header({ voltar: 'Voltar' })} />
-      <Stack.Screen name="politicas" options={header({ title: 'Privacidade', voltar: 'Voltar' })} />
-      <Stack.Screen name="perfil/editar" options={header({ title: 'Editar perfil', voltar: 'Perfil' })} />
-      <Stack.Screen name="perfil/notificacoes" options={header({ title: 'Lembretes', voltar: 'Perfil' })} />
+      <Stack.Screen name="leitura/[key]" options={header({ voltar: 'Voltar', scheme })} />
+      <Stack.Screen name="politicas" options={header({ title: 'Privacidade', voltar: 'Voltar', scheme })} />
+      <Stack.Screen
+        name="perfil/editar"
+        options={header({ title: 'Editar perfil', voltar: 'Perfil', scheme })}
+      />
+      <Stack.Screen
+        name="perfil/notificacoes"
+        options={header({ title: 'Lembretes', voltar: 'Perfil', scheme })}
+      />
+      <Stack.Screen
+        name="perfil/aparencia"
+        options={header({ title: 'Aparência', voltar: 'Perfil', scheme })}
+      />
       <Stack.Screen
         name="assinatura"
         options={{
@@ -161,6 +171,12 @@ function RouteGuard() {
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
   );
+}
+
+/** Icones claros sobre fundo escuro, escuros sobre fundo claro — a mesma regra de sempre, agora reativa ao tema. */
+function BarraDeStatus() {
+  const { effectiveMode } = useTheme();
+  return <StatusBar style={effectiveMode === 'dark' ? 'light' : 'dark'} />;
 }
 
 export default function RootLayout() {
@@ -192,18 +208,19 @@ export default function RootLayout() {
     return null;
   }
 
-  const conteudo = atualizacao.situacao === 'obrigatoria' ? (
-    <AtualizacaoObrigatoria storeUrl={atualizacao.storeUrl} />
-  ) : (
-    <AuthProvider>
-      <IapProvider>
-        {/* `dark` e nao `auto`: as telas sao creme em qualquer modo do
-            sistema, entao deixar o iOS decidir pelo tema do aparelho
-            produziria icones brancos sobre papel no modo escuro. */}
-        <StatusBar style="dark" />
-        <RouteGuard />
-      </IapProvider>
-    </AuthProvider>
+  const conteudo = (
+    <ThemeProvider>
+      <BarraDeStatus />
+      {atualizacao.situacao === 'obrigatoria' ? (
+        <AtualizacaoObrigatoria storeUrl={atualizacao.storeUrl} />
+      ) : (
+        <AuthProvider>
+          <IapProvider>
+            <RouteGuard />
+          </IapProvider>
+        </AuthProvider>
+      )}
+    </ThemeProvider>
   );
 
   return (

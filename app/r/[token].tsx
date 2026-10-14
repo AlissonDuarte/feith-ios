@@ -7,9 +7,10 @@ import { api } from '../../src/api/client';
 import { ApiError, type SharedReflection } from '../../src/api/types';
 import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
-import { Button, EmptyState, GoldRule, Loading, Overline, Text, scheme } from '../../src/components/ui';
+import { Button, EmptyState, GoldRule, Loading, Overline, Text } from '../../src/components/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 import { posthog } from '../../src/config/posthog';
+import { useTheme } from '../../src/theme/ThemeContext';
 import { space } from '../../src/theme/tokens';
 
 /**
@@ -23,6 +24,7 @@ import { space } from '../../src/theme/tokens';
  * instalado, e pela pagina web quando nao esta.
  */
 export default function LinkCompartilhado() {
+  const { scheme } = useTheme();
   const { token } = useLocalSearchParams<{ token: string }>();
   const { token: sessao } = useAuth();
   const router = useRouter();

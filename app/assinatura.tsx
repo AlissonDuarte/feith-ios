@@ -12,7 +12,7 @@
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -32,11 +32,11 @@ import {
   GoldRule,
   Overline,
   Text,
-  scheme,
 } from '../src/components/ui';
 import { useIap } from '../src/iap/IapContext';
 import { NOME_LOJA } from '../src/iap/tipos';
-import { radius, space } from '../src/theme/tokens';
+import { useTheme } from '../src/theme/ThemeContext';
+import { radius, space, type Scheme } from '../src/theme/tokens';
 
 const APPLE_STANDARD_EULA =
   'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
@@ -48,6 +48,8 @@ interface BeneficioItemProps {
 }
 
 function BeneficioItem({ icone, titulo, descricao }: BeneficioItemProps) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <View style={estilos.beneficioRow}>
       <View style={estilos.iconeContainer}>
@@ -66,6 +68,8 @@ function BeneficioItem({ icone, titulo, descricao }: BeneficioItemProps) {
 }
 
 export default function AssinaturaModal() {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const router = useRouter();
   const { isSupporter } = useAuth();
   const {
@@ -262,7 +266,8 @@ export default function AssinaturaModal() {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   headerModal: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -362,4 +367,5 @@ const estilos = StyleSheet.create({
   link: {
     textDecorationLine: 'underline',
   },
-});
+  });
+}

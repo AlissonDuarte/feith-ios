@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,12 +10,15 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { googleSignInAvailable, signInWithGoogle } from '../../src/auth/googleSignIn';
 import { AccentHalo } from '../../src/components/ornaments';
 import { AppleButton, GoogleButton, Separador } from '../../src/components/SocialAuth';
-import { Button, Field, GoldRule, Overline, Text, scheme } from '../../src/components/ui';
-import { fonts, space } from '../../src/theme/tokens';
+import { Button, Field, GoldRule, Overline, Text } from '../../src/components/ui';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { fonts, space, type Scheme } from '../../src/theme/tokens';
 
 type Metodo = 'email' | 'google' | 'apple' | null;
 
 export default function Login() {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { signIn } = useAuth();
   const router = useRouter();
 
@@ -182,13 +185,15 @@ export default function Login() {
   );
 }
 
-const estilos = StyleSheet.create({
-  marca: {
-    fontFamily: fonts.display,
-    fontSize: 56,
-    lineHeight: 64,
-    letterSpacing: -1,
-    color: scheme.textPrimary,
-    marginTop: space.md,
-  },
-});
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
+    marca: {
+      fontFamily: fonts.display,
+      fontSize: 56,
+      lineHeight: 64,
+      letterSpacing: -1,
+      color: scheme.textPrimary,
+      marginTop: space.md,
+    },
+  });
+}

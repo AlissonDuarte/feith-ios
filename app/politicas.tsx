@@ -2,7 +2,8 @@ import { Linking, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EndMark, SectionNumeral } from '../src/components/ornaments';
-import { GoldRule, Overline, Text, scheme } from '../src/components/ui';
+import { GoldRule, Overline, Text } from '../src/components/ui';
+import { useTheme } from '../src/theme/ThemeContext';
 import { space } from '../src/theme/tokens';
 
 /**
@@ -99,6 +100,7 @@ const SECOES: Secao[] = [
 ];
 
 export default function Politicas() {
+  const { scheme } = useTheme();
   const ano = new Date().getFullYear();
 
   return (

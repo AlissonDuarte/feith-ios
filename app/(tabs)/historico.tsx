@@ -16,12 +16,13 @@ import {
   ScreenHeader,
   Text,
   TouchableCard,
-  scheme,
 } from '../../src/components/ui';
 import { useListaPaginada } from '../../src/hooks/useListaPaginada';
+import { useTheme } from '../../src/theme/ThemeContext';
 import { space } from '../../src/theme/tokens';
 
 export default function Historico() {
+  const { scheme } = useTheme();
   const router = useRouter();
   const { summary, isSupporter } = useAuth();
   const lista = useListaPaginada<HistoryItem>(api.getHistory);

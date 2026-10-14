@@ -6,7 +6,8 @@ import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router/js-tabs';
 import { Platform, StyleSheet, View } from 'react-native';
 
-import { fonts, schemes } from '../../src/theme/tokens';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { fonts } from '../../src/theme/tokens';
 
 /**
  * Tab bar com os mesmos 5 destinos do Sidebar.svelte:99-105 da web.
@@ -25,7 +26,7 @@ import { fonts, schemes } from '../../src/theme/tokens';
  *    (oxblood sobre cinza) e um sinal fraco em icones de 24px.
  */
 export default function TabsLayout() {
-  const scheme = schemes.light;
+  const { scheme, effectiveMode } = useTheme();
 
   return (
     <Tabs
@@ -45,13 +46,15 @@ export default function TabsLayout() {
         tabBarBackground: () =>
           Platform.OS === 'ios' ? (
             <BlurView
-              tint="light"
+              tint={effectiveMode === 'dark' ? 'dark' : 'light'}
               intensity={80}
               style={StyleSheet.absoluteFill}
             >
-              {/* Veu creme por cima do blur: sem ele o vidro puxa para o
-                  cinza-azulado do sistema e briga com o papel das telas. */}
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(250,248,244,0.72)' }]} />
+              {/* Veu da cor de superficie por cima do blur: sem ele o vidro
+                  puxa para o cinza-azulado do sistema e briga com o papel
+                  das telas. `surfaceGlass` ja e essa mesma cor com alpha,
+                  claro ou escuro. */}
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: scheme.surfaceGlass }]} />
             </BlurView>
           ) : null,
         tabBarLabelStyle: {

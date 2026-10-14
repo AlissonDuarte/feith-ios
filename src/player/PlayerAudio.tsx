@@ -15,15 +15,14 @@
  */
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '../components/ui';
-import { radius, schemes, shadow, space } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
+import { radius, shadow, space, type Scheme } from '../theme/tokens';
 import { formatarTempo } from './tempo';
 import { SALTO_SEGUNDOS, useAudioReflexao } from './useAudioReflexao';
-
-const scheme = schemes.light;
 
 interface Props {
   reflectionUuid: string;
@@ -34,6 +33,8 @@ interface Props {
 }
 
 export function PlayerAudio({ reflectionUuid, referencia, onAnotar }: Props) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const [aberto, setAberto] = useState(false);
   const audio = useAudioReflexao(reflectionUuid);
 
@@ -281,7 +282,8 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   capsula: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -372,4 +374,5 @@ const estilos = StyleSheet.create({
     backgroundColor: scheme.accentPressed,
     opacity: 0.92,
   },
-});
+  });
+}

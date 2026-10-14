@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import * as StoreReview from 'expo-store-review';
 import { Alert, Share, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,15 +18,19 @@ import {
   RowGroup,
   ScreenHeader,
   Text,
-  scheme,
   useEspacoTabBar,
 } from '../../src/components/ui';
 import { posthog } from '../../src/config/posthog';
 import { useIap } from '../../src/iap/IapContext';
 import { NOME_LOJA } from '../../src/iap/tipos';
-import { fonts, radius, space } from '../../src/theme/tokens';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { fonts, radius, space, type Scheme } from '../../src/theme/tokens';
+
+const ROTULO_MODO = { system: 'Sistema', light: 'Claro', dark: 'Escuro' } as const;
 
 function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; limite: number }) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const razao = limite > 0 ? Math.min(1, usado / limite) : 0;
   const perto = razao >= 0.85;
 
@@ -60,6 +64,8 @@ function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; lim
 }
 
 export default function Perfil() {
+  const { scheme, mode } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { summary, isSupporter, diasParaExpirar, signOut } = useAuth();
   const { gerenciar } = useIap();
   const router = useRouter();
@@ -275,6 +281,14 @@ export default function Perfil() {
             iconColor={scheme.gold}
             label="Lembretes"
             onPress={() => router.push('/perfil/notificacoes')}
+          />
+          <ListRow
+            icon="contrast-outline"
+            iconBg="rgba(139,105,20,0.10)"
+            iconColor={scheme.gold}
+            label="Aparência"
+            value={ROTULO_MODO[mode]}
+            onPress={() => router.push('/perfil/aparencia')}
             ultimo
           />
         </RowGroup>
@@ -337,7 +351,8 @@ export default function Perfil() {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
   monograma: {
     width: 80,
     height: 80,
@@ -402,4 +417,5 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(122,31,31,0.15)',
   },
-});
+  });
+}

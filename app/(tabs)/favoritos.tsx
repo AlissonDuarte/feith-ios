@@ -7,11 +7,13 @@ import { formatRelativePT } from '../../src/api/dates';
 import type { BookmarkItem } from '../../src/api/types';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { FeedList } from '../../src/components/FeedList';
-import { GoldRule, ScreenHeader, Text, TouchableCard, scheme } from '../../src/components/ui';
+import { GoldRule, ScreenHeader, Text, TouchableCard } from '../../src/components/ui';
 import { useListaPaginada } from '../../src/hooks/useListaPaginada';
+import { useTheme } from '../../src/theme/ThemeContext';
 import { space } from '../../src/theme/tokens';
 
 export default function Favoritos() {
+  const { scheme } = useTheme();
   const router = useRouter();
   const lista = useListaPaginada<BookmarkItem>(api.getBookmarks);
 

@@ -20,8 +20,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api } from '../api/client';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
+import { useTheme } from '../theme/ThemeContext';
 import { fonts, space } from '../theme/tokens';
-import { Button, GoldRule, Overline, Text, scheme } from './ui';
+import { Button, GoldRule, Overline, Text } from './ui';
 
 /** Mesmo minimo da web (WriteNote.svelte): tres palavras. */
 const MINIMO_PALAVRAS = 3;
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export function NotaSheet({ visivel, reflectionUuid, onFechar, onSalvou }: Props) {
+  const { scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { summary, refreshSummary } = useAuth();
   const [texto, setTexto] = useState('');

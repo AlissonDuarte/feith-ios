@@ -11,8 +11,9 @@ import { useMemo } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, TextInput, View } from 'react-native';
 
 import type { ListaPaginada } from '../hooks/useListaPaginada';
+import { useTheme } from '../theme/ThemeContext';
 import { fonts, radius, space } from '../theme/tokens';
-import { Button, Card, EmptyState, Text, scheme, useEspacoTabBar } from './ui';
+import { Button, Card, EmptyState, Text, useEspacoTabBar } from './ui';
 
 interface FeedListProps<T> {
   lista: ListaPaginada<T>;
@@ -35,6 +36,7 @@ interface FeedListProps<T> {
  * o que vai chegar, e a tela nao "pula" quando o conteudo entra.
  */
 function Esqueleto() {
+  const { scheme } = useTheme();
   return (
     <Card style={{ marginBottom: space.md, opacity: 0.6 }}>
       <View style={{ height: 14, width: '46%', backgroundColor: scheme.borderSoft, borderRadius: 3 }} />
@@ -75,6 +77,7 @@ function CampoBusca({
   aoMudar: (v: string) => void;
   placeholder: string;
 }) {
+  const { scheme } = useTheme();
   return (
     <View
       style={{
@@ -122,6 +125,7 @@ export function FeedList<T>({
   iconeVazio,
   cabecalho,
 }: FeedListProps<T>) {
+  const { scheme } = useTheme();
   const {
     itens,
     carregando,

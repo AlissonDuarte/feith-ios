@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActionSheetIOS, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,8 +9,9 @@ import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import type { UserProfile } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
-import { Button, Card, Field, Loading, Overline, Text, scheme } from '../../src/components/ui';
-import { radius, space } from '../../src/theme/tokens';
+import { Button, Card, Field, Loading, Overline, Text } from '../../src/components/ui';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { radius, space, type Scheme } from '../../src/theme/tokens';
 
 type Genero = 'male' | 'female' | 'other';
 
@@ -65,6 +66,8 @@ function CampoSeletor({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <View>
       <Overline style={{ marginBottom: space.sm }}>{label}</Overline>
@@ -85,6 +88,7 @@ function CampoSeletor({
 }
 
 export default function EditarPerfil() {
+  const { scheme } = useTheme();
   const router = useRouter();
   const { refreshSummary } = useAuth();
 
@@ -235,16 +239,18 @@ export default function EditarPerfil() {
   );
 }
 
-const estilos = StyleSheet.create({
-  seletor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 54,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: scheme.border,
-    backgroundColor: scheme.surface,
-    paddingHorizontal: 16,
-  },
-});
+function criarEstilos(scheme: Scheme) {
+  return StyleSheet.create({
+    seletor: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 54,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: scheme.border,
+      backgroundColor: scheme.surface,
+      paddingHorizontal: 16,
+    },
+  });
+}
