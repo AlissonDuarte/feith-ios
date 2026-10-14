@@ -128,6 +128,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.feith.app',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.feith.app',
     versionCode: Number(process.env.ANDROID_VERSION_CODE) || 1,
     ...(googleServicesFile ? { googleServicesFile } : {}),
     predictiveBackGestureEnabled: false,

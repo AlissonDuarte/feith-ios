@@ -1,10 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import * as StoreReview from 'expo-store-review';
+import { Alert, Share, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { api } from '../../src/api/client';
+import { api, WEB_URL } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import { useAuth } from '../../src/auth/AuthContext';
 import { AccentHalo } from '../../src/components/ornaments';
@@ -64,6 +65,26 @@ export default function Perfil() {
   const router = useRouter();
   const { respiro } = useEspacoTabBar();
   const [excluindo, setExcluindo] = useState(false);
+
+  async function compartilharApp() {
+    try {
+      await Share.share({
+        title: 'feith — exegese diária',
+        message: `Tenho usado o feith pra estudar a Bíblia todo dia e queria recomendar: ${WEB_URL}`,
+        url: WEB_URL,
+      });
+      posthog?.capture('app_shared', { source: 'perfil' });
+    } catch {}
+  }
+
+  async function avaliarApp() {
+    try {
+      if (await StoreReview.hasAction()) {
+        await StoreReview.requestReview();
+        posthog?.capture('app_rating_requested', { source: 'perfil' });
+      }
+    } catch {}
+  }
 
   function confirmarSaida() {
     // `confirm()` da web (Sidebar.svelte:54) nao existe no RN.
@@ -259,6 +280,20 @@ export default function Perfil() {
         </RowGroup>
 
         <RowGroup titulo="Sobre">
+          <ListRow
+            icon="share-social-outline"
+            iconBg="rgba(139,105,20,0.10)"
+            iconColor={scheme.gold}
+            label="Compartilhar app"
+            onPress={compartilharApp}
+          />
+          <ListRow
+            icon="star-outline"
+            iconBg="rgba(139,105,20,0.10)"
+            iconColor={scheme.gold}
+            label="Avaliar na loja"
+            onPress={avaliarApp}
+          />
           <ListRow
             icon="shield-checkmark-outline"
             iconBg={scheme.canvasWarm}

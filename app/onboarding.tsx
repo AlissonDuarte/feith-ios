@@ -45,22 +45,6 @@ const PASSOS: Passo[] = [
       'O feith foi construído para quem leva a fé a sério e quer entender as Escrituras com rigor histórico e teológico.',
   },
   {
-    titulo: 'Como cada reflexão funciona',
-    corpo: 'Toda reflexão diária é estruturada em três camadas de leitura:',
-    itens: [
-      { rotulo: 'Contexto', desc: 'Situação histórica, literária e cultural do texto' },
-      { rotulo: 'Exegese', desc: 'O que o texto diz nas línguas originais' },
-      { rotulo: 'Doutrina', desc: 'O que isso significa para a fé hoje' },
-    ],
-    detalhe: 'Leva cerca de 5–10 minutos por dia. Profundidade sem pressa.',
-  },
-  {
-    titulo: 'Capture seus pensamentos',
-    corpo:
-      'Registre insights, perguntas e conexões enquanto lê. Suas anotações ficam salvas e organizadas por reflexão.',
-    detalhe: 'O botão Anotar, no canto da tela de leitura, abre o editor a qualquer momento.',
-  },
-  {
     titulo: 'A consistência que transforma',
     corpo:
       'A leitura diária é o que separa conhecimento acumulado de transformação real.',

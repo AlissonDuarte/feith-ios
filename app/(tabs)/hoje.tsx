@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { mensagemDe } from '../../src/api/errors';
 import type { Reflection } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
+import { CoachTour, type PassoTour } from '../../src/components/CoachTour';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
@@ -29,6 +31,8 @@ import { PlayerAudio } from '../../src/player/PlayerAudio';
 import { ConviteLembrete } from '../../src/push/ConviteLembrete';
 import { radius, shadow, space } from '../../src/theme/tokens';
 
+const TOUR_HOJE_KEY = 'feith.tour.hoje.v1';
+
 export default function Hoje() {
   const router = useRouter();
   // O streak vem do summary do AuthContext, que ja e compartilhado por todas
@@ -41,7 +45,36 @@ export default function Hoje() {
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [escrevendo, setEscrevendo] = useState(false);
+  const [tourVisivel, setTourVisivel] = useState(false);
   const rastreio = useRastreioDeLeitura(reflexao, 'hoje');
+
+  const refCorpo = useRef<View>(null);
+  const refCapsula = useRef<View>(null);
+  const refBarra = useRef<View>(null);
+
+  const passosTour: PassoTour[] = [
+    {
+      ref: refCorpo,
+      titulo: 'A reflexão de hoje',
+      corpo: 'Contexto, exegese e doutrina em três camadas — uma leitura de 5 a 10 minutos.',
+    },
+    {
+      ref: refCapsula,
+      titulo: 'Ouça ou anote',
+      corpo: 'Toque em OUVIR para a versão narrada (Apoiador) ou em ANOTAR para registrar um pensamento.',
+    },
+    {
+      ref: refBarra,
+      titulo: 'Guarde para depois',
+      corpo: 'O marcador guarda a reflexão em Favoritos; o ícone ao lado compartilha com alguém.',
+    },
+  ];
+
+  function concluirTour(metodo: 'completed' | 'skipped') {
+    setTourVisivel(false);
+    void AsyncStorage.setItem(TOUR_HOJE_KEY, '1');
+    posthog?.capture('coach_tour_hoje_completed', { completion_method: metodo });
+  }
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -62,6 +95,18 @@ export default function Hoje() {
   useEffect(() => {
     void carregar().finally(() => setCarregando(false));
   }, [carregar]);
+
+  useEffect(() => {
+    if (!reflexao?.uuid) return;
+    AsyncStorage.getItem(TOUR_HOJE_KEY)
+      .then((visto) => {
+        if (!visto) {
+          setTourVisivel(true);
+          posthog?.capture('coach_tour_hoje_shown');
+        }
+      })
+      .catch(() => undefined);
+  }, [reflexao?.uuid]);
 
   const compartilhar = useCallback(async () => {
     if (!reflexao?.uuid) return;
@@ -144,7 +189,7 @@ export default function Hoje() {
       {/* ── Barra superior ────────────────────────────────────────────────
           Sem titulo: o titulo da tela e a propria referencia biblica, logo
           abaixo. Repetir "Hoje" aqui gastaria a linha mais nobre da tela. */}
-      <View style={estilos.barra}>
+      <View ref={refBarra} style={estilos.barra}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
           {streak > 0 ? (
             <View style={estilos.streak}>
@@ -202,7 +247,7 @@ export default function Hoje() {
           />
         }
       >
-        <View onLayout={rastreio.onLayoutTexto}>
+        <View ref={refCorpo} onLayout={rastreio.onLayoutTexto}>
           <ReflexaoReader reflexao={reflexao} />
         </View>
 
@@ -238,6 +283,7 @@ export default function Hoje() {
           o produto quer estimular, e um icone de lapis sozinho nao a promete
           para quem nunca a usou. */}
       <View
+        ref={refCapsula}
         style={[estilos.ancora, { bottom: Math.max(96, alturaTabBar + space.lg) }]}
         pointerEvents="box-none"
       >
@@ -254,6 +300,8 @@ export default function Hoje() {
         onFechar={() => setEscrevendo(false)}
         onSalvou={() => setEscrevendo(false)}
       />
+
+      <CoachTour visivel={tourVisivel} passos={passosTour} onConcluir={concluirTour} />
     </SafeAreaView>
   );
 }
