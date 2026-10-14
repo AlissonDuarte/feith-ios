@@ -74,24 +74,44 @@ export function CoachTour({ visivel, passos, onConcluir }: Props) {
     setIndice((i) => i + 1);
   }
 
+  // Recorte limitado a tela: alvos mais altos que a viewport (a reflexao
+  // inteira, por exemplo — ReflexaoReader.tsx nao e virtualizado, entao
+  // measureInWindow devolve a altura do conteudo rolavel inteiro, nao so a
+  // parte visivel) nao podem esticar o aro nem o calculo do balao para fora
+  // da tela.
   const recorte = retangulo
-    ? {
-        x: retangulo.x - PADDING_RECORTE,
-        y: retangulo.y - PADDING_RECORTE,
-        width: retangulo.width + PADDING_RECORTE * 2,
-        height: retangulo.height + PADDING_RECORTE * 2,
-      }
+    ? (() => {
+        const y = Math.max(retangulo.y - PADDING_RECORTE, 0);
+        const base = Math.min(retangulo.y + retangulo.height + PADDING_RECORTE, alturaTela);
+        return {
+          x: retangulo.x - PADDING_RECORTE,
+          y,
+          width: retangulo.width + PADDING_RECORTE * 2,
+          height: Math.max(base - y, 0),
+        };
+      })()
     : null;
 
-  // Baloes abaixo do recorte, a nao ser que ele esteja na metade de baixo da
-  // tela — ai sobe para cima dele, pra nao cair atras da tab bar.
-  const abaixo = !recorte || recorte.y < alturaTela / 2;
-  const topoBalao = recorte
-    ? abaixo
-      ? recorte.y + recorte.height + space.lg
-      : undefined
-    : undefined;
-  const baseBalao = recorte && !abaixo ? alturaTela - recorte.y + space.lg : undefined;
+  // Prefere o lado (acima/abaixo do recorte) com mais espaco livre. Se nenhum
+  // dos dois tiver espaco suficiente para o balao — caso de um recorte que
+  // ja ocupa quase a tela toda — cai para uma posicao fixa perto da base,
+  // sempre alcancavel.
+  const ESPACO_MINIMO_BALAO = 260;
+  let topoBalao: number | undefined;
+  let baseBalao: number | undefined;
+  if (recorte) {
+    const espacoAbaixo = alturaTela - (recorte.y + recorte.height);
+    const espacoAcima = recorte.y;
+    if (espacoAbaixo >= ESPACO_MINIMO_BALAO) {
+      topoBalao = recorte.y + recorte.height + space.lg;
+    } else if (espacoAcima >= ESPACO_MINIMO_BALAO) {
+      baseBalao = alturaTela - recorte.y + space.lg;
+    } else {
+      baseBalao = space.xxl;
+    }
+  } else {
+    baseBalao = space.xxl;
+  }
 
   return (
     <Modal visible={visivel} transparent statusBarTranslucent animationType="fade">
