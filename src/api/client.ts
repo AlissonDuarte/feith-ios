@@ -29,6 +29,7 @@ import {
   type BookmarkItem,
   type BookmarkToggleResponse,
   type ErrorPayload,
+  type FeedbackPayload,
   type HistoryItem,
   type LoginPayload,
   type NoteItem,
@@ -439,6 +440,9 @@ export const api = {
 
   unregisterDeviceToken: (token: string) =>
     request<unknown>('/push/device', { method: 'DELETE', body: { token } }),
+
+  sendFeedback: (payload: FeedbackPayload) =>
+    request<{ uuid: string }>('/feedback', { method: 'POST', body: payload }),
 };
 
 export { BASE_URL, WEB_URL };

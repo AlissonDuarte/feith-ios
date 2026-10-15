@@ -15,10 +15,12 @@
  */
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '../components/ui';
+import { posthog } from '../config/posthog';
 import { useTheme } from '../theme/ThemeContext';
 import { radius, shadow, space, type Scheme } from '../theme/tokens';
 import { formatarTempo } from './tempo';
@@ -37,10 +39,73 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar }: Props) {
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const [aberto, setAberto] = useState(false);
   const audio = useAudioReflexao(reflectionUuid);
+  const router = useRouter();
 
   function tocar(acao: () => void) {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     acao();
+  }
+
+  function abrirAssinatura() {
+    posthog?.capture('audio_paywall_opened', {
+      reflection_uuid: reflectionUuid,
+      source: onAnotar ? 'hoje' : 'leitura',
+    });
+    router.push('/assinatura');
+  }
+
+  if (audio.semAcesso) {
+    const ouvirBloqueado = (
+      <>
+        <Ionicons name="lock-closed" size={14} color={scheme.goldSoft} />
+        <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
+          OUVIR
+        </Text>
+      </>
+    );
+
+    if (onAnotar) {
+      return (
+        <View style={estilos.capsula}>
+          <Pressable
+            onPress={() => tocar(abrirAssinatura)}
+            accessibilityRole="button"
+            accessibilityLabel="Ouvir a reflexão, exclusivo do Plano Apoiador"
+            hitSlop={4}
+            style={({ pressed }) => [estilos.secaoCapsula, pressed && estilos.secaoCapsulaPressed]}
+          >
+            {ouvirBloqueado}
+          </Pressable>
+
+          <View style={estilos.divisorCapsula} />
+
+          <Pressable
+            onPress={() => tocar(onAnotar)}
+            accessibilityRole="button"
+            accessibilityLabel="Escrever anotação"
+            hitSlop={4}
+            style={({ pressed }) => [estilos.secaoCapsula, pressed && estilos.secaoCapsulaPressed]}
+          >
+            <Ionicons name="create-outline" size={16} color={scheme.goldSoft} />
+            <Text variant="micro" font="bodySemi" color="#FFFFFF" style={estilos.rotulo}>
+              ANOTAR
+            </Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => tocar(abrirAssinatura)}
+        accessibilityRole="button"
+        accessibilityLabel="Ouvir a reflexão, exclusivo do Plano Apoiador"
+        hitSlop={4}
+        style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+      >
+        <View style={estilos.pilula}>{ouvirBloqueado}</View>
+      </Pressable>
+    );
   }
 
   const temAudio = !audio.semAcesso && (!!audio.transcript || !!audio.erro);

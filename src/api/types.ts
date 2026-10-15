@@ -342,3 +342,12 @@ export interface UserSummary {
   history_window_days: number | null;
   notification_schedule: NotificationSchedule | Record<string, never>;
 }
+
+export type FeedbackCategoria = 'sugestao' | 'dica' | 'elogio' | 'critica' | 'reclamacao' | 'erro';
+
+export interface FeedbackPayload {
+  category: FeedbackCategoria;
+  message: string;
+  app_version: string | null;
+  platform: 'ios' | 'android';
+}

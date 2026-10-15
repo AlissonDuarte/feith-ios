@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import * as StoreReview from 'expo-store-review';
-import { Alert, Share, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, Share, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api, WEB_URL } from '../../src/api/client';
@@ -84,12 +84,18 @@ export default function Perfil() {
   }
 
   async function avaliarApp() {
+    posthog?.capture('app_rating_requested', { source: 'perfil' });
+    const url =
+      Platform.OS === 'android'
+        ? 'market://details?id=com.feith.app'
+        : 'itms-apps://apps.apple.com/app/id6808073824?action=write-review';
     try {
-      if (await StoreReview.hasAction()) {
-        await StoreReview.requestReview();
-        posthog?.capture('app_rating_requested', { source: 'perfil' });
-      }
-    } catch {}
+      await Linking.openURL(url);
+    } catch {
+      try {
+        if (await StoreReview.hasAction()) await StoreReview.requestReview();
+      } catch {}
+    }
   }
 
   function confirmarSaida() {
@@ -307,6 +313,13 @@ export default function Perfil() {
             iconColor={scheme.gold}
             label="Avaliar na loja"
             onPress={avaliarApp}
+          />
+          <ListRow
+            icon="chatbubbles-outline"
+            iconBg="rgba(122,31,31,0.08)"
+            iconColor={scheme.accent}
+            label="Conta pra gente"
+            onPress={() => router.push('/perfil/conta-pra-gente')}
           />
           <ListRow
             icon="shield-checkmark-outline"

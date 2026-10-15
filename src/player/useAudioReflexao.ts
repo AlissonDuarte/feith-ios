@@ -21,6 +21,7 @@ import { api } from '../api/client';
 import { posthog } from '../config/posthog';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import type { Transcript } from '../api/types';
+import { useAuth } from '../auth/AuthContext';
 
 /** Dez minutos de folga antes dos 60 da assinatura. */
 const RENOVAR_APOS_MS = 50 * 60 * 1000;
@@ -82,6 +83,7 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [semAcesso, setSemAcesso] = useState(false);
+  const { isSupporter } = useAuth();
 
   const player = useAudioPlayer(transcript ? { uri: transcript.audioUrl } : null);
   const status = useAudioPlayerStatus(player);
@@ -125,7 +127,7 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
 
   useEffect(() => {
     void buscar();
-  }, [buscar]);
+  }, [buscar, isSupporter]);
 
   // Renovacao da URL assinada. Trocar a fonte reinicia a posicao, entao ela e
   // guardada antes e restaurada depois — quem estava no minuto 12 continua no

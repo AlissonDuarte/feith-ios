@@ -159,6 +159,10 @@ function RouteGuard() {
         options={header({ title: 'Aparência', voltar: 'Perfil', scheme })}
       />
       <Stack.Screen
+        name="perfil/conta-pra-gente"
+        options={header({ title: 'Conta pra gente', voltar: 'Perfil', scheme })}
+      />
+      <Stack.Screen
         name="assinatura"
         options={{
           presentation: 'modal',
