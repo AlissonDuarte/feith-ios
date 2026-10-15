@@ -26,7 +26,7 @@ import {
   Text,
   useEspacoTabBar,
 } from '../../src/components/ui';
-import { PlayerAudio } from '../../src/player/PlayerAudio';
+import { ALTURA_BARRA_AUDIO, PlayerAudio } from '../../src/player/PlayerAudio';
 import { ConviteLembrete } from '../../src/push/ConviteLembrete';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
@@ -47,6 +47,7 @@ export default function Hoje() {
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [escrevendo, setEscrevendo] = useState(false);
+  const [prefixoNota, setPrefixoNota] = useState<string | undefined>(undefined);
   const [tourVisivel, setTourVisivel] = useState(false);
   const rastreio = useRastreioDeLeitura(reflexao, 'hoje');
 
@@ -63,7 +64,7 @@ export default function Hoje() {
     {
       ref: refCapsula,
       titulo: 'Ouça ou anote',
-      corpo: 'Toque em OUVIR para a versão narrada (Apoiador) ou em ANOTAR para registrar um pensamento.',
+      corpo: 'Toque no play para ouvir a versão narrada (Apoiador) ou em Anotar para registrar um pensamento.',
     },
     {
       ref: refBarra,
@@ -233,10 +234,7 @@ export default function Hoje() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: space.gutter,
-          // O `respiro` cobre a tab bar e o FAB. Com o player empilhado por
-          // cima do FAB, o fim da oracao ficaria atras dele — dai a altura da
-          // pilula (46) mais o gap.
-          paddingBottom: isSupporter ? respiro + 46 + space.md : respiro,
+          paddingBottom: respiro + ALTURA_BARRA_AUDIO,
         }}
         showsVerticalScrollIndicator={false}
         onScroll={rastreio.onScroll}
@@ -279,25 +277,24 @@ export default function Hoje() {
         ) : null}
       </ScrollView>
 
-      {/* Botao fixo, e nao o FAB arrastavel da web (Note.svelte): arrastar
-          briga com o gesto de voltar do iOS e com o scroll.
-          Pilula com rotulo em vez de circulo com icone: "anotar" e a acao que
-          o produto quer estimular, e um icone de lapis sozinho nao a promete
-          para quem nunca a usou. */}
       <View
         ref={refCapsula}
-        style={[estilos.ancora, { bottom: Math.max(96, alturaTabBar + space.lg) }]}
+        style={[estilos.ancora, { bottom: alturaTabBar + space.md }]}
         pointerEvents="box-none"
       >
         <PlayerAudio
           reflectionUuid={reflexao.uuid}
           referencia={reflexao.scripture_reference}
-          onAnotar={() => setEscrevendo(true)}
+          onAnotar={(prefixo) => {
+            setPrefixoNota(prefixo);
+            setEscrevendo(true);
+          }}
         />
       </View>
 
       <NotaSheet
         visivel={escrevendo}
+        textoInicial={prefixoNota}
         reflectionUuid={reflexao.uuid}
         onFechar={() => setEscrevendo(false)}
         onSalvou={() => setEscrevendo(false)}
@@ -341,15 +338,10 @@ function criarEstilos(scheme: Scheme) {
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  // `bottom` vem da tela: e a altura real da tab bar mais a safe area, para o
-  // botao ficar ACIMA dela e nao atras do vidro.
   ancora: {
     position: 'absolute',
-    right: space.gutter,
-    // Player e ANOTAR empilhados, alinhados a direita: o card do player e mais
-    // largo que a pilula, e sem isto ele empurraria o ANOTAR para o centro.
-    alignItems: 'flex-end',
-    gap: space.md,
+    left: space.md,
+    right: space.md,
     zIndex: 99,
     elevation: 10,
   },

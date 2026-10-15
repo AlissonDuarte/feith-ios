@@ -1,13 +1,12 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
 import { formatRelativePT } from '../../src/api/dates';
 import { mensagemDe } from '../../src/api/errors';
 import type { Reflection, ReflectionNote } from '../../src/api/types';
-import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
@@ -23,7 +22,7 @@ import {
   Overline,
   Text,
 } from '../../src/components/ui';
-import { PlayerAudio } from '../../src/player/PlayerAudio';
+import { ALTURA_BARRA_AUDIO, PlayerAudio } from '../../src/player/PlayerAudio';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
 
@@ -38,13 +37,14 @@ export default function Leitura() {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { key } = useLocalSearchParams<{ key: string }>();
-  const { isSupporter } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [reflexao, setReflexao] = useState<Reflection | null>(null);
   const [notas, setNotas] = useState<ReflectionNote[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [escrevendo, setEscrevendo] = useState(false);
+  const [prefixoNota, setPrefixoNota] = useState<string | undefined>(undefined);
   const rastreio = useRastreioDeLeitura(reflexao, 'leitura');
 
   const carregarNotas = useCallback(async () => {
@@ -146,11 +146,9 @@ export default function Leitura() {
 
       <ScrollView
         style={{ flex: 1 }}
-        // 112 cobria so o FAB. Com o player empilhado acima dele, as anotacoes
-        // do fim da tela ficariam encobertas.
         contentContainerStyle={{
           paddingHorizontal: space.gutter,
-          paddingBottom: isSupporter ? 112 + 46 + space.md : 112,
+          paddingBottom: Math.max(insets.bottom, space.lg) + ALTURA_BARRA_AUDIO + space.xxl,
         }}
         showsVerticalScrollIndicator={false}
         onScroll={rastreio.onScroll}
@@ -177,18 +175,23 @@ export default function Leitura() {
         ) : null}
       </ScrollView>
 
-      {/* Botao fixo, e nao o FAB arrastavel da web (Note.svelte): arrastar briga com o gesto
-          de voltar do iOS e com o scroll. */}
-      <View style={estilos.ancora} pointerEvents="box-none">
+      <View
+        style={[estilos.ancora, { bottom: Math.max(insets.bottom, space.lg) }]}
+        pointerEvents="box-none"
+      >
         <PlayerAudio
           reflectionUuid={reflexao.uuid}
           referencia={reflexao.scripture_reference}
-          onAnotar={() => setEscrevendo(true)}
+          onAnotar={(prefixo) => {
+            setPrefixoNota(prefixo);
+            setEscrevendo(true);
+          }}
         />
       </View>
 
       <NotaSheet
         visivel={escrevendo}
+        textoInicial={prefixoNota}
         reflectionUuid={reflexao.uuid}
         onFechar={() => setEscrevendo(false)}
         onSalvou={() => {
@@ -205,11 +208,8 @@ function criarEstilos(scheme: Scheme) {
   tela: { flex: 1, backgroundColor: scheme.canvas },
   ancora: {
     position: 'absolute',
-    right: space.gutter,
-    bottom: 36,
-    // Player e ANOTAR empilhados, alinhados a direita.
-    alignItems: 'flex-end',
-    gap: space.md,
+    left: space.md,
+    right: space.md,
     zIndex: 99,
     elevation: 10,
   },

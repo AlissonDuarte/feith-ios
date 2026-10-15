@@ -80,7 +80,7 @@ export interface AudioReflexao {
 
 export function useAudioReflexao(reflectionUuid: string | undefined): AudioReflexao {
   const [transcript, setTranscript] = useState<Transcript | null>(null);
-  const [carregando, setCarregando] = useState(false);
+  const [carregando, setCarregando] = useState(Boolean(reflectionUuid));
   const [erro, setErro] = useState<string | null>(null);
   const [semAcesso, setSemAcesso] = useState(false);
   const { isSupporter } = useAuth();

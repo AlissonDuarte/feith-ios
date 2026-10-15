@@ -36,15 +36,20 @@ interface Props {
   reflectionUuid: string;
   onFechar: () => void;
   onSalvou: () => void;
+  textoInicial?: string;
 }
 
-export function NotaSheet({ visivel, reflectionUuid, onFechar, onSalvou }: Props) {
+export function NotaSheet({ visivel, reflectionUuid, onFechar, onSalvou, textoInicial }: Props) {
   const { scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { summary, refreshSummary } = useAuth();
   const [texto, setTexto] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [alturaTeclado, setAlturaTeclado] = useState(0);
+
+  useEffect(() => {
+    if (visivel && textoInicial) setTexto((atual) => (atual.trim() ? atual : textoInicial));
+  }, [visivel, textoInicial]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
