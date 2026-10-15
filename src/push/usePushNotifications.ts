@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { useAuth } from '../auth/AuthContext';
+import { posthog } from '../config/posthog';
 import { registerForPush } from './registerDevice';
 
 /**
@@ -29,10 +30,21 @@ Notifications.setNotificationHandler({
   }),
 });
 
+function propriedadesDaNotificacao(notification: Notifications.Notification) {
+  const { content, identifier } = notification.request;
+  const data = content.data as { url?: string } | undefined;
+  return {
+    notification_id: identifier,
+    title: content.title ?? null,
+    url: data?.url ?? null,
+  };
+}
+
 export function usePushNotifications(): void {
   const { token } = useAuth();
   const router = useRouter();
   const registeredFor = useRef<string | null>(null);
+  const abertas = useRef(new Set<string>());
 
   // Registra o aparelho uma vez por sessao, so para quem ja concedeu antes.
   useEffect(() => {
@@ -43,7 +55,18 @@ export function usePushNotifications(): void {
 
   // Tocar na notificacao leva para a leitura do dia.
   useEffect(() => {
+    const registrarAbertura = (response: Notifications.NotificationResponse, coldStart: boolean) => {
+      const props = propriedadesDaNotificacao(response.notification);
+      if (abertas.current.has(props.notification_id)) return;
+      abertas.current.add(props.notification_id);
+      posthog?.capture('push_opened', { ...props, cold_start: coldStart });
+    };
+
+    const inicial = Notifications.getLastNotificationResponse();
+    if (inicial) registrarAbertura(inicial, true);
+
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      registrarAbertura(response, false);
       const data = response.notification.request.content.data as { url?: string } | undefined;
       // O payload do backend usa `url` (scripts/notification.py:98). Hoje ele
       // sempre manda "/", mas respeitar o campo deixa o backend redirecionar
@@ -53,4 +76,11 @@ export function usePushNotifications(): void {
     });
     return () => sub.remove();
   }, [router]);
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationReceivedListener((notification) => {
+      posthog?.capture('push_received', { ...propriedadesDaNotificacao(notification), app_state: 'foreground' });
+    });
+    return () => sub.remove();
+  }, []);
 }
