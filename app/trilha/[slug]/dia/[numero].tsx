@@ -12,6 +12,7 @@ import { ReflexaoReader } from '../../../../src/components/ReflexaoReader';
 import { Button, EmptyState, IconButton, Loading, Overline, Text } from '../../../../src/components/ui';
 import { posthog } from '../../../../src/config/posthog';
 import { useRastreioDeLeitura } from '../../../../src/config/useRastreioDeLeitura';
+import { ALTURA_BARRA_AUDIO, PlayerAudio } from '../../../../src/player/PlayerAudio';
 import { COR_PROTESTANTE, Etapas } from '../../../../src/trilhas/componentes';
 import { agendarLembretesDaTrilha } from '../../../../src/trilhas/lembretes';
 import { codigoDoBloqueio, mensagemDoBloqueio } from '../../../../src/trilhas/regras';
@@ -69,6 +70,7 @@ export default function DiaDaTrilha() {
   const [erro, setErro] = useState<string | null>(null);
   const [resultado, setResultado] = useState<TrailCompleteResult | null>(null);
   const [anotando, setAnotando] = useState(false);
+  const [prefixoNota, setPrefixoNota] = useState<string | undefined>(undefined);
   const abertoEm = useRef(0);
   const enviando = useRef(false);
   const retry = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -180,7 +182,10 @@ export default function DiaDaTrilha() {
         }}
       />
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.section * 2 }}
+        contentContainerStyle={{
+          paddingHorizontal: space.gutter,
+          paddingBottom: space.section * 2 + (dia.reflection_uuid ? ALTURA_BARRA_AUDIO : 0),
+        }}
         showsVerticalScrollIndicator={false}
         onScroll={rastreio.onScroll}
         scrollEventThrottle={rastreio.scrollEventThrottle}
@@ -252,9 +257,23 @@ export default function DiaDaTrilha() {
       </ScrollView>
 
       {dia.reflection_uuid ? (
+        <View style={estilos.ancora} pointerEvents="box-none">
+          <PlayerAudio
+            reflectionUuid={dia.reflection_uuid}
+            referencia={dia.scripture_reference}
+            onAnotar={(prefixo) => {
+              setPrefixoNota(prefixo);
+              setAnotando(true);
+            }}
+          />
+        </View>
+      ) : null}
+
+      {dia.reflection_uuid ? (
         <NotaSheet
           visivel={anotando}
           reflectionUuid={dia.reflection_uuid}
+          textoInicial={prefixoNota}
           onFechar={() => setAnotando(false)}
           onSalvou={() => setAnotando(false)}
         />
@@ -266,6 +285,14 @@ export default function DiaDaTrilha() {
 function criarEstilos(scheme: Scheme) {
   return StyleSheet.create({
     etapasLegenda: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 7, gap: space.sm },
+    ancora: {
+      position: 'absolute',
+      left: space.md,
+      right: space.md,
+      bottom: space.md,
+      zIndex: 99,
+      elevation: 10,
+    },
     comum: {
       padding: space.lg,
       borderRadius: radius.md,
