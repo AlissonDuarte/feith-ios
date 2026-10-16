@@ -11,8 +11,8 @@
  */
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -33,7 +33,10 @@ import {
   Overline,
   Text,
 } from '../src/components/ui';
+import { posthog } from '../src/config/posthog';
+import { fraseDoLembrete, origemDe } from '../src/iap/guiaAssinatura';
 import { useIap } from '../src/iap/IapContext';
+import { diasDeUso, registrarExibicaoAssinatura } from '../src/iap/lembretesAssinatura';
 import { NOME_LOJA } from '../src/iap/tipos';
 import { useTheme } from '../src/theme/ThemeContext';
 import { radius, space, type Scheme } from '../src/theme/tokens';
@@ -71,7 +74,26 @@ export default function AssinaturaModal() {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const router = useRouter();
-  const { isSupporter } = useAuth();
+  const { isSupporter, summary } = useAuth();
+  const params = useLocalSearchParams<{ origem?: string; marco?: string }>();
+  const origem = origemDe(params.origem);
+  const marco = typeof params.marco === 'string' ? params.marco : null;
+  const convidado = origem === 'onboarding' || origem === 'lembrete';
+  const [dias, setDias] = useState<number | null>(null);
+  const registrado = useRef(false);
+
+  useEffect(() => {
+    if (registrado.current) return;
+    registrado.current = true;
+    posthog?.capture('paywall_viewed', { source: origem, reminder: marco });
+    void registrarExibicaoAssinatura(origem);
+    if (origem === 'lembrete') void diasDeUso().then(setDias);
+  }, [origem, marco]);
+
+  function fechar(metodo: 'close' | 'continue_free') {
+    posthog?.capture('paywall_dismissed', { source: origem, reminder: marco, method: metodo });
+    router.back();
+  }
   const {
     produto,
     carregandoProduto,
@@ -122,7 +144,7 @@ export default function AssinaturaModal() {
       {/* Barra de Fechar */}
       <View style={estilos.headerModal}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => fechar('close')}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Fechar tela de assinatura"
@@ -137,6 +159,16 @@ export default function AssinaturaModal() {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ alignItems: 'center' }}>
+          {origem === 'lembrete' && dias !== null ? (
+            <Text
+              variant="bodySm"
+              font="bodySemi"
+              color={scheme.accent}
+              style={{ textAlign: 'center', marginBottom: space.md }}
+            >
+              {fraseDoLembrete(summary?.streak ?? 0, dias)}
+            </Text>
+          ) : null}
           <View style={estilos.badge}>
             <Ionicons name="ribbon-outline" size={14} color={scheme.gold} />
             <Text
@@ -235,6 +267,17 @@ export default function AssinaturaModal() {
             disabled={comprando || restaurando}
             onPress={handleRestaurar}
           />
+
+          {convidado ? (
+            <Button
+              label="Continuar grátis"
+              variant="ghost"
+              textColor={scheme.textSecondary}
+              disabled={comprando}
+              onPress={() => fechar('continue_free')}
+              style={{ alignSelf: 'center' }}
+            />
+          ) : null}
         </View>
 
         {/* Termos Legais Obrigatorios pela Diretriz 3.1.2 da Apple */}

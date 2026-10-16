@@ -15,6 +15,7 @@
  *      secao da outra e o numeral, o fio de ouro e o espaco — que e como um
  *      livro faz.
  */
+import type { ReactNode } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import Markdown from 'react-native-marked';
 
@@ -110,9 +111,11 @@ export function ReflexaoReader({
   reflexao,
   /** Largura util da coluna de texto. Default: tela menos as margens padrao. */
   largura,
+  entreTextoESecoes,
 }: {
   reflexao: Lida;
   largura?: number;
+  entreTextoESecoes?: ReactNode;
 }) {
   const { scheme } = useTheme();
   const { width } = useWindowDimensions();
@@ -172,11 +175,12 @@ export function ReflexaoReader({
         <GoldRule width="100%" />
       </View>
 
+      {entreTextoESecoes}
+
       {/* ── As cinco etapas da exegese ────────────────────────────────────
           Numeradas como em TextReader.svelte. */}
-      {REFLECTION_SECTIONS.map((secao, i) => {
+      {REFLECTION_SECTIONS.filter((secao) => reflexao[secao.key]).map((secao, i) => {
         const conteudo = reflexao[secao.key];
-        if (!conteudo) return null;
 
         return (
           <View key={secao.key} style={{ marginTop: space.section }}>

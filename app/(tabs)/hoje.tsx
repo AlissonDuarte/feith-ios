@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { AppState, Pressable, RefreshControl, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
-import type { Reflection } from '../../src/api/types';
+import type { Reflection, TrailCatalog } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
 import { CoachTour, type PassoTour } from '../../src/components/CoachTour';
@@ -15,7 +15,7 @@ import { AccentHalo } from '../../src/components/ornaments';
 import { ReflexaoReader } from '../../src/components/ReflexaoReader';
 import { posthog } from '../../src/config/posthog';
 import { useRastreioDeLeitura } from '../../src/config/useRastreioDeLeitura';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Button,
   Card,
@@ -26,8 +26,13 @@ import {
   Text,
   useEspacoTabBar,
 } from '../../src/components/ui';
+import {
+  iniciarCalendarioAssinatura,
+  lembreteAssinaturaDevido,
+} from '../../src/iap/lembretesAssinatura';
 import { ALTURA_BARRA_AUDIO, PlayerAudio } from '../../src/player/PlayerAudio';
 import { ConviteLembrete } from '../../src/push/ConviteLembrete';
+import { AnelProgresso } from '../../src/trilhas/componentes';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
 
@@ -49,7 +54,45 @@ export default function Hoje() {
   const [escrevendo, setEscrevendo] = useState(false);
   const [prefixoNota, setPrefixoNota] = useState<string | undefined>(undefined);
   const [tourVisivel, setTourVisivel] = useState(false);
-  const rastreio = useRastreioDeLeitura(reflexao, 'hoje');
+  const [trilhas, setTrilhas] = useState<TrailCatalog | null>(null);
+  const { paywall } = useLocalSearchParams<{ paywall?: string }>();
+  const focado = useIsFocused();
+
+  const contexto = useRef({ focado, escrevendo, tourVisivel, isSupporter });
+  contexto.current = { focado, escrevendo, tourVisivel, isSupporter };
+  const timerLembrete = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const aoLer = useCallback(() => {
+    if (contexto.current.isSupporter) return;
+    void lembreteAssinaturaDevido().then((marco) => {
+      if (!marco) return;
+      if (timerLembrete.current) clearTimeout(timerLembrete.current);
+      timerLembrete.current = setTimeout(() => {
+        const c = contexto.current;
+        if (c.isSupporter || !c.focado || c.escrevendo || c.tourVisivel) return;
+        if (AppState.currentState !== 'active') return;
+        router.push({ pathname: '/assinatura', params: { origem: 'lembrete', marco } });
+      }, 2500);
+    });
+  }, [router]);
+
+  const rastreio = useRastreioDeLeitura(reflexao, 'hoje', aoLer);
+
+  useEffect(() => {
+    void iniciarCalendarioAssinatura();
+    return () => {
+      if (timerLembrete.current) clearTimeout(timerLembrete.current);
+    };
+  }, []);
+
+  const paywallOnboardingAberto = useRef(false);
+
+  useEffect(() => {
+    if (paywall !== 'onboarding' || paywallOnboardingAberto.current) return;
+    paywallOnboardingAberto.current = true;
+    router.setParams({ paywall: undefined });
+    router.push({ pathname: '/assinatura', params: { origem: 'onboarding' } });
+  }, [paywall, router]);
 
   const refCorpo = useRef<View>(null);
   const refCapsula = useRef<View>(null);
@@ -98,6 +141,12 @@ export default function Hoje() {
   useEffect(() => {
     void carregar().finally(() => setCarregando(false));
   }, [carregar]);
+
+  useFocusEffect(
+    useCallback(() => {
+      api.getTrails().then(setTrilhas).catch(() => undefined);
+    }, []),
+  );
 
   useEffect(() => {
     if (!reflexao?.uuid) return;
@@ -205,7 +254,7 @@ export default function Hoje() {
 
           {!isSupporter ? (
             <Pressable
-              onPress={() => router.push('/assinatura')}
+              onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'hoje_badge' } })}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Conhecer plano Apoiador"
@@ -251,6 +300,34 @@ export default function Hoje() {
           <ReflexaoReader reflexao={reflexao} />
         </View>
 
+        {trilhas?.active?.progress && trilhas.active.progress.next_day ? (
+          <Pressable
+            onPress={() => {
+              posthog?.capture('trail_continue_tapped', { trail: trilhas.active?.slug ?? null, source: 'hoje' });
+              router.push({ pathname: '/trilha/[slug]', params: { slug: trilhas.active!.slug } });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Continuar trilha ${trilhas.active.name}`}
+            style={({ pressed }) => [estilos.trilha, pressed && { opacity: 0.9 }]}
+          >
+            <AnelProgresso feitos={trilhas.active.progress.completed_days} total={trilhas.active.days_count} tamanho={44} />
+            <View style={{ flex: 1 }}>
+              <Text variant="micro" font="bodySemi" color={scheme.goldSoft} style={{ letterSpacing: 2 }}>
+                CONTINUAR TRILHA
+              </Text>
+              <Text variant="title" color={scheme.onAccent} numberOfLines={1}>
+                {trilhas.active.name}
+              </Text>
+              {trilhas.active_next_title ? (
+                <Text variant="micro" color="rgba(255,255,255,0.78)" numberOfLines={1}>
+                  {`Dia ${trilhas.active.progress.next_day} · ${trilhas.active_next_title}`}
+                </Text>
+              ) : null}
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={scheme.goldSoft} />
+          </Pressable>
+        ) : null}
+
         <ConviteLembrete
           streak={streak}
           hora={(summary?.notification_schedule as { time?: string } | undefined)?.time || '08:00'}
@@ -271,7 +348,7 @@ export default function Hoje() {
               size="sm"
               icon="arrow-forward"
               style={{ marginTop: space.sm }}
-              onPress={() => router.push('/assinatura')}
+              onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'hoje_card' } })}
             />
           </Card>
         ) : null}
@@ -300,7 +377,7 @@ export default function Hoje() {
         onSalvou={() => setEscrevendo(false)}
       />
 
-      <CoachTour visivel={tourVisivel} passos={passosTour} onConcluir={concluirTour} />
+      <CoachTour visivel={tourVisivel && focado} passos={passosTour} onConcluir={concluirTour} />
     </SafeAreaView>
   );
 }
@@ -308,6 +385,15 @@ export default function Hoje() {
 function criarEstilos(scheme: Scheme) {
   return StyleSheet.create({
   tela: { flex: 1, backgroundColor: scheme.canvas },
+  trilha: {
+    marginTop: space.xxl,
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: scheme.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   barra: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -30,6 +30,11 @@ import {
   type BookmarkToggleResponse,
   type ErrorPayload,
   type FeedbackPayload,
+  type TrailCatalog,
+  type TrailCompleteResult,
+  type TrailDayContent,
+  type TrailDetail,
+  type TrailStartPayload,
   type HistoryItem,
   type LoginPayload,
   type NoteItem,
@@ -443,6 +448,19 @@ export const api = {
 
   sendFeedback: (payload: FeedbackPayload) =>
     request<{ uuid: string }>('/feedback', { method: 'POST', body: payload }),
+
+  getTrails: () => request<TrailCatalog>('/trails'),
+
+  getTrail: (slug: string) => request<TrailDetail>(`/trails/${slug}`),
+
+  startTrail: (slug: string, payload: TrailStartPayload) =>
+    request<TrailDetail>(`/trails/${slug}/start`, { method: 'POST', body: payload }),
+
+  getTrailDay: (slug: string, numero: number) =>
+    request<TrailDayContent>(`/trails/${slug}/days/${numero}`),
+
+  completeTrailDay: (slug: string, numero: number) =>
+    request<TrailCompleteResult>(`/trails/${slug}/days/${numero}/complete`, { method: 'POST' }),
 };
 
 export { BASE_URL, WEB_URL };

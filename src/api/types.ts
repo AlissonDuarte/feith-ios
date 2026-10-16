@@ -351,3 +351,98 @@ export interface FeedbackPayload {
   app_version: string | null;
   platform: 'ios' | 'android';
 }
+
+export type TrailKind = 'livro' | 'tema' | 'duas_vozes';
+export type TrailTier = 'free' | 'supporter';
+export type TrailDayState = 'done' | 'available' | 'locked';
+
+export interface TrailProgress {
+  uuid: string;
+  status: 'active' | 'completed';
+  start_date: string;
+  reading_time: string;
+  completed_days: number;
+  total_days: number;
+  steps_done: number;
+  total_steps: number;
+  next_day: number | null;
+  next_unlock_date: string | null;
+  days_behind: number;
+  grace_available: boolean;
+  window_ends_on: string;
+  badge: boolean | null;
+}
+
+export interface TrailSummary {
+  slug: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  kind: TrailKind;
+  tier: TrailTier;
+  cover: string;
+  days_count: number;
+  minutes_per_day: number;
+  locked: boolean;
+  progress: TrailProgress | null;
+}
+
+export interface TrailCatalog {
+  trails: TrailSummary[];
+  active: TrailSummary | null;
+  active_next_title: string | null;
+}
+
+export interface TrailDayItem {
+  number: number;
+  title: string;
+  scripture_reference: string;
+  estimated_minutes: number;
+  state: TrailDayState;
+  unlocks_on: string;
+  completed_on: string | null;
+  hook: string | null;
+}
+
+export interface TrailDetail extends TrailSummary {
+  days: TrailDayItem[];
+}
+
+export interface TrailStartPayload {
+  start: 'today' | 'next_monday';
+  reading_time: string;
+  timezone: string;
+}
+
+export interface TrailDayContent {
+  trail_slug: string;
+  trail_name: string;
+  kind: TrailKind;
+  number: number;
+  total_days: number;
+  title: string;
+  scripture_reference: string;
+  version: string | null;
+  reflection_uuid: string | null;
+  estimated_minutes: number;
+  bible_text: string | null;
+  context: string | null;
+  exegesis: string | null;
+  application: string | null;
+  prayer: string | null;
+  common_ground: string | null;
+  protestant_view: string | null;
+  protestant_source: string | null;
+  catholic_view: string | null;
+  catholic_source: string | null;
+  hook: string | null;
+  completed: boolean;
+  min_read_seconds: number;
+}
+
+export interface TrailCompleteResult {
+  progress: TrailProgress;
+  trail_completed: boolean;
+  stats: { days: number; minutes: number; notes: number } | null;
+  next_trail: TrailSummary | null;
+}

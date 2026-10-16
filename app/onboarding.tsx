@@ -66,7 +66,7 @@ export default function Onboarding() {
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { width } = useWindowDimensions();
   const router = useRouter();
-  const { refreshSummary } = useAuth();
+  const { refreshSummary, isSupporter } = useAuth();
 
   const [passos, setPassos] = useState<Passo[]>(PASSOS);
   const [indice, setIndice] = useState(0);
@@ -109,7 +109,9 @@ export default function Onboarding() {
       // para a leitura, e o onboarding reaparece na proxima vez.
     } finally {
       setConcluindo(false);
-      router.replace('/(tabs)/hoje');
+      router.replace(
+        isSupporter ? '/(tabs)/hoje' : { pathname: '/(tabs)/hoje', params: { paywall: 'onboarding' } },
+      );
     }
   }
 

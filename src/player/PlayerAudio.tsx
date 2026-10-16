@@ -54,7 +54,7 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar }: Props) {
 
   function abrirAssinatura() {
     posthog?.capture('audio_paywall_opened', { reflection_uuid: reflectionUuid, source: origem });
-    router.push('/assinatura');
+    router.push({ pathname: '/assinatura', params: { origem: 'audio' } });
   }
 
   function abrirPlayer() {

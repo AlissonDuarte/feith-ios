@@ -172,7 +172,12 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.warn('[IAP] Erro no fluxo do StoreKit:', error);
-      posthog?.capture('subscription_purchase_failed', { stage: 'store', error_code: String(error.code) });
+      posthog?.capture('subscription_purchase_failed', {
+        stage: 'store',
+        error_code: String(error.code),
+        error_message: error.message,
+        platform: Platform.OS,
+      });
       setErro('A compra não foi concluída. Tente novamente.');
     });
 

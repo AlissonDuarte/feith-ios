@@ -1,21 +1,20 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { Alert, Pressable, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { api } from '../../src/api/client';
-import { formatRelativePT } from '../../src/api/dates';
-import { mensagemDe } from '../../src/api/errors';
-import type { NoteItem } from '../../src/api/types';
-import { useAuth } from '../../src/auth/AuthContext';
-import { FeedList } from '../../src/components/FeedList';
-import { GoldRule, Overline, ScreenHeader, Text, TouchableCard } from '../../src/components/ui';
-import { useListaPaginada } from '../../src/hooks/useListaPaginada';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { space } from '../../src/theme/tokens';
+import { api } from '../api/client';
+import { formatRelativePT } from '../api/dates';
+import { mensagemDe } from '../api/errors';
+import type { NoteItem } from '../api/types';
+import { useAuth } from '../auth/AuthContext';
+import { FeedList } from '../components/FeedList';
+import { GoldRule, Overline, ScreenHeader, Text, TouchableCard } from '../components/ui';
+import { useListaPaginada } from '../hooks/useListaPaginada';
+import { useTheme } from '../theme/ThemeContext';
+import { space } from '../theme/tokens';
 
-export default function Anotacoes() {
+export function Anotacoes({ seletor }: { seletor: ReactNode }) {
   const { scheme } = useTheme();
   const router = useRouter();
   const { refreshSummary } = useAuth();
@@ -46,9 +45,9 @@ export default function Anotacoes() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
+    <View style={{ flex: 1 }}>
       <ScreenHeader
-        overline="Seu caderno"
+        overline="Caderno"
         title="Anotações"
         right={
           lista.total > 0 ? (
@@ -58,6 +57,8 @@ export default function Anotacoes() {
           ) : null
         }
       />
+
+      {seletor}
 
       <FeedList
         lista={lista}
@@ -103,6 +104,6 @@ export default function Anotacoes() {
           </TouchableCard>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }

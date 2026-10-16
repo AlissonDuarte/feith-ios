@@ -145,6 +145,9 @@ function RouteGuard() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="leitura/[key]" options={header({ voltar: 'Voltar', scheme })} />
+      <Stack.Screen name="trilha/[slug]/index" options={header({ voltar: 'Trilhas', scheme })} />
+      <Stack.Screen name="trilha/[slug]/dia/[numero]" options={header({ voltar: 'Trilha', scheme })} />
+      <Stack.Screen name="trilha/[slug]/concluida" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="politicas" options={header({ title: 'Privacidade', voltar: 'Voltar', scheme })} />
       <Stack.Screen
         name="perfil/editar"

@@ -76,25 +76,21 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="anotacoes"
+        name="trilhas"
         options={{
-          title: 'Anotações',
+          title: 'Trilhas',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'document-text' : 'document-text-outline'}
-              color={color}
-              size={size - 1}
-            />
+            <Ionicons name={focused ? 'trail-sign' : 'trail-sign-outline'} color={color} size={size - 1} />
           ),
         }}
       />
       <Tabs.Screen
-        name="favoritos"
+        name="caderno"
         options={{
-          title: 'Favoritos',
+          title: 'Caderno',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? 'bookmark' : 'bookmark-outline'}
+              name={focused ? 'document-text' : 'document-text-outline'}
               color={color}
               size={size - 1}
             />

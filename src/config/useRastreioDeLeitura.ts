@@ -15,7 +15,7 @@ const FRACAO_MINIMA_DO_TEMPO = 0.25;
 const ROLAGEM_FIM = 0.9;
 const INTERVALO_CHECAGEM_MS = 5000;
 
-export type OrigemLeitura = 'hoje' | 'leitura';
+export type OrigemLeitura = 'hoje' | 'leitura' | 'trilha';
 
 interface Sessao {
   uuid: string;
@@ -35,7 +35,11 @@ function tempoAtivoMs(s: Sessao): number {
   return s.totalMs + (s.inicio ? Date.now() - s.inicio : 0);
 }
 
-export function useRastreioDeLeitura(reflexao: Reflection | null, origem: OrigemLeitura) {
+export function useRastreioDeLeitura(
+  reflexao: Reflection | null,
+  origem: OrigemLeitura,
+  aoLer?: () => void,
+) {
   const uuid = reflexao?.uuid || null;
   const palavras = useMemo(() => (reflexao ? contarPalavras(reflexao) : 0), [reflexao]);
   const tempoEstimado = Math.round((palavras / PALAVRAS_POR_MINUTO) * 60);
@@ -44,6 +48,8 @@ export function useRastreioDeLeitura(reflexao: Reflection | null, origem: Origem
   const fimDoTexto = useRef(0);
   const base = useRef({ origem, palavras, tempoEstimado });
   base.current = { origem, palavras, tempoEstimado };
+  const aoLerRef = useRef(aoLer);
+  aoLerRef.current = aoLer;
 
   const propriedades = useCallback(
     (s: Sessao) => ({
@@ -65,6 +71,7 @@ export function useRastreioDeLeitura(reflexao: Reflection | null, origem: Origem
       ...propriedades(s),
       active_seconds: Math.round(ativo),
     });
+    aoLerRef.current?.();
   }, [propriedades]);
 
   const reportar = useCallback(
@@ -90,7 +97,7 @@ export function useRastreioDeLeitura(reflexao: Reflection | null, origem: Origem
   );
 
   useEffect(() => {
-    if (!uuid || !posthog) return;
+    if (!uuid) return;
     sessao.current = {
       uuid,
       inicio: AppState.currentState === 'active' ? Date.now() : null,
@@ -99,7 +106,7 @@ export function useRastreioDeLeitura(reflexao: Reflection | null, origem: Origem
       maxRolagem: 0,
       leu: false,
     };
-    posthog.capture('reflection_opened', propriedades(sessao.current));
+    posthog?.capture('reflection_opened', propriedades(sessao.current));
 
     const timer = setInterval(checarLeitura, INTERVALO_CHECAGEM_MS);
     return () => {

@@ -67,7 +67,7 @@ export default function Historico() {
                 size="sm"
                 icon="arrow-forward"
                 style={{ marginTop: space.sm, alignSelf: 'flex-start' }}
-                onPress={() => router.push('/assinatura')}
+                onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'historico' } })}
               />
             </Card>
           ) : null

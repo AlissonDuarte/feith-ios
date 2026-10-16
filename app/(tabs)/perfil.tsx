@@ -235,7 +235,7 @@ export default function Perfil() {
               variant="quiet"
               icon="arrow-forward"
               style={{ marginTop: space.xl }}
-              onPress={() => router.push('/assinatura')}
+              onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'perfil' } })}
             />
           </Card>
         ) : null}
@@ -257,7 +257,7 @@ export default function Perfil() {
               iconColor={scheme.gold}
               label="Seja um Apoiador Feith"
               value="R$ 9,90/mês"
-              onPress={() => router.push('/assinatura')}
+              onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'perfil' } })}
               ultimo
             />
           )}

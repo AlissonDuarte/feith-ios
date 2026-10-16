@@ -1,26 +1,26 @@
 import { useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { api } from '../../src/api/client';
-import { formatRelativePT } from '../../src/api/dates';
-import type { BookmarkItem } from '../../src/api/types';
-import { BotaoFavorito } from '../../src/components/BotaoFavorito';
-import { FeedList } from '../../src/components/FeedList';
-import { GoldRule, ScreenHeader, Text, TouchableCard } from '../../src/components/ui';
-import { useListaPaginada } from '../../src/hooks/useListaPaginada';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { space } from '../../src/theme/tokens';
+import { api } from '../api/client';
+import { formatRelativePT } from '../api/dates';
+import type { BookmarkItem } from '../api/types';
+import { BotaoFavorito } from '../components/BotaoFavorito';
+import { FeedList } from '../components/FeedList';
+import { GoldRule, ScreenHeader, Text, TouchableCard } from '../components/ui';
+import { useListaPaginada } from '../hooks/useListaPaginada';
+import { useTheme } from '../theme/ThemeContext';
+import { space } from '../theme/tokens';
 
-export default function Favoritos() {
+export function Favoritos({ seletor }: { seletor: ReactNode }) {
   const { scheme } = useTheme();
   const router = useRouter();
   const lista = useListaPaginada<BookmarkItem>(api.getBookmarks);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
+    <View style={{ flex: 1 }}>
       <ScreenHeader
-        overline="Guardadas"
+        overline="Caderno"
         title="Favoritos"
         right={
           lista.total > 0 ? (
@@ -30,6 +30,8 @@ export default function Favoritos() {
           ) : null
         }
       />
+
+      {seletor}
 
       <FeedList
         lista={lista}
@@ -85,6 +87,6 @@ export default function Favoritos() {
           </TouchableCard>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
