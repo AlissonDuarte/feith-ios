@@ -42,6 +42,8 @@ export interface Scheme {
   goldSubtle: string;
   /** Texto sobre o acento. */
   onAccent: string;
+  /** Texto secundario sobre o acento — metadados, subtitulos. */
+  onAccentMuted: string;
 }
 
 /**
@@ -69,6 +71,7 @@ export const schemes: Record<ReadingMode, Scheme> = {
     goldSoft: palette['gold-light'],
     goldSubtle: palette['gold-tint'],
     onAccent: '#FFFFFF',
+    onAccentMuted: 'rgba(255,255,255,0.78)',
   },
   dark: {
     canvas: palette['dark-bg'],
@@ -88,6 +91,7 @@ export const schemes: Record<ReadingMode, Scheme> = {
     goldSoft: palette['gold-pale'],
     goldSubtle: 'rgba(184,156,92,0.12)',
     onAccent: '#15120F',
+    onAccentMuted: 'rgba(21,18,15,0.78)',
   },
   sepia: {
     canvas: palette['parchment-deep'],
@@ -107,6 +111,7 @@ export const schemes: Record<ReadingMode, Scheme> = {
     goldSoft: palette['gold-light'],
     goldSubtle: '#EFE4C8',
     onAccent: '#FBF5E6',
+    onAccentMuted: 'rgba(251,245,230,0.78)',
   },
 };
 

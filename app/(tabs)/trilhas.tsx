@@ -127,7 +127,7 @@ export default function Trilhas() {
                 {ativa.name}
               </Text>
               {catalogo?.active_next_title && ativa.progress.next_day ? (
-                <Text variant="micro" color="rgba(255,255,255,0.78)" style={{ marginTop: 3 }} numberOfLines={1}>
+                <Text variant="micro" color={scheme.onAccentMuted} style={{ marginTop: 3 }} numberOfLines={1}>
                   {`Dia ${ativa.progress.next_day} · "${catalogo.active_next_title}" · ${ativa.minutes_per_day} min`}
                 </Text>
               ) : null}

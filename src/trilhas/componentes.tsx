@@ -110,6 +110,10 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
   const raio = (tamanho - 6) / 2;
   const perimetro = 2 * Math.PI * raio;
   const fracao = total > 0 ? feitos / total : 0;
+  // Miolo com fundo proprio (igual a `.ring span` da proposta aprovada em
+  // screenshots/proposta-trilhas.html): sem ele, o numero so fica legivel se o
+  // card por tras tambem estiver com o fundo de acento aplicado.
+  const miolo = tamanho - 10;
   return (
     <View style={{ width: tamanho, height: tamanho, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={tamanho} height={tamanho} style={StyleSheet.absoluteFill}>
@@ -126,9 +130,20 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
           transform={`rotate(-90 ${tamanho / 2} ${tamanho / 2})`}
         />
       </Svg>
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: scheme.onAccent }}>
-        {`${feitos}/${total}`}
-      </Text>
+      <View
+        style={{
+          width: miolo,
+          height: miolo,
+          borderRadius: miolo / 2,
+          backgroundColor: scheme.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: scheme.onAccent }}>
+          {`${feitos}/${total}`}
+        </Text>
+      </View>
     </View>
   );
 }
