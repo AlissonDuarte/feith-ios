@@ -115,8 +115,7 @@ export default function Trilhas() {
             accessibilityLabel={`Continuar ${ativa.name}`}
             style={({ pressed }) => [
               estilos.continuar,
-              { backgroundColor: scheme.accent },
-              shadow.raised,
+              { backgroundColor: scheme.accent, ...shadow.raised },
               pressed && { opacity: 0.9 },
             ]}
           >

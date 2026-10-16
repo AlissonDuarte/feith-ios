@@ -366,6 +366,7 @@ export default function Hoje() {
             setPrefixoNota(prefixo);
             setEscrevendo(true);
           }}
+          aoConcluir={aoLer}
         />
       </View>
 

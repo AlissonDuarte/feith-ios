@@ -28,6 +28,8 @@ interface Props {
   reflectionUuid: string;
   referencia?: string;
   onAnotar?: (prefixo?: string) => void;
+  /** Chamado quando o audio toca ate o fim — ouvir conta como ler. */
+  aoConcluir?: () => void;
 }
 
 function vibrar() {
@@ -40,11 +42,11 @@ function duracaoLegivel(segundos: number): string | null {
   return `${minutos} min`;
 }
 
-export function PlayerAudio({ reflectionUuid, referencia, onAnotar }: Props) {
+export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }: Props) {
   const { scheme, effectiveMode } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const router = useRouter();
-  const audio = useAudioReflexao(reflectionUuid);
+  const audio = useAudioReflexao(reflectionUuid, aoConcluir);
   const [aberto, setAberto] = useState(false);
 
   const origem = onAnotar ? 'hoje' : 'leitura';

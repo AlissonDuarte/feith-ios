@@ -265,6 +265,7 @@ export default function DiaDaTrilha() {
               setPrefixoNota(prefixo);
               setAnotando(true);
             }}
+            aoConcluir={concluir}
           />
         </View>
       ) : null}

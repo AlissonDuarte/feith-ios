@@ -78,7 +78,13 @@ export interface AudioReflexao {
   tentarDeNovo: () => void;
 }
 
-export function useAudioReflexao(reflectionUuid: string | undefined): AudioReflexao {
+export function useAudioReflexao(
+  reflectionUuid: string | undefined,
+  aoConcluir?: () => void,
+): AudioReflexao {
+  const aoConcluirRef = useRef(aoConcluir);
+  aoConcluirRef.current = aoConcluir;
+
   const [transcript, setTranscript] = useState<Transcript | null>(null);
   const [carregando, setCarregando] = useState(Boolean(reflectionUuid));
   const [erro, setErro] = useState<string | null>(null);
@@ -238,6 +244,7 @@ export function useAudioReflexao(reflectionUuid: string | undefined): AudioRefle
       reflection_uuid: reflectionUuid ?? null,
       ...resumoOuvido(),
     });
+    aoConcluirRef.current?.();
   }, [status.didJustFinish, reflectionUuid, resumoOuvido]);
 
   const alternar = useCallback(() => {
