@@ -148,7 +148,7 @@ export default function DiaDaTrilha() {
     [dia, slug, n],
   );
 
-  const rastreio = useRastreioDeLeitura(comoReflexao, 'trilha', concluir);
+  const rastreio = useRastreioDeLeitura(comoReflexao, 'trilha', concluir, dia?.min_read_seconds, 0.6);
 
   if (!dia && !erro) return <Loading />;
 

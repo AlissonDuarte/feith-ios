@@ -39,6 +39,8 @@ export function useRastreioDeLeitura(
   reflexao: Reflection | null,
   origem: OrigemLeitura,
   aoLer?: () => void,
+  minSegundos?: number,
+  rolagemMinima: number = ROLAGEM_FIM,
 ) {
   const uuid = reflexao?.uuid || null;
   const palavras = useMemo(() => (reflexao ? contarPalavras(reflexao) : 0), [reflexao]);
@@ -50,6 +52,16 @@ export function useRastreioDeLeitura(
   base.current = { origem, palavras, tempoEstimado };
   const aoLerRef = useRef(aoLer);
   aoLerRef.current = aoLer;
+  // Quando o chamador sabe o minimo que o servidor vai exigir (ex: trilhas,
+  // que bloqueiam conclusao rapida demais pra extensao do dia), usamos esse
+  // valor em vez da estimativa local — senao o cliente libera a conclusao
+  // antes do servidor aceitar, e so sobra a re-tentativa em `dia/[numero].tsx`
+  // pra salvar o progresso, que nao sobrevive se a pessoa sair da tela antes
+  // da hora agendada.
+  const minSegundosRef = useRef(minSegundos);
+  minSegundosRef.current = minSegundos;
+  const rolagemMinimaRef = useRef(rolagemMinima);
+  rolagemMinimaRef.current = rolagemMinima;
 
   const propriedades = useCallback(
     (s: Sessao) => ({
@@ -65,7 +77,8 @@ export function useRastreioDeLeitura(
     const s = sessao.current;
     if (!s || s.leu) return;
     const ativo = tempoAtivoMs(s) / 1000;
-    if (s.maxRolagem < ROLAGEM_FIM || ativo < base.current.tempoEstimado * FRACAO_MINIMA_DO_TEMPO) return;
+    const minimo = minSegundosRef.current ?? base.current.tempoEstimado * FRACAO_MINIMA_DO_TEMPO;
+    if (s.maxRolagem < rolagemMinimaRef.current || ativo < minimo) return;
     s.leu = true;
     posthog?.capture('reflection_read', {
       ...propriedades(s),
@@ -88,7 +101,7 @@ export function useRastreioDeLeitura(
         active_seconds: Math.round(delta / 1000),
         total_active_seconds: Math.round(total / 1000),
         max_scroll_percent: Math.round(s.maxRolagem * 100),
-        reached_end: s.maxRolagem >= ROLAGEM_FIM,
+        reached_end: s.maxRolagem >= rolagemMinimaRef.current,
         read: s.leu,
         reason: motivo,
       });
