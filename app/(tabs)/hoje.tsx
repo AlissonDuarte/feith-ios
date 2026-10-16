@@ -39,7 +39,7 @@ import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
 const TOUR_HOJE_KEY = 'feith.tour.hoje.v1';
 
 export default function Hoje() {
-  const { scheme } = useTheme();
+  const { scheme, effectiveMode } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const router = useRouter();
   // O streak vem do summary do AuthContext, que ja e compartilhado por todas
@@ -258,12 +258,15 @@ export default function Hoje() {
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Conhecer plano Apoiador"
-              style={({ pressed }) => [estilos.badgeApoiador, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="ribbon-outline" size={12} color={scheme.gold} />
-              <Text variant="micro" font="bodySemi" color={scheme.gold} style={{ letterSpacing: 1 }}>
-                APOIADOR
-              </Text>
+              {({ pressed }) => (
+                <View style={[estilos.badgeApoiador, pressed && { opacity: 0.7 }]}>
+                  <Ionicons name="ribbon-outline" size={12} color={scheme.gold} />
+                  <Text variant="micro" font="bodySemi" color={scheme.gold} style={{ letterSpacing: 1 }}>
+                    APOIADOR
+                  </Text>
+                </View>
+              )}
             </Pressable>
           ) : null}
         </View>
@@ -308,23 +311,29 @@ export default function Hoje() {
             }}
             accessibilityRole="button"
             accessibilityLabel={`Continuar trilha ${trilhas.active.name}`}
-            style={({ pressed }) => [estilos.trilha, pressed && { opacity: 0.9 }]}
           >
-            <AnelProgresso feitos={trilhas.active.progress.completed_days} total={trilhas.active.days_count} tamanho={44} />
-            <View style={{ flex: 1 }}>
-              <Text variant="micro" font="bodySemi" color={scheme.goldSoft} style={{ letterSpacing: 2 }}>
-                CONTINUAR TRILHA
-              </Text>
-              <Text variant="title" color={scheme.onAccent} numberOfLines={1}>
-                {trilhas.active.name}
-              </Text>
-              {trilhas.active_next_title ? (
-                <Text variant="micro" color="rgba(255,255,255,0.78)" numberOfLines={1}>
-                  {`Dia ${trilhas.active.progress.next_day} · ${trilhas.active_next_title}`}
-                </Text>
-              ) : null}
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={scheme.goldSoft} />
+            {({ pressed }) => {
+              const corDestaque = effectiveMode === 'dark' ? scheme.onAccentMuted : scheme.goldSoft;
+              return (
+                <View style={[estilos.trilha, pressed && { opacity: 0.9 }]}>
+                  <AnelProgresso feitos={trilhas.active!.progress!.completed_days} total={trilhas.active!.days_count} tamanho={44} />
+                  <View style={{ flex: 1 }}>
+                    <Text variant="micro" font="bodySemi" color={corDestaque} style={{ letterSpacing: 2 }}>
+                      CONTINUAR TRILHA
+                    </Text>
+                    <Text variant="title" color={scheme.onAccent} numberOfLines={1}>
+                      {trilhas.active!.name}
+                    </Text>
+                    {trilhas.active_next_title ? (
+                      <Text variant="micro" color={scheme.onAccentMuted} numberOfLines={1}>
+                        {`Dia ${trilhas.active!.progress!.next_day} · ${trilhas.active_next_title}`}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={corDestaque} />
+                </View>
+              );
+            }}
           </Pressable>
         ) : null}
 

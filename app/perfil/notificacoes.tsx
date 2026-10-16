@@ -185,19 +185,25 @@ export default function Notificacoes() {
                     // O rotulo visivel repete letras (S, T, Q, Q, S, S, D); o
                     // leitor de tela precisa do nome inteiro.
                     accessibilityLabel={d.nome}
-                    style={({ pressed }) => [
-                      estilos.dia,
-                      ativo && estilos.diaAtivo,
-                      pressed && { opacity: 0.6 },
-                    ]}
+                    style={{ flex: 1 }}
                   >
-                    <Text
-                      variant="caption"
-                      font={ativo ? 'bodySemi' : 'body'}
-                      color={ativo ? scheme.accent : scheme.textSecondary}
-                    >
-                      {d.rotulo}
-                    </Text>
+                    {({ pressed }) => (
+                      <View
+                        style={[
+                          estilos.dia,
+                          ativo && estilos.diaAtivo,
+                          pressed && { opacity: 0.6 },
+                        ]}
+                      >
+                        <Text
+                          variant="caption"
+                          font={ativo ? 'bodySemi' : 'body'}
+                          color={ativo ? scheme.accent : scheme.textSecondary}
+                        >
+                          {d.rotulo}
+                        </Text>
+                      </View>
+                    )}
                   </Pressable>
                 );
               })}
@@ -220,14 +226,17 @@ export default function Notificacoes() {
               onPress={() => setMostrandoPicker((v) => !v)}
               accessibilityRole="button"
               accessibilityLabel={`Horário do lembrete: ${hora}`}
-              style={({ pressed }) => [estilos.hora, pressed && { borderColor: scheme.accent }]}
             >
-              <Text style={estilos.horaTexto}>{hora}</Text>
-              <Ionicons
-                name={mostrandoPicker ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={scheme.textGhost}
-              />
+              {({ pressed }) => (
+                <View style={[estilos.hora, pressed && { borderColor: scheme.accent }]}>
+                  <Text style={estilos.horaTexto}>{hora}</Text>
+                  <Ionicons
+                    name={mostrandoPicker ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={scheme.textGhost}
+                  />
+                </View>
+              )}
             </Pressable>
           </View>
 

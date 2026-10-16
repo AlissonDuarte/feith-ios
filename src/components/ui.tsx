@@ -324,6 +324,9 @@ export function Button({
             ? scheme.textSecondary
             : scheme.accent;
 
+  const estiloExterno = StyleSheet.flatten(style);
+  const fundoCustomizado = estiloExterno?.backgroundColor;
+
   const getContainerStyle = (pressed: boolean): ViewStyle => {
     const s: ViewStyle = {
       ...styles.button,
@@ -350,7 +353,8 @@ export function Button({
       }
       return {
         ...s,
-        backgroundColor: pressed ? scheme.accentPressed : scheme.accent,
+        backgroundColor: fundoCustomizado ?? (pressed ? scheme.accentPressed : scheme.accent),
+        opacity: fundoCustomizado && pressed ? 0.9 : 1,
         ...(inativo ? {} : shadow.card),
       };
     }
@@ -381,9 +385,8 @@ export function Button({
       accessibilityLabel={label}
       accessibilityState={{ disabled: !!inativo, busy: loading }}
       disabled={inativo}
-      style={({ pressed }) => [
+      style={[
         { width: comoLink ? undefined : '100%' },
-        comoLink && pressed && { opacity: 0.55 },
         !solido && inativo && { opacity: 0.4 },
         style,
       ]}
@@ -448,14 +451,19 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: ativo, disabled: !!disabled }}
-      style={({ pressed }) => [
-        styles.iconButton,
-        ativo && { borderColor: scheme.goldSoft, backgroundColor: scheme.goldSubtle },
-        pressed && { opacity: 0.5 },
-        disabled && { opacity: 0.4 },
-      ]}
     >
-      <Ionicons name={name} size={size} color={ativo ? scheme.gold : corFinal} />
+      {({ pressed }) => (
+        <View
+          style={[
+            styles.iconButton,
+            ativo && { borderColor: scheme.goldSoft, backgroundColor: scheme.goldSubtle },
+            pressed && { opacity: 0.5 },
+            disabled && { opacity: 0.4 },
+          ]}
+        >
+          <Ionicons name={name} size={size} color={ativo ? scheme.gold : corFinal} />
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -503,13 +511,18 @@ export function TouchableCard({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && { backgroundColor: scheme.canvasWarm, borderColor: scheme.goldSoft },
-        style,
-      ]}
     >
-      {children}
+      {({ pressed }) => (
+        <View
+          style={[
+            styles.card,
+            pressed && { backgroundColor: scheme.canvasWarm, borderColor: scheme.goldSoft },
+            style,
+          ]}
+        >
+          {children}
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -640,43 +653,48 @@ export function ListRow({
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        style={({ pressed }) => [
-          styles.rowPressable,
-          pressed && { backgroundColor: scheme.canvasWarm },
-        ]}
       >
-        <View style={styles.row}>
-          {icon ? (
-            <View
-              style={[
-                styles.iconBadge,
-                {
-                  backgroundColor: iconBg ?? (destrutivo ? '#FBF0EF' : scheme.canvasWarm),
-                },
-              ]}
-            >
-              <Ionicons
-                name={icon}
-                size={17}
-                color={iconColor ?? (destrutivo ? scheme.accent : scheme.textSecondary)}
-              />
-            </View>
-          ) : null}
-          <Text
-            variant="body"
-            font="bodyMedium"
-            color={cor}
-            style={[styles.rowLabel, !icon && { marginLeft: 0 }]}
+        {({ pressed }) => (
+          <View
+            style={[
+              styles.rowPressable,
+              pressed && { backgroundColor: scheme.canvasWarm },
+            ]}
           >
-            {label}
-          </Text>
-          {value ? (
-            <Text variant="bodySm" color={scheme.textMuted} style={styles.rowValue}>
-              {value}
-            </Text>
-          ) : null}
-          <Ionicons name="chevron-forward" size={16} color={scheme.textGhost} />
-        </View>
+            <View style={styles.row}>
+              {icon ? (
+                <View
+                  style={[
+                    styles.iconBadge,
+                    {
+                      backgroundColor: iconBg ?? (destrutivo ? '#FBF0EF' : scheme.canvasWarm),
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={icon}
+                    size={17}
+                    color={iconColor ?? (destrutivo ? scheme.accent : scheme.textSecondary)}
+                  />
+                </View>
+              ) : null}
+              <Text
+                variant="body"
+                font="bodyMedium"
+                color={cor}
+                style={[styles.rowLabel, !icon && { marginLeft: 0 }]}
+              >
+                {label}
+              </Text>
+              {value ? (
+                <Text variant="bodySm" color={scheme.textMuted} style={styles.rowValue}>
+                  {value}
+                </Text>
+              ) : null}
+              <Ionicons name="chevron-forward" size={16} color={scheme.textGhost} />
+            </View>
+          </View>
+        )}
       </Pressable>
       {ultimo ? null : <Hairline inset={icon ? 62 : space.lg} />}
     </>

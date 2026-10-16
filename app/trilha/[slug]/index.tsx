@@ -82,7 +82,7 @@ function Linha({
           <Ionicons
             name={feito ? 'checkmark' : aberto ? 'book-outline' : 'lock-closed'}
             size={13}
-            color={feito || aberto ? '#FFFFFF' : scheme.textGhost}
+            color={feito || aberto ? scheme.onAccent : scheme.textGhost}
           />
         </View>
         {!ultimo ? <View style={{ width: 1, flex: 1, backgroundColor: scheme.border, minHeight: 14 }} /> : null}
@@ -315,9 +315,9 @@ export default function DetalheTrilha() {
                 {trilha.days.slice(0, 3).map((dia) => (
                   <View key={dia.number} style={estilos.previa}>
                     <View style={estilos.previaNumero}>
-                      <Text style={{ fontFamily: fonts.serifItalic, fontSize: 14, color: scheme.gold }}>{dia.number}</Text>
+                      <Text style={{ fontFamily: fonts.serifItalic, fontSize: 14, lineHeight: 18, color: scheme.gold }}>{dia.number}</Text>
                     </View>
-                    <Text style={{ flex: 1, fontFamily: fonts.serifSemi, fontSize: 16, color: scheme.textPrimary }} numberOfLines={1}>
+                    <Text style={{ flex: 1, fontFamily: fonts.serifSemi, fontSize: 16, lineHeight: 20, color: scheme.textPrimary }} numberOfLines={1}>
                       {dia.title}
                     </Text>
                     <Text variant="micro" color={scheme.textMuted}>

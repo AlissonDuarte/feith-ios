@@ -148,9 +148,12 @@ export default function AssinaturaModal() {
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Fechar tela de assinatura"
-          style={({ pressed }) => [estilos.botaoFechar, pressed && estilos.botaoFecharPressed]}
         >
-          <Ionicons name="close" size={22} color={scheme.textSecondary} />
+          {({ pressed }) => (
+            <View style={[estilos.botaoFechar, pressed && estilos.botaoFecharPressed]}>
+              <Ionicons name="close" size={22} color={scheme.textSecondary} />
+            </View>
+          )}
         </Pressable>
       </View>
 

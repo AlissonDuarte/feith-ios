@@ -20,7 +20,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { api } from '../api/client';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
@@ -93,17 +93,22 @@ export function BotaoFavorito({
       accessibilityRole="button"
       accessibilityLabel={favoritado ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
       accessibilityState={{ selected: favoritado, disabled: ocupado }}
-      style={({ pressed }) => [
-        emMoldura && estilos.moldura,
-        emMoldura && favoritado && estilos.molduraAtiva,
-        { opacity: pressed || ocupado ? 0.5 : 1 },
-      ]}
     >
-      <Ionicons
-        name={favoritado ? 'bookmark' : 'bookmark-outline'}
-        size={tamanho}
-        color={favoritado ? scheme.gold : scheme.textMuted}
-      />
+      {({ pressed }) => (
+        <View
+          style={[
+            emMoldura && estilos.moldura,
+            emMoldura && favoritado && estilos.molduraAtiva,
+            { opacity: pressed || ocupado ? 0.5 : 1 },
+          ]}
+        >
+          <Ionicons
+            name={favoritado ? 'bookmark' : 'bookmark-outline'}
+            size={tamanho}
+            color={favoritado ? scheme.gold : scheme.textMuted}
+          />
+        </View>
+      )}
     </Pressable>
   );
 }

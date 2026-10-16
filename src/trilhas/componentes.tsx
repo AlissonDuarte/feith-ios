@@ -17,6 +17,7 @@ const CAPAS: Record<string, { claro: [string, string]; escuro: [string, string] 
 };
 
 export const COR_PROTESTANTE = '#2C3E5C';
+const COR_CATOLICA = '#7A1F1F';
 
 export function CapaTrilha({
   cover,
@@ -33,22 +34,23 @@ export function CapaTrilha({
   const id = `capa-${cover}-${effectiveMode}`;
   return (
     <View style={[{ overflow: 'hidden' }, style]}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-        <Defs>
-          <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={de} />
-            <Stop offset="1" stopColor={ate} />
-          </LinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
-      </Svg>
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Svg width="100%" height="100%">
+          <Defs>
+            <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor={de} />
+              <Stop offset="1" stopColor={ate} />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
+        </Svg>
+      </View>
       {children}
     </View>
   );
 }
 
 export function SeloVozes({ tamanho = 20 }: { tamanho?: number }) {
-  const { scheme } = useTheme();
   const bolinha = (cor: string, letra: string, deslocar: boolean) => (
     <View
       style={{
@@ -71,7 +73,7 @@ export function SeloVozes({ tamanho = 20 }: { tamanho?: number }) {
   return (
     <View style={{ flexDirection: 'row' }} accessibilityLabel="Duas vozes: protestante e católica">
       {bolinha(COR_PROTESTANTE, 'P', false)}
-      {bolinha(scheme.accent, 'C', true)}
+      {bolinha(COR_CATOLICA, 'C', true)}
     </View>
   );
 }
@@ -106,7 +108,7 @@ export function Etapas({ total, feitas, atual }: { total: number; feitas: number
 }
 
 export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number; total: number; tamanho?: number }) {
-  const { scheme } = useTheme();
+  const { scheme, effectiveMode } = useTheme();
   const raio = (tamanho - 6) / 2;
   const perimetro = 2 * Math.PI * raio;
   const fracao = total > 0 ? feitos / total : 0;
@@ -114,15 +116,17 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
   // screenshots/proposta-trilhas.html): sem ele, o numero so fica legivel se o
   // card por tras tambem estiver com o fundo de acento aplicado.
   const miolo = tamanho - 10;
+  const trilhaCor = effectiveMode === 'dark' ? 'rgba(21,18,15,0.22)' : 'rgba(255,255,255,0.18)';
+  const arcoCor = effectiveMode === 'dark' ? scheme.onAccent : scheme.goldSoft;
   return (
     <View style={{ width: tamanho, height: tamanho, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={tamanho} height={tamanho} style={StyleSheet.absoluteFill}>
-        <Circle cx={tamanho / 2} cy={tamanho / 2} r={raio} stroke="rgba(255,255,255,0.18)" strokeWidth={5} fill="none" />
+        <Circle cx={tamanho / 2} cy={tamanho / 2} r={raio} stroke={trilhaCor} strokeWidth={5} fill="none" />
         <Circle
           cx={tamanho / 2}
           cy={tamanho / 2}
           r={raio}
-          stroke={scheme.goldSoft}
+          stroke={arcoCor}
           strokeWidth={5}
           fill="none"
           strokeDasharray={`${perimetro * fracao} ${perimetro}`}
@@ -140,7 +144,7 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: scheme.onAccent }}>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 16, color: scheme.onAccent }}>
           {`${feitos}/${total}`}
         </Text>
       </View>
@@ -162,44 +166,49 @@ export function CartaoTrilha({ trilha, onPress }: { trilha: TrailSummary; onPres
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${trilha.name}, ${trilha.days_count} dias${trilha.locked ? ', exclusiva para Apoiadores' : ''}`}
-      style={({ pressed }) => [
-        estilos.cartao,
-        { backgroundColor: scheme.surface, borderColor: scheme.border },
-        pressed && { opacity: 0.8 },
-      ]}
     >
-      <CapaTrilha cover={trilha.cover} style={estilos.cartaoCapa}>
-        {trilha.kind === 'duas_vozes' ? (
-          <View style={{ position: 'absolute', left: 9, top: 9 }}>
-            <SeloVozes />
+      {({ pressed }) => (
+        <View
+          style={[
+            estilos.cartao,
+            { backgroundColor: scheme.surface, borderColor: scheme.border },
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <CapaTrilha cover={trilha.cover} style={estilos.cartaoCapa}>
+            {trilha.kind === 'duas_vozes' ? (
+              <View style={{ position: 'absolute', left: 9, top: 9 }}>
+                <SeloVozes />
+              </View>
+            ) : null}
+            {trilha.tier === 'free' ? (
+              <View style={[estilos.canto, { backgroundColor: 'rgba(26,26,26,0.45)' }]}>
+                <Text style={[estilos.cantoTexto, { color: '#FFFFFF' }]}>GRÁTIS</Text>
+              </View>
+            ) : trilha.locked ? (
+              <View style={[estilos.cadeado, { backgroundColor: 'rgba(255,255,255,0.9)' }]}>
+                <Ionicons name="lock-closed" size={12} color="#8B6914" />
+              </View>
+            ) : null}
+            {concluida ? (
+              <View style={[estilos.cadeado, { backgroundColor: scheme.gold }]}>
+                <Ionicons name="checkmark" size={14} color={scheme.onAccent} />
+              </View>
+            ) : null}
+            <View style={estilos.dias}>
+              <Text style={estilos.diasTexto}>{`${trilha.days_count} DIAS`}</Text>
+            </View>
+          </CapaTrilha>
+          <View style={{ paddingHorizontal: 10, paddingTop: 9, paddingBottom: 11 }}>
+            <Text style={{ fontFamily: fonts.serifSemi, fontSize: 17, lineHeight: 20, color: scheme.textPrimary }} numberOfLines={2}>
+              {trilha.name}
+            </Text>
+            <Text variant="micro" color={emAndamento ? scheme.accent : scheme.textMuted} style={{ marginTop: 3 }} numberOfLines={1}>
+              {legenda}
+            </Text>
           </View>
-        ) : null}
-        {trilha.tier === 'free' ? (
-          <View style={[estilos.canto, { backgroundColor: 'rgba(26,26,26,0.45)' }]}>
-            <Text style={[estilos.cantoTexto, { color: '#FFFFFF' }]}>GRÁTIS</Text>
-          </View>
-        ) : trilha.locked ? (
-          <View style={[estilos.cadeado, { backgroundColor: 'rgba(255,255,255,0.9)' }]}>
-            <Ionicons name="lock-closed" size={12} color="#8B6914" />
-          </View>
-        ) : null}
-        {concluida ? (
-          <View style={[estilos.cadeado, { backgroundColor: scheme.gold }]}>
-            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-          </View>
-        ) : null}
-        <View style={estilos.dias}>
-          <Text style={estilos.diasTexto}>{`${trilha.days_count} DIAS`}</Text>
         </View>
-      </CapaTrilha>
-      <View style={{ paddingHorizontal: 10, paddingTop: 9, paddingBottom: 11 }}>
-        <Text style={{ fontFamily: fonts.serifSemi, fontSize: 17, lineHeight: 20, color: scheme.textPrimary }} numberOfLines={2}>
-          {trilha.name}
-        </Text>
-        <Text variant="micro" color={emAndamento ? scheme.accent : scheme.textMuted} style={{ marginTop: 3 }} numberOfLines={1}>
-          {legenda}
-        </Text>
-      </View>
+      )}
     </Pressable>
   );
 }
@@ -214,7 +223,7 @@ const estilos = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: 'rgba(255,255,255,0.9)',
   },
-  pilulaTexto: { fontFamily: fonts.bodySemi, fontSize: 11, color: '#1A1A1A' },
+  pilulaTexto: { fontFamily: fonts.bodySemi, fontSize: 11, lineHeight: 14, color: '#1A1A1A' },
   cartao: {
     width: 152,
     borderRadius: radius.md,
@@ -230,7 +239,7 @@ const estilos = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
-  cantoTexto: { fontFamily: fonts.bodySemi, fontSize: 9, letterSpacing: 1.2 },
+  cantoTexto: { fontFamily: fonts.bodySemi, fontSize: 9, lineHeight: 12, letterSpacing: 1.2 },
   cadeado: {
     position: 'absolute',
     right: 8,
@@ -248,6 +257,6 @@ const estilos = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
-  diasTexto: { fontFamily: fonts.bodySemi, fontSize: 10, letterSpacing: 1.2, color: '#1A1A1A' },
+  diasTexto: { fontFamily: fonts.bodySemi, fontSize: 10, lineHeight: 13, letterSpacing: 1.2, color: '#1A1A1A' },
 });
 

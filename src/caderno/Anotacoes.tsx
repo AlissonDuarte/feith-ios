@@ -96,9 +96,12 @@ export function Anotacoes({ seletor }: { seletor: ReactNode }) {
                 hitSlop={12}
                 accessibilityRole="button"
                 accessibilityLabel="Apagar anotação"
-                style={({ pressed }) => [{ opacity: pressed ? 0.4 : 1 }]}
               >
-                <Ionicons name="trash-outline" size={17} color={scheme.textGhost} />
+                {({ pressed }) => (
+                  <View style={{ opacity: pressed ? 0.4 : 1 }}>
+                    <Ionicons name="trash-outline" size={17} color={scheme.textGhost} />
+                  </View>
+                )}
               </Pressable>
             </View>
           </TouchableCard>

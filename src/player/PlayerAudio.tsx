@@ -171,23 +171,26 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }
           accessibilityRole="button"
           accessibilityLabel={rotuloPrincipal}
           hitSlop={6}
-          style={({ pressed }) => [estilos.play, pressed && estilos.playPressed]}
         >
-          {carregandoPlay || (audio.bufferizando && audio.tocando) ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
-          ) : (
-            <Ionicons
-              name={iconePrincipal}
-              size={iconePrincipal === 'headset' ? 21 : 22}
-              color="#FFFFFF"
-              style={iconePrincipal === 'play' ? { marginLeft: 3 } : undefined}
-            />
-          )}
-          {audio.semAcesso ? (
-            <View style={estilos.cadeado}>
-              <Ionicons name="lock-closed" size={10} color={scheme.gold} />
+          {({ pressed }) => (
+            <View style={[estilos.play, pressed && estilos.playPressed]}>
+              {carregandoPlay || (audio.bufferizando && audio.tocando) ? (
+                <ActivityIndicator color={scheme.onAccent} size="small" />
+              ) : (
+                <Ionicons
+                  name={iconePrincipal}
+                  size={iconePrincipal === 'headset' ? 21 : 22}
+                  color={scheme.onAccent}
+                  style={iconePrincipal === 'play' ? { marginLeft: 3 } : undefined}
+                />
+              )}
+              {audio.semAcesso ? (
+                <View style={estilos.cadeado}>
+                  <Ionicons name="lock-closed" size={10} color={scheme.gold} />
+                </View>
+              ) : null}
             </View>
-          ) : null}
+          )}
         </Pressable>
 
         <Pressable
@@ -289,17 +292,22 @@ function BotaoAnotar({
       accessibilityRole="button"
       accessibilityLabel="Escrever anotação"
       hitSlop={4}
-      style={({ pressed }) => [
-        estilos.anotar,
-        redondo && estilos.anotarRedondo,
-        pressed && { opacity: 0.75 },
-      ]}
     >
-      <Ionicons name="pencil-outline" size={redondo ? 19 : 17} color={scheme.gold} />
-      {redondo ? null : (
-        <Text variant="bodySm" font="bodySemi" color={scheme.gold}>
-          Anotar
-        </Text>
+      {({ pressed }) => (
+        <View
+          style={[
+            estilos.anotar,
+            redondo && estilos.anotarRedondo,
+            pressed && { opacity: 0.75 },
+          ]}
+        >
+          <Ionicons name="pencil-outline" size={redondo ? 19 : 17} color={scheme.gold} />
+          {redondo ? null : (
+            <Text variant="bodySm" font="bodySemi" color={scheme.gold}>
+              Anotar
+            </Text>
+          )}
+        </View>
       )}
     </Pressable>
   );
@@ -422,17 +430,20 @@ function FolhaPlayer({
             }}
             accessibilityRole="button"
             accessibilityLabel={audio.tocando ? 'Pausar' : 'Tocar'}
-            style={({ pressed }) => [estilos.playGrande, pressed && estilos.playPressed]}
           >
-            {audio.bufferizando && audio.tocando ? (
-              <ActivityIndicator color={scheme.textPrimary} />
-            ) : (
-              <Ionicons
-                name={audio.tocando ? 'pause' : 'play'}
-                size={32}
-                color={scheme.textPrimary}
-                style={!audio.tocando ? { marginLeft: 4 } : undefined}
-              />
+            {({ pressed }) => (
+              <View style={[estilos.playGrande, pressed && estilos.playPressed]}>
+                {audio.bufferizando && audio.tocando ? (
+                  <ActivityIndicator color={scheme.onAccent} />
+                ) : (
+                  <Ionicons
+                    name={audio.tocando ? 'pause' : 'play'}
+                    size={32}
+                    color={scheme.onAccent}
+                    style={!audio.tocando ? { marginLeft: 4 } : undefined}
+                  />
+                )}
+              </View>
             )}
           </Pressable>
 
@@ -471,12 +482,15 @@ function FolhaPlayer({
             }}
             accessibilityRole="button"
             accessibilityLabel={`Anotar neste trecho, em ${formatarTempo(audio.posicao)}`}
-            style={({ pressed }) => [estilos.anotarTrecho, pressed && { opacity: 0.8 }]}
           >
-            <Ionicons name="pencil-outline" size={18} color={scheme.gold} />
-            <Text variant="bodySm" font="bodySemi" color={scheme.gold}>
-              Anotar neste trecho
-            </Text>
+            {({ pressed }) => (
+              <View style={[estilos.anotarTrecho, pressed && { opacity: 0.8 }]}>
+                <Ionicons name="pencil-outline" size={18} color={scheme.gold} />
+                <Text variant="bodySm" font="bodySemi" color={scheme.gold}>
+                  Anotar neste trecho
+                </Text>
+              </View>
+            )}
           </Pressable>
         ) : null}
       </View>

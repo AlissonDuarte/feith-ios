@@ -109,20 +109,25 @@ export default function ContaPraGente() {
                   accessibilityRole="radio"
                   accessibilityState={{ selected: ativo }}
                   accessibilityLabel={m.rotulo}
-                  style={({ pressed }) => [
-                    estilos.motivo,
-                    ativo && { borderColor: scheme.accent, backgroundColor: scheme.canvasWarm },
-                    pressed && { opacity: 0.7 },
-                  ]}
                 >
-                  <Ionicons name={m.icone} size={16} color={ativo ? scheme.accent : scheme.textSecondary} />
-                  <Text
-                    variant="bodySm"
-                    font={ativo ? 'bodySemi' : 'bodyMedium'}
-                    color={ativo ? scheme.accent : scheme.textPrimary}
-                  >
-                    {m.rotulo}
-                  </Text>
+                  {({ pressed }) => (
+                    <View
+                      style={[
+                        estilos.motivo,
+                        ativo && { borderColor: scheme.accent, backgroundColor: scheme.canvasWarm },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <Ionicons name={m.icone} size={16} color={ativo ? scheme.accent : scheme.textSecondary} />
+                      <Text
+                        variant="bodySm"
+                        font={ativo ? 'bodySemi' : 'bodyMedium'}
+                        color={ativo ? scheme.accent : scheme.textPrimary}
+                      >
+                        {m.rotulo}
+                      </Text>
+                    </View>
+                  )}
                 </Pressable>
               );
             })}

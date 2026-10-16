@@ -20,8 +20,12 @@ import { useFonts } from 'expo-font';
 import { SplashScreen, Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PostHogProvider } from 'posthog-react-native';
+import { remapProps } from 'nativewind';
 import { useEffect } from 'react';
+import { Pressable } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+remapProps(Pressable, { className: 'style' });
 
 import { startMetaSdk } from '../src/ads/metaSdk';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';

@@ -28,7 +28,7 @@ function Prateleira({
   return (
     <View style={{ marginTop: space.xl }}>
       <View style={estilos.prateleiraTopo}>
-        <Text style={{ fontFamily: fonts.serifSemi, fontSize: 21, color: scheme.textPrimary }}>{titulo}</Text>
+        <Text style={{ fontFamily: fonts.serifSemi, fontSize: 21, lineHeight: 24, color: scheme.textPrimary }}>{titulo}</Text>
         <Text variant="micro" color={scheme.textMuted}>
           {legenda}
         </Text>
@@ -47,7 +47,7 @@ function Prateleira({
 }
 
 export default function Trilhas() {
-  const { scheme } = useTheme();
+  const { scheme, effectiveMode } = useTheme();
   const router = useRouter();
   const { respiro } = useEspacoTabBar();
   const [catalogo, setCatalogo] = useState<TrailCatalog | null>(null);
@@ -78,6 +78,8 @@ export default function Trilhas() {
   const duasVozes = trilhas.filter((t) => t.tier !== 'free' && t.kind === 'duas_vozes');
   const apoiadores = trilhas.filter((t) => t.tier !== 'free' && t.kind !== 'duas_vozes');
   const ativa = catalogo?.active;
+  const progressoAtiva = ativa?.progress;
+  const corDestaque = effectiveMode === 'dark' ? scheme.onAccentMuted : scheme.goldSoft;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
@@ -108,30 +110,38 @@ export default function Trilhas() {
           />
         ) : null}
 
-        {ativa?.progress ? (
+        {ativa && progressoAtiva ? (
           <Pressable
             onPress={() => abrir(ativa)}
             accessibilityRole="button"
             accessibilityLabel={`Continuar ${ativa.name}`}
-            style={({ pressed }) => [
-              estilos.continuar,
-              { backgroundColor: scheme.accent, ...shadow.raised },
-              pressed && { opacity: 0.9 },
-            ]}
           >
-            <AnelProgresso feitos={ativa.progress.completed_days} total={ativa.days_count} />
-            <View style={{ flex: 1 }}>
-              <Text style={[estilos.continuarRotulo, { color: scheme.goldSoft }]}>CONTINUAR</Text>
-              <Text style={{ fontFamily: fonts.serifSemi, fontSize: 21, lineHeight: 24, color: scheme.onAccent }} numberOfLines={2}>
-                {ativa.name}
-              </Text>
-              {catalogo?.active_next_title && ativa.progress.next_day ? (
-                <Text variant="micro" color={scheme.onAccentMuted} style={{ marginTop: 3 }} numberOfLines={1}>
-                  {`Dia ${ativa.progress.next_day} · "${catalogo.active_next_title}" · ${ativa.minutes_per_day} min`}
-                </Text>
-              ) : null}
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={scheme.goldSoft} />
+            {({ pressed }) => (
+              <View
+                style={[
+                  estilos.continuar,
+                  { backgroundColor: scheme.accent, ...shadow.raised },
+                  pressed && { opacity: 0.9 },
+                ]}
+              >
+                <AnelProgresso feitos={progressoAtiva.completed_days} total={ativa.days_count} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[estilos.continuarRotulo, { color: corDestaque }]}>CONTINUAR</Text>
+                  <Text
+                    style={{ fontFamily: fonts.serifSemi, fontSize: 21, lineHeight: 24, color: scheme.onAccent, marginTop: 2 }}
+                    numberOfLines={2}
+                  >
+                    {ativa.name}
+                  </Text>
+                  {catalogo?.active_next_title && progressoAtiva.next_day ? (
+                    <Text variant="micro" color={scheme.onAccentMuted} style={{ marginTop: 3 }} numberOfLines={1}>
+                      {`Dia ${progressoAtiva.next_day} · "${catalogo.active_next_title}" · ${ativa.minutes_per_day} min`}
+                    </Text>
+                  ) : null}
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={corDestaque} />
+              </View>
+            )}
           </Pressable>
         ) : null}
 
@@ -159,5 +169,5 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
-  continuarRotulo: { fontFamily: fonts.bodySemi, fontSize: 10, letterSpacing: 2 },
+  continuarRotulo: { fontFamily: fonts.bodySemi, fontSize: 10, lineHeight: 14, letterSpacing: 2 },
 });

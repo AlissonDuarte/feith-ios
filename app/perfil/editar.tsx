@@ -76,12 +76,15 @@ function CampoSeletor({
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${valor}`}
-        style={({ pressed }) => [estilos.seletor, pressed && { borderColor: scheme.accent }]}
       >
-        <Text variant="body" color={vazio ? scheme.textGhost : scheme.textPrimary}>
-          {valor}
-        </Text>
-        <Ionicons name="chevron-down" size={15} color={scheme.textGhost} />
+        {({ pressed }) => (
+          <View style={[estilos.seletor, pressed && { borderColor: scheme.accent }]}>
+            <Text variant="body" color={vazio ? scheme.textGhost : scheme.textPrimary}>
+              {valor}
+            </Text>
+            <Ionicons name="chevron-down" size={15} color={scheme.textGhost} />
+          </View>
+        )}
       </Pressable>
     </View>
   );

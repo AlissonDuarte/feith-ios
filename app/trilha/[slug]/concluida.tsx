@@ -111,7 +111,7 @@ export default function TrilhaConcluida() {
             { valor: params.notas ?? '0', rotulo: 'anotações' },
           ].map((item, i) => (
             <View key={item.rotulo} style={[estilos.numero, i > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: scheme.borderSoft }]}>
-              <Text style={{ fontFamily: fonts.serifSemi, fontSize: 24, color: scheme.accent }}>{item.valor}</Text>
+              <Text style={{ fontFamily: fonts.serifSemi, fontSize: 24, lineHeight: 30, color: scheme.accent }}>{item.valor}</Text>
               <Text variant="micro" color={scheme.textMuted}>
                 {item.rotulo}
               </Text>
@@ -129,35 +129,42 @@ export default function TrilhaConcluida() {
               key={b.rotulo}
               onPress={() => void b.acao()}
               accessibilityRole="button"
-              style={({ pressed }) => [estilos.botaoCompartilhar, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name={b.icone} size={16} color={scheme.textSecondary} />
-              <Text variant="micro" font="bodySemi" color={scheme.textSecondary}>
-                {b.rotulo}
-              </Text>
+              {({ pressed }) => (
+                <View style={[estilos.botaoCompartilhar, pressed && { opacity: 0.7 }]}>
+                  <Ionicons name={b.icone} size={16} color={scheme.textSecondary} />
+                  <Text variant="micro" font="bodySemi" color={scheme.textSecondary}>
+                    {b.rotulo}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           ))}
         </View>
 
         {proxima ? (
-          <Pressable onPress={seguir} accessibilityRole="button" style={({ pressed }) => [estilos.proxima, pressed && { opacity: 0.8 }]}>
-            <CapaTrilha cover={proxima.cover} style={estilos.proximaCapa}>
-              {proxima.locked ? (
-                <View style={estilos.proximaCadeado}>
-                  <Ionicons name="lock-closed" size={10} color={scheme.gold} />
+          <Pressable onPress={seguir} accessibilityRole="button">
+            {({ pressed }) => (
+              <View style={[estilos.proxima, pressed && { opacity: 0.8 }]}>
+                <CapaTrilha cover={proxima.cover} style={estilos.proximaCapa}>
+                  {proxima.locked ? (
+                    <View style={estilos.proximaCadeado}>
+                      <Ionicons name="lock-closed" size={10} color={scheme.gold} />
+                    </View>
+                  ) : null}
+                </CapaTrilha>
+                <View style={{ flex: 1 }}>
+                  <Overline color={scheme.gold}>Próximo degrau</Overline>
+                  <Text style={{ fontFamily: fonts.serifSemi, fontSize: 18, lineHeight: 22, color: scheme.textPrimary, marginTop: 2 }}>
+                    {proxima.name}
+                  </Text>
+                  <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 2 }}>
+                    {`${proxima.days_count} dias · ${proxima.tier === 'free' ? 'Grátis' : 'Apoiador'}`}
+                  </Text>
                 </View>
-              ) : null}
-            </CapaTrilha>
-            <View style={{ flex: 1 }}>
-              <Overline color={scheme.gold}>Próximo degrau</Overline>
-              <Text style={{ fontFamily: fonts.serifSemi, fontSize: 18, color: scheme.textPrimary, marginTop: 2 }}>
-                {proxima.name}
-              </Text>
-              <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 2 }}>
-                {`${proxima.days_count} dias · ${proxima.tier === 'free' ? 'Grátis' : 'Apoiador'}`}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={scheme.textGhost} />
+                <Ionicons name="chevron-forward" size={18} color={scheme.textGhost} />
+              </View>
+            )}
           </Pressable>
         ) : null}
 

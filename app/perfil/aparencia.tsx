@@ -40,29 +40,32 @@ function LinhaOpcao({
         accessibilityRole="radio"
         accessibilityState={{ checked: selecionado }}
         accessibilityLabel={rotulo}
-        style={({ pressed }) => [estilos.linha, pressed && { backgroundColor: scheme.canvasWarm }]}
       >
-        <View
-          style={[
-            estilos.iconBadge,
-            { backgroundColor: selecionado ? scheme.goldSubtle : scheme.canvasWarm },
-          ]}
-        >
-          <Ionicons name={icone} size={17} color={selecionado ? scheme.gold : scheme.textSecondary} />
-        </View>
-        <View style={{ flex: 1, marginLeft: 14 }}>
-          <Text variant="body" font="bodyMedium">
-            {rotulo}
-          </Text>
-          <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 2 }}>
-            {descricao}
-          </Text>
-        </View>
-        <Ionicons
-          name={selecionado ? 'checkmark-circle' : 'ellipse-outline'}
-          size={21}
-          color={selecionado ? scheme.gold : scheme.border}
-        />
+        {({ pressed }) => (
+          <View style={[estilos.linha, pressed && { backgroundColor: scheme.canvasWarm }]}>
+            <View
+              style={[
+                estilos.iconBadge,
+                { backgroundColor: selecionado ? scheme.goldSubtle : scheme.canvasWarm },
+              ]}
+            >
+              <Ionicons name={icone} size={17} color={selecionado ? scheme.gold : scheme.textSecondary} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text variant="body" font="bodyMedium">
+                {rotulo}
+              </Text>
+              <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 2 }}>
+                {descricao}
+              </Text>
+            </View>
+            <Ionicons
+              name={selecionado ? 'checkmark-circle' : 'ellipse-outline'}
+              size={21}
+              color={selecionado ? scheme.gold : scheme.border}
+            />
+          </View>
+        )}
       </Pressable>
       {ultimo ? null : <Hairline inset={62} />}
     </>
