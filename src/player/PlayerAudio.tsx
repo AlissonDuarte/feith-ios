@@ -425,12 +425,12 @@ function FolhaPlayer({
             style={({ pressed }) => [estilos.playGrande, pressed && estilos.playPressed]}
           >
             {audio.bufferizando && audio.tocando ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={scheme.textPrimary} />
             ) : (
               <Ionicons
                 name={audio.tocando ? 'pause' : 'play'}
                 size={32}
-                color="#FFFFFF"
+                color={scheme.textPrimary}
                 style={!audio.tocando ? { marginLeft: 4 } : undefined}
               />
             )}
