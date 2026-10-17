@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ import {
 } from '../../src/components/ui';
 import { useListaPaginada } from '../../src/hooks/useListaPaginada';
 import { useTheme } from '../../src/theme/ThemeContext';
-import { space } from '../../src/theme/tokens';
+import { colors, radius, space } from '../../src/theme/tokens';
 
 export default function Historico() {
   const { scheme } = useTheme();
@@ -55,7 +56,39 @@ export default function Historico() {
         tituloVazio="Nada no histórico ainda"
         descricaoVazia="As reflexões que você abrir aparecem aqui."
         cabecalho={
-          !isSupporter && janela ? (
+          <>
+          {summary ? (
+            <TouchableCard
+              onPress={() => router.push('/perfil/sequencia')}
+              accessibilityLabel={`Sua sequência: ${summary.streak} dias`}
+              style={{ marginBottom: space.xl, paddingVertical: space.md }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: radius.sm,
+                    backgroundColor: scheme.canvasWarm,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="flame" size={18} color={colors.streak} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="caption" font="bodySemi">
+                    {summary.streak > 0 ? `${summary.streak} dias seguidos` : 'Comece sua sequência hoje'}
+                  </Text>
+                  <Text variant="micro" color={scheme.textGhost} style={{ marginTop: 1 }}>
+                    Ver sequência
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={scheme.textGhost} />
+              </View>
+            </TouchableCard>
+          ) : null}
+          {!isSupporter && janela ? (
             <Card quiet style={{ marginBottom: space.xl }}>
               <Overline color={scheme.gold}>Plano gratuito</Overline>
               <Text variant="caption" color={scheme.textSecondary} style={{ marginTop: 6 }}>
@@ -70,7 +103,8 @@ export default function Historico() {
                 onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'historico' } })}
               />
             </Card>
-          ) : null
+          ) : null}
+          </>
         }
         renderItem={(item) => (
           <TouchableCard

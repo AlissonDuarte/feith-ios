@@ -87,10 +87,18 @@ export type Plan = 'free' | 'supporter';
  */
 export type WeekdayCode = 'seg' | 'ter' | 'qua' | 'qui' | 'sex' | 'sab' | 'dom';
 
+export interface QuietHours {
+  /** HH:MM, 24h. */
+  start: string;
+  /** HH:MM, 24h. Pode ser menor que `start` — janela cruzando a meia-noite. */
+  end: string;
+}
+
 export interface NotificationSchedule {
   days: WeekdayCode[];
   /** HH:MM, 24h. */
   time: string;
+  quiet_hours?: QuietHours;
 }
 
 /**
@@ -255,6 +263,17 @@ export interface Transcript {
 export interface Streak {
   streak: number;
   read_today: boolean;
+  best: number;
+  total_days: number;
+  /** So significativo para Apoiador — free nunca tem protetor disponível. */
+  freeze_available: boolean;
+}
+
+/** GET /streaks/calendar — dias do mês (1-31) em que a pessoa leu. */
+export interface StreakCalendar {
+  year: number;
+  month: number;
+  days_read: number[];
 }
 
 export interface VersaoPlataforma {
@@ -337,6 +356,9 @@ export interface UserSummary {
   onboarding_completed: boolean;
   streak: number;
   read_today: boolean;
+  streak_best: number;
+  streak_total_days: number;
+  streak_freeze_available: boolean;
   quotas: UserQuotas;
   /** Quantos dias para tras o plano enxerga. null = sem limite (apoiador). */
   history_window_days: number | null;

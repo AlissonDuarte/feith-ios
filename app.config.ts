@@ -161,6 +161,23 @@ const config: ExpoConfig = {
     // enableBackgroundRemoteNotifications: as notificacoes sao puramente de
     // alerta, o app nao roda codigo em background ao receber uma.
     'expo-notifications',
+    // Folha de compartilhamento nativa para o cartao de reflexao (imagem),
+    // diferente do Share.share() so-texto ja usado em app/leitura/[key].tsx.
+    // `enabled` (Share Extension) fica no default `false` — so precisamos do
+    // shareAsync().
+    'expo-sharing',
+    // Salvar o cartao de reflexao no rolo. photosPermission:false porque o
+    // app so ESCREVE na galeria, nunca le — sem motivo para pedir a
+    // permissao de LEITURA tambem.
+    [
+      'expo-media-library',
+      {
+        photosPermission: false,
+        savePhotosPermission:
+          'Permita salvar o cartão da sua reflexão nas fotos para compartilhar onde quiser.',
+        isAccessMediaLocationEnabled: false,
+      },
+    ] as [string, Record<string, unknown>],
     // No SDK 57 a splash deixou de ser chave de topo e virou config do plugin.
     [
       'expo-splash-screen',

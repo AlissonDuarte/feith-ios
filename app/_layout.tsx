@@ -149,6 +149,10 @@ function RouteGuard() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="leitura/[key]" options={header({ voltar: 'Voltar', scheme })} />
+      <Stack.Screen
+        name="leitura/compartilhar-cartao"
+        options={{ ...header({ voltar: 'Voltar', scheme }), presentation: 'modal' }}
+      />
       <Stack.Screen name="trilha/[slug]/index" options={header({ voltar: 'Trilhas', scheme })} />
       <Stack.Screen name="trilha/[slug]/dia/[numero]" options={header({ voltar: 'Trilha', scheme })} />
       <Stack.Screen name="trilha/[slug]/concluida" options={{ headerShown: false, gestureEnabled: false }} />
@@ -160,6 +164,10 @@ function RouteGuard() {
       <Stack.Screen
         name="perfil/notificacoes"
         options={header({ title: 'Lembretes', voltar: 'Perfil', scheme })}
+      />
+      <Stack.Screen
+        name="perfil/sequencia"
+        options={header({ title: 'Sequência', voltar: 'Histórico', scheme })}
       />
       <Stack.Screen
         name="perfil/aparencia"

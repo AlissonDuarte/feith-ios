@@ -47,6 +47,7 @@ import {
   type SharedLinkResponse,
   type SharedReflection,
   type Streak,
+  type StreakCalendar,
   type SubscriptionStatus,
   type Transcript,
   type TranscriptResponse,
@@ -364,6 +365,8 @@ export const api = {
 
   // Streak
   getStreak: () => request<Streak>('/streaks/me'),
+  getStreakCalendar: (year: number, month: number) =>
+    request<StreakCalendar>(`/streaks/calendar?year=${year}&month=${month}`),
 
   // Audio — exclusivo de apoiador (401/402/403 para os demais)
   /**

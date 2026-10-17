@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { diasDoServidor, diasParaServidor } from '../../src/api/agendamento';
 import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
-import type { WeekdayCode } from '../../src/api/types';
+import type { NotificationSchedule, QuietHours, WeekdayCode } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { Button, Card, GoldRule, Overline, Text } from '../../src/components/ui';
 import { posthog } from '../../src/config/posthog';
@@ -37,20 +37,27 @@ function dataParaHora(d: Date): string {
   return `${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/**
+ * Janela fixa, sem editor de intervalo customizado nesta rodada — ver
+ * PRODUCT_ROADMAP.md item 1.3. Se o agendamento salvo tiver uma janela
+ * diferente (editada por outro cliente), ainda assim o toggle aqui só liga
+ * ou desliga esta janela padrão.
+ */
+const JANELA_SILENCIOSA: QuietHours = { start: '22:00', end: '07:00' };
+
 export default function Notificacoes() {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { summary, refreshSummary } = useAuth();
 
-  const agendamento = summary?.notification_schedule as
-    | { days?: WeekdayCode[]; time?: string }
-    | undefined;
+  const agendamento = summary?.notification_schedule as Partial<NotificationSchedule> | undefined;
 
   // A conversao entre o que o servidor guarda e o que a tela marca vive em
   // src/api/agendamento.ts, com teste: lista vazia significa TODOS os dias.
   const [dias, setDias] = useState<WeekdayCode[]>(diasDoServidor(agendamento?.days));
   const [hora, setHora] = useState(agendamento?.time ?? '08:00');
   const [mostrandoPicker, setMostrandoPicker] = useState(false);
+  const [silencioso, setSilencioso] = useState(Boolean(agendamento?.quiet_hours));
 
   const [status, setStatus] = useState<PushStatus>('undetermined');
   const [ligado, setLigado] = useState(false);
@@ -121,6 +128,7 @@ export default function Notificacoes() {
         notification_schedule: {
           days: diasParaServidor(dias),
           time: hora,
+          ...(silencioso ? { quiet_hours: JANELA_SILENCIOSA } : {}),
         },
       });
       await refreshSummary();
@@ -260,6 +268,48 @@ export default function Notificacoes() {
               />
             </Card>
           ) : null}
+
+          {/* Mostra exatamente o texto que scripts/notification.py manda
+              (DAILY_PAYLOAD) — pré-visualização fiel, não um texto inventado. */}
+          <View>
+            <Overline>Pré-visualização</Overline>
+            <GoldRule align="left" width={32} style={{ marginTop: space.sm }} />
+
+            <View style={[estilos.preview, { marginTop: space.lg }]}>
+              <View style={[estilos.previewIcone, { backgroundColor: scheme.accent }]}>
+                <Ionicons name="book" size={16} color={scheme.onAccent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text variant="caption" font="bodySemi" color="#fff">
+                    feith
+                  </Text>
+                  <Text variant="micro" color="rgba(255,255,255,0.45)">
+                    {hora}
+                  </Text>
+                </View>
+                <Text variant="caption" color="rgba(255,255,255,0.78)" style={{ marginTop: 3 }}>
+                  Sua reflexão diária está disponível. Venha ler!
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={estilos.silencioso}>
+            <View style={{ flex: 1, paddingRight: space.lg }}>
+              <Text variant="caption" font="bodySemi">
+                Modo silencioso
+              </Text>
+              <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 2 }}>
+                Não notifica entre {JANELA_SILENCIOSA.start} e {JANELA_SILENCIOSA.end}
+              </Text>
+            </View>
+            <Switch
+              value={silencioso}
+              onValueChange={setSilencioso}
+              trackColor={{ true: scheme.accent, false: scheme.border }}
+            />
+          </View>
         </View>
 
         {erro ? (
@@ -322,6 +372,29 @@ function criarEstilos(scheme: Scheme) {
     fontSize: 30,
     lineHeight: 38,
     color: scheme.textPrimary,
+  },
+  preview: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    padding: 13,
+    borderRadius: radius.sm,
+    backgroundColor: '#1f1b17',
+  },
+  previewIcone: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  silencioso: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: space.lg,
+    borderRadius: radius.sm,
+    backgroundColor: scheme.canvasWarm,
   },
   });
 }

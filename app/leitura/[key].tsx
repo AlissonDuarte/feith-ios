@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ import {
   Text,
 } from '../../src/components/ui';
 import { ALTURA_BARRA_AUDIO, PlayerAudio } from '../../src/player/PlayerAudio';
+import { trechoDe } from '../../src/share/trecho';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
 
@@ -37,6 +38,7 @@ export default function Leitura() {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const { key } = useLocalSearchParams<{ key: string }>();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [reflexao, setReflexao] = useState<Reflection | null>(null);
@@ -76,9 +78,8 @@ export default function Leitura() {
     if (!reflexao) return;
     try {
       const link = await api.createShareLink(reflexao.uuid);
-      const trecho = reflexao.bible_text?.trim()
-        ? `"${reflexao.bible_text.length > 200 ? reflexao.bible_text.slice(0, 200).trim() + '...' : reflexao.bible_text.trim()}"\n\n`
-        : '';
+      const corte = trechoDe(reflexao.bible_text);
+      const trecho = corte ? `"${corte}"\n\n` : '';
 
       await Share.share(
         {
@@ -132,6 +133,12 @@ export default function Leitura() {
                 favoritado={reflexao.bookmarked}
                 onMudou={(v) => setReflexao((r) => (r ? { ...r, bookmarked: v } : r))}
                 tamanho={19}
+              />
+              <IconButton
+                name="image-outline"
+                label="Cartão para compartilhar"
+                onPress={() => router.push(`/leitura/compartilhar-cartao?key=${reflexao.uuid}`)}
+                size={18}
               />
               <IconButton
                 name="share-outline"
