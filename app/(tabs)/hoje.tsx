@@ -278,6 +278,11 @@ export default function Hoje() {
             onMudou={(v) => setReflexao((r) => (r ? { ...r, bookmarked: v } : r))}
             emMoldura
           />
+          <IconButton
+            name="image-outline"
+            label="Cartão para compartilhar"
+            onPress={() => router.push(`/leitura/compartilhar-cartao?key=${reflexao.uuid}`)}
+          />
           <IconButton name="share-outline" label="Compartilhar" onPress={compartilhar} />
         </View>
       </View>

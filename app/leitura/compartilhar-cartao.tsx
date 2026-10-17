@@ -83,17 +83,19 @@ export default function CompartilharCartao() {
 
         <View style={{ width: '100%' }}>
           <Overline style={{ textAlign: 'center' }}>Modelo do cartão</Overline>
-          <View style={{ flexDirection: 'row', gap: space.md, justifyContent: 'center', marginTop: space.md }}>
+          <View style={{ flexDirection: 'row', gap: space.md, marginTop: space.md }}>
             {SHARE_CARD_TEMPLATES.map((t) => {
               const ativo = t.valor === template;
               return (
-                <Button
-                  key={t.valor}
-                  label={t.rotulo}
-                  variant={ativo ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onPress={() => setTemplate(t.valor)}
-                />
+                <View key={t.valor} style={{ flex: 1 }}>
+                  <Button
+                    label={t.rotulo}
+                    variant={ativo ? 'secondary' : 'ghost'}
+                    size="sm"
+                    style={{ width: '100%' }}
+                    onPress={() => setTemplate(t.valor)}
+                  />
+                </View>
               );
             })}
           </View>
