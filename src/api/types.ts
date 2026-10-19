@@ -205,6 +205,9 @@ export interface NoteItem {
   /** dd/mm/aaaa HH:MM */
   created_at: string;
   createdAt: Date | null;
+  /** So vem preenchido quando a nota e de uma reflexao de trilha. */
+  trail_slug: string | null;
+  trail_day_number: number | null;
 }
 
 /** GET /user_notes/reflection/notes — versao enxuta, sem os campos da reflexao. */

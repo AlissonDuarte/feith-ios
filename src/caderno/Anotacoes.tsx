@@ -69,7 +69,14 @@ export function Anotacoes({ seletor }: { seletor: ReactNode }) {
         descricaoVazia="Ao ler uma reflexão, toque em Anotar para guardar o que ela te disse."
         renderItem={(nota) => (
           <TouchableCard
-            onPress={() => router.push(`/leitura/${nota.reflection_uuid}`)}
+            onPress={() =>
+              // Reflexao de trilha nao promovida nao tem publish_at, e
+              // /leitura/[key] (GET /reflections/daily) exige esse campo —
+              // por isso essas abrem pela tela da trilha, nao pela generica.
+              nota.trail_slug
+                ? router.push(`/trilha/${nota.trail_slug}/dia/${nota.trail_day_number}`)
+                : router.push(`/leitura/${nota.reflection_uuid}`)
+            }
             accessibilityLabel={`Anotação em ${nota.reflection_verse}`}
             style={{ marginBottom: space.md }}
           >
