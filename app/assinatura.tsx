@@ -56,6 +56,9 @@ const PLANOS: { id: PlanoId; nome: string; destaque?: string }[] = [
   { id: 'annual_family', nome: 'Anual Família', destaque: 'Até 6 pessoas · 7 dias grátis' },
 ];
 
+const PLANOS_DISPONIVEIS =
+  Platform.OS === 'android' ? PLANOS.filter((p) => p.id !== 'annual_family') : PLANOS;
+
 interface BeneficioItemProps {
   icone: keyof typeof Ionicons.glyphMap;
   titulo: string;
@@ -303,7 +306,7 @@ export default function AssinaturaModal() {
 
         {/* Seletor de plano */}
         <View style={{ gap: space.sm, marginBottom: space.lg }}>
-          {PLANOS.map((plano) => (
+          {PLANOS_DISPONIVEIS.map((plano) => (
             <CartaoPlano
               key={plano.id}
               nome={plano.nome}

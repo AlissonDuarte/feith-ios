@@ -176,6 +176,11 @@ const config: ExpoConfig = {
         savePhotosPermission:
           'Permita salvar o cartão da sua reflexão nas fotos para compartilhar onde quiser.',
         isAccessMediaLocationEnabled: false,
+        // photosPermission:false só afeta o iOS; no Android quem controla
+        // READ_MEDIA_IMAGES/VIDEO/AUDIO é este prop. O app só ESCREVE na
+        // galeria (salvar o cartão), nunca lê, então zero permissões de
+        // leitura — sem isso o Google Play exige declarar uso de fotos/vídeo.
+        granularPermissions: [],
       },
     ] as [string, Record<string, unknown>],
     // No SDK 57 a splash deixou de ser chave de topo e virou config do plugin.

@@ -107,13 +107,14 @@ export async function desconectarStoreKit(): Promise<void> {
 }
 
 /**
- * Oferta do plano base mensal. Ofertas promocionais (teste gratis, desconto)
- * tem `id` proprio; o plano base vem sem id. Se so houver promocionais — o
- * Google so as lista para quem e elegivel —, usa a primeira.
+ * Oferta do plano base. Ofertas promocionais (teste gratis, desconto) tem
+ * `id` proprio; o plano base puro vem sem id. O Google so lista a
+ * promocional para quem e elegivel, entao preferir ela quando presente e o
+ * que aplica o teste gratis na compra.
  */
 function ofertaAndroid(item: ProductSubscription) {
   const ofertas = (item.subscriptionOffers ?? []).filter((o) => o.offerTokenAndroid);
-  return ofertas.find((o) => !o.id) ?? ofertas[0] ?? null;
+  return ofertas.find((o) => o.id) ?? ofertas[0] ?? null;
 }
 
 /**
