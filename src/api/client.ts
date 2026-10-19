@@ -28,6 +28,7 @@ import {
   type AuthResponse,
   type BookmarkItem,
   type BookmarkToggleResponse,
+  type CommentItem,
   type ErrorPayload,
   type FeedbackPayload,
   type TrailCatalog,
@@ -215,6 +216,11 @@ const hydrateNote = (n: NoteItem): NoteItem => ({
 const hydrateReflectionNote = (n: ReflectionNote): ReflectionNote => ({
   ...n,
   createdAt: parseDateTimeBR(n.created_at),
+});
+
+const hydrateComment = (c: CommentItem): CommentItem => ({
+  ...c,
+  createdAt: parseDateTimeBR(c.created_at),
 });
 
 interface PageQuery {
@@ -451,6 +457,30 @@ export const api = {
 
   sendFeedback: (payload: FeedbackPayload) =>
     request<{ uuid: string }>('/feedback', { method: 'POST', body: payload }),
+
+  // Comentarios
+  getComments: (reflectionUuid: string, q: PageQuery = {}) =>
+    request<RawPage<CommentItem>>('/comments/reflection', {
+      query: { ref_key: reflectionUuid, ...q },
+    }).then((raw) => normalizePage(raw, hydrateComment)),
+
+  createComment: (reflectionUuid: string, content: string) =>
+    request<{ status: boolean; message: string }>('/comments/create', {
+      method: 'POST',
+      body: { reflection_uuid: reflectionUuid, content },
+    }).then(assertStatus('/comments/create')),
+
+  deleteComment: (commentUuid: string) =>
+    request<{ status: boolean; message: string }>('/comments/delete', {
+      method: 'DELETE',
+      body: { comment_uuid: commentUuid },
+    }).then(assertStatus('/comments/delete')),
+
+  reportComment: (commentUuid: string) =>
+    request<{ status: boolean; message: string }>('/comments/report', {
+      method: 'POST',
+      body: { comment_uuid: commentUuid },
+    }).then(assertStatus('/comments/report')),
 
   getTrails: () => request<TrailCatalog>('/trails'),
 

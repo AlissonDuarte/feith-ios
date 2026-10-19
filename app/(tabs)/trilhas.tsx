@@ -8,6 +8,7 @@ import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import type { TrailCatalog, TrailSummary } from '../../src/api/types';
 import { EmptyState, Loading, ScreenHeader, Text, useEspacoTabBar } from '../../src/components/ui';
+import { posthog } from '../../src/config/posthog';
 import { AnelProgresso, CartaoTrilha } from '../../src/trilhas/componentes';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { fonts, radius, shadow, space } from '../../src/theme/tokens';
@@ -69,7 +70,10 @@ export default function Trilhas() {
     }, [carregar]),
   );
 
-  const abrir = (t: TrailSummary) => router.push({ pathname: '/trilha/[slug]', params: { slug: t.slug } });
+  const abrir = (t: TrailSummary, origem: 'continuar' | 'prateleira') => {
+    posthog?.capture('trail_card_clicked', { trail: t.slug, tier: t.tier, kind: t.kind, locked: t.locked, origem });
+    router.push({ pathname: '/trilha/[slug]', params: { slug: t.slug } });
+  };
 
   if (!catalogo && !erro) return <Loading />;
 
@@ -112,7 +116,7 @@ export default function Trilhas() {
 
         {ativa && progressoAtiva ? (
           <Pressable
-            onPress={() => abrir(ativa)}
+            onPress={() => abrir(ativa, 'continuar')}
             accessibilityRole="button"
             accessibilityLabel={`Continuar ${ativa.name}`}
           >
@@ -145,9 +149,9 @@ export default function Trilhas() {
           </Pressable>
         ) : null}
 
-        <Prateleira titulo="Para começar" legenda="Grátis" trilhas={gratis} abrir={abrir} />
-        <Prateleira titulo="Em Duas Vozes" legenda="Protestante e católica" trilhas={duasVozes} abrir={abrir} />
-        <Prateleira titulo="Para Apoiadores" legenda="Trilhas completas" trilhas={apoiadores} abrir={abrir} />
+        <Prateleira titulo="Para começar" legenda="Grátis" trilhas={gratis} abrir={(t) => abrir(t, 'prateleira')} />
+        <Prateleira titulo="Em Duas Vozes" legenda="Protestante e católica" trilhas={duasVozes} abrir={(t) => abrir(t, 'prateleira')} />
+        <Prateleira titulo="Para Apoiadores" legenda="Trilhas completas" trilhas={apoiadores} abrir={(t) => abrir(t, 'prateleira')} />
       </ScrollView>
     </SafeAreaView>
   );

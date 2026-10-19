@@ -146,6 +146,14 @@ export interface Reflection {
   /** dd/mm/aaaa */
   publish_at: string;
   publishAt: Date | null;
+  /**
+   * Quantas pessoas distintas ja leram HOJE (nao e por reflexao — ha uma so
+   * reflexao publicada por dia). So vem preenchido de verdade na reflexao do
+   * dia; numa reflexao de historico/trilha fica 0.
+   */
+  readers_today: number;
+  /** Comentarios visiveis (nao ocultados por moderacao) nesta reflexao. */
+  comments_count: number;
 }
 
 /** GET /shorts/r/{token} — igual a Reflection, menos uuid e bookmarked. */
@@ -204,6 +212,18 @@ export interface ReflectionNote {
   note_uuid: string;
   note: string;
   public: boolean;
+  created_at: string;
+  createdAt: Date | null;
+}
+
+// ── Comentarios ──────────────────────────────────────────────────────────────
+
+export interface CommentItem {
+  comment_uuid: string;
+  content: string;
+  author: string;
+  is_own: boolean;
+  /** dd/mm/aaaa HH:MM */
   created_at: string;
   createdAt: Date | null;
 }

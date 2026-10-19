@@ -164,7 +164,7 @@ export default function DetalheTrilha() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo',
       });
       setTrilha(detalhe);
-      void agendarLembretesDaTrilha(detalhe);
+      void agendarLembretesDaTrilha(detalhe, 'trail_started');
       if (inicio === 'today' && detalhe.days[0]?.state === 'available') {
         router.push({ pathname: '/trilha/[slug]/dia/[numero]', params: { slug: trilha.slug, numero: '1' } });
       }
@@ -179,10 +179,16 @@ export default function DetalheTrilha() {
     if (!trilha) return;
     if (dia.state === 'locked') {
       const limite = trilha.days.filter((d) => d.completed_on === isoLocal(hoje)).length >= 2;
+      const foraDeOrdem = dia.number > (trilha.progress?.next_day ?? 1);
+      posthog?.capture('trail_day_locked_tapped', {
+        trail: trilha.slug,
+        day: dia.number,
+        reason: limite ? 'limite_diario' : foraDeOrdem ? 'fora_de_ordem' : 'ainda_bloqueado',
+      });
       mostrarAviso(
         limite
           ? 'Você já leu 2 dias hoje. Volte amanhã para continuar.'
-          : dia.number > (trilha.progress?.next_day ?? 1)
+          : foraDeOrdem
             ? `Uma etapa por dia. ${quandoLibera(dia.unlocks_on, hoje)}.`
             : `${quandoLibera(dia.unlocks_on, hoje)}. Volte com calma, o texto rende mais assim.`,
       );

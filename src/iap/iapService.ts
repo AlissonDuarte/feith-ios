@@ -29,7 +29,14 @@ import {
 
 import { api } from '../api/client';
 import type { SubscriptionStatus } from '../api/types';
-import { ANDROID_PACKAGE, IAP_SKU, type ProdutoAssinatura } from './tipos';
+import {
+  ANDROID_PACKAGE,
+  PLANO_POR_SKU,
+  PLANOS_IDS,
+  SKUS_POR_PLANO,
+  type PlanoId,
+  type ProdutoAssinatura,
+} from './tipos';
 
 let conexaoIniciada = false;
 
@@ -38,15 +45,36 @@ let conexaoIniciada = false;
  * vem no fetchProducts. Guardado aqui para o solicitarAssinatura nao precisar
  * buscar de novo a cada toque no botao.
  */
-let offerTokenAndroid: string | null = null;
+const offerTokensAndroid: Partial<Record<PlanoId, string>> = {};
 
-const METADADOS_PADRAO: ProdutoAssinatura = {
-  id: IAP_SKU,
-  title: 'Apoiador Feith',
-  description: 'Acesso ao áudio diário, acervo completo e reflexões ilimitadas.',
-  displayPrice: 'R$ 9,90',
-  price: 9.9,
-  currency: 'BRL',
+const METADADOS_PADRAO: Record<PlanoId, ProdutoAssinatura> = {
+  monthly: {
+    id: SKUS_POR_PLANO.monthly,
+    plano: 'monthly',
+    title: 'Apoiador Feith Mensal',
+    description: 'Acesso ao áudio diário, acervo completo e reflexões ilimitadas.',
+    displayPrice: 'R$ 9,90',
+    price: 9.9,
+    currency: 'BRL',
+  },
+  annual: {
+    id: SKUS_POR_PLANO.annual,
+    plano: 'annual',
+    title: 'Apoiador Anual',
+    description: 'O mesmo acesso completo, com desconto por pagar uma vez ao ano.',
+    displayPrice: 'R$ 69,90',
+    price: 69.9,
+    currency: 'BRL',
+  },
+  annual_family: {
+    id: SKUS_POR_PLANO.annual_family,
+    plano: 'annual_family',
+    title: 'Apoiador Anual Família',
+    description: 'Acesso completo para até 6 pessoas da família, em um só plano anual.',
+    displayPrice: 'R$ 99,90',
+    price: 99.9,
+    currency: 'BRL',
+  },
 };
 
 /**
@@ -89,75 +117,84 @@ function ofertaAndroid(item: ProductSubscription) {
 }
 
 /**
- * Busca informacoes atualizadas da assinatura na loja.
- * Se a loja estiver inacessivel (ou em dev sem conexao), devolve
- * os metadados padrao para a tela nao travar.
+ * Busca informacoes atualizadas dos tres planos de assinatura na loja, numa
+ * so chamada. Planos que a loja ainda nao tem cadastrado (ex: anual/familia
+ * ainda em revisao) caem no fallback — a tela mostra o preco padrao em vez de
+ * travar.
  */
-export async function buscarProdutoAssinatura(): Promise<ProdutoAssinatura> {
+export async function buscarProdutosAssinatura(): Promise<Record<PlanoId, ProdutoAssinatura>> {
   const conectado = await conectarStoreKit();
+  const resultado: Record<PlanoId, ProdutoAssinatura> = { ...METADADOS_PADRAO };
 
-  if (conectado) {
-    try {
-      const produtos = await fetchProducts({
-        skus: [IAP_SKU],
-        type: 'subs',
-      });
+  if (!conectado) return resultado;
 
-      if (produtos && produtos.length > 0) {
-        const item = produtos[0] as ProductSubscription;
+  try {
+    const produtos = await fetchProducts({
+      skus: PLANOS_IDS.map((plano) => SKUS_POR_PLANO[plano]),
+      type: 'subs',
+    });
 
-        if (Platform.OS === 'android') {
-          const oferta = ofertaAndroid(item);
-          offerTokenAndroid = oferta?.offerTokenAndroid ?? null;
-          // A politica do Google exige mostrar o preco que a Play Store devolve.
-          return {
-            id: item.id,
-            title: item.title || METADADOS_PADRAO.title,
-            description: item.description || METADADOS_PADRAO.description,
-            displayPrice: oferta?.displayPrice || item.displayPrice || METADADOS_PADRAO.displayPrice,
-            price: oferta?.price ?? item.price ?? METADADOS_PADRAO.price,
-            currency: item.currency || METADADOS_PADRAO.currency,
-          };
-        }
+    for (const produto of produtos ?? []) {
+      const item = produto as ProductSubscription;
+      const plano = PLANO_POR_SKU[item.id];
+      if (!plano) continue;
 
-        return {
+      if (Platform.OS === 'android') {
+        const oferta = ofertaAndroid(item);
+        if (oferta?.offerTokenAndroid) offerTokensAndroid[plano] = oferta.offerTokenAndroid;
+        // A politica do Google exige mostrar o preco que a Play Store devolve.
+        resultado[plano] = {
           id: item.id,
-          title: item.title || METADADOS_PADRAO.title,
-          description: item.description || METADADOS_PADRAO.description,
-          displayPrice: 'R$ 9,90',
-          price: 9.9,
-          currency: item.currency || 'BRL',
+          plano,
+          title: item.title || METADADOS_PADRAO[plano].title,
+          description: item.description || METADADOS_PADRAO[plano].description,
+          displayPrice:
+            oferta?.displayPrice || item.displayPrice || METADADOS_PADRAO[plano].displayPrice,
+          price: oferta?.price ?? item.price ?? METADADOS_PADRAO[plano].price,
+          currency: item.currency || METADADOS_PADRAO[plano].currency,
         };
+        continue;
       }
-    } catch (err) {
-      console.warn('[IAP] Erro ao buscar produto na loja:', err);
+
+      resultado[plano] = {
+        id: item.id,
+        plano,
+        title: item.title || METADADOS_PADRAO[plano].title,
+        description: item.description || METADADOS_PADRAO[plano].description,
+        displayPrice: item.displayPrice || METADADOS_PADRAO[plano].displayPrice,
+        price: item.price ?? METADADOS_PADRAO[plano].price,
+        currency: item.currency || METADADOS_PADRAO[plano].currency,
+      };
     }
+  } catch (err) {
+    console.warn('[IAP] Erro ao buscar produtos na loja:', err);
   }
 
-  // Fallback seguro em caso de indisponibilidade de rede ou sandbox local
-  return METADADOS_PADRAO;
+  return resultado;
 }
 
 /**
- * Abre a folha nativa da loja para o usuario assinar.
+ * Abre a folha nativa da loja para o usuario assinar o plano escolhido.
  * O resultado real do pagamento e entregue pelo purchaseUpdatedListener.
  */
-export async function solicitarAssinatura(): Promise<void> {
+export async function solicitarAssinatura(plano: PlanoId): Promise<void> {
   await conectarStoreKit();
+  const sku = SKUS_POR_PLANO[plano];
 
   if (Platform.OS === 'android') {
-    if (!offerTokenAndroid) {
-      await buscarProdutoAssinatura();
+    if (!offerTokensAndroid[plano]) {
+      await buscarProdutosAssinatura();
     }
-    if (!offerTokenAndroid) {
+    const offerToken = offerTokensAndroid[plano];
+    if (!offerToken) {
       throw new Error('A assinatura ainda não está disponível na Play Store. Tente novamente mais tarde.');
     }
 
     await requestPurchase({
       request: {
         google: {
-          skus: [IAP_SKU],
-          subscriptionOffers: [{ sku: IAP_SKU, offerToken: offerTokenAndroid }],
+          skus: [sku],
+          subscriptionOffers: [{ sku, offerToken }],
         },
       },
       type: 'subs',
@@ -167,7 +204,7 @@ export async function solicitarAssinatura(): Promise<void> {
 
   await requestPurchase({
     request: {
-      apple: { sku: IAP_SKU },
+      apple: { sku },
     },
     type: 'subs',
   });
@@ -241,8 +278,8 @@ export async function restaurarCompras(): Promise<boolean> {
     return false;
   }
 
-  // Procura transacoes associadas ao SKU do Feith
-  const comprasFeith = compras.filter((c) => c.productId === IAP_SKU);
+  // Procura transacoes associadas a qualquer um dos tres planos do Feith
+  const comprasFeith = compras.filter((c) => c.productId in PLANO_POR_SKU);
   if (comprasFeith.length === 0) {
     return false;
   }
@@ -260,14 +297,18 @@ export async function restaurarCompras(): Promise<boolean> {
  */
 export async function abrirGerenciadorAssinaturas(): Promise<void> {
   if (Platform.OS === 'android') {
+    // A pagina de assinaturas da Play Store e geral, nao por plano: o sku so
+    // ajuda o deep link a abrir direto nela, nao importa qual dos tres planos
+    // a pessoa tenha.
+    const sku = SKUS_POR_PLANO.monthly;
     try {
-      await deepLinkToSubscriptions({ skuAndroid: IAP_SKU, packageNameAndroid: ANDROID_PACKAGE });
+      await deepLinkToSubscriptions({ skuAndroid: sku, packageNameAndroid: ANDROID_PACKAGE });
       return;
     } catch {
       // Fallback para a pagina de assinaturas da Play Store
     }
     await Linking.openURL(
-      `https://play.google.com/store/account/subscriptions?sku=${IAP_SKU}&package=${ANDROID_PACKAGE}`,
+      `https://play.google.com/store/account/subscriptions?sku=${sku}&package=${ANDROID_PACKAGE}`,
     );
     return;
   }

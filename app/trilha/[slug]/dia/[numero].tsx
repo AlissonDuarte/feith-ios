@@ -102,7 +102,10 @@ export default function DiaDaTrilha() {
       const r = await api.completeTrailDay(slug, n);
       setResultado(r);
       setDia((d) => (d ? { ...d, completed: true } : d));
-      void api.getTrail(slug).then(agendarLembretesDaTrilha).catch(() => undefined);
+      void api
+        .getTrail(slug)
+        .then((detalhe) => agendarLembretesDaTrilha(detalhe, 'trail_day_completed'))
+        .catch(() => undefined);
       if (r.trail_completed) {
         router.replace({
           pathname: '/trilha/[slug]/concluida',
@@ -145,6 +148,8 @@ export default function DiaDaTrilha() {
             bookmarked: false,
             publish_at: '',
             publishAt: null,
+            readers_today: 0,
+            comments_count: 0,
           }
         : null,
     [dia, slug, n],

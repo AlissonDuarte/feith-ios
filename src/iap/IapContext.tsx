@@ -28,22 +28,22 @@ import { useAuth } from '../auth/AuthContext';
 import { posthog, posthogLog } from '../config/posthog';
 import {
   abrirGerenciadorAssinaturas,
-  buscarProdutoAssinatura,
+  buscarProdutosAssinatura,
   conectarStoreKit,
   desconectarStoreKit,
   restaurarCompras,
   solicitarAssinatura,
   validarEFinalizarTransacao,
 } from './iapService';
-import { IAP_SKU, NOME_LOJA, type ProdutoAssinatura } from './tipos';
+import { NOME_LOJA, PLANO_POR_SKU, type PlanoId, type ProdutoAssinatura } from './tipos';
 
 interface IapContextValue {
-  produto: ProdutoAssinatura | null;
+  produtos: Record<PlanoId, ProdutoAssinatura> | null;
   carregandoProduto: boolean;
   comprando: boolean;
   restaurando: boolean;
   erro: string | null;
-  assinar: () => Promise<boolean>;
+  assinar: (plano: PlanoId, origem?: string) => Promise<boolean>;
   restaurar: () => Promise<boolean>;
   gerenciar: () => Promise<void>;
   limparErro: () => void;
@@ -53,7 +53,7 @@ const IapContext = createContext<IapContextValue | null>(null);
 
 export function IapProvider({ children }: { children: React.ReactNode }) {
   const { isSupporter, refreshSummary } = useAuth();
-  const [produto, setProduto] = useState<ProdutoAssinatura | null>(null);
+  const [produtos, setProdutos] = useState<Record<PlanoId, ProdutoAssinatura> | null>(null);
   const [carregandoProduto, setCarregandoProduto] = useState(false);
   const [comprando, setComprando] = useState(false);
   const [restaurando, setRestaurando] = useState(false);
@@ -62,16 +62,32 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
   // Evita re-processamento concorrente da mesma transacao
   const transacoesEmProcessamento = useRef<Set<string>>(new Set());
 
-  // Carrega informacoes do produto na inicializacao
+  const planoCompraRef = useRef<PlanoId | null>(null);
+  const origemRef = useRef<string | undefined>(undefined);
+  const propriedadesCompra = useCallback(
+    (productId?: string) => {
+      const plano = (productId && PLANO_POR_SKU[productId]) || planoCompraRef.current;
+      const p = plano ? produtos?.[plano] : null;
+      return {
+        source: origemRef.current ?? null,
+        plan: p?.id ?? productId ?? null,
+        price: p?.price ?? null,
+        currency: p?.currency ?? null,
+      };
+    },
+    [produtos],
+  );
+
+  // Carrega informacoes dos tres planos na inicializacao
   useEffect(() => {
     let ativo = true;
 
     async function carregar() {
       setCarregandoProduto(true);
       try {
-        const info = await buscarProdutoAssinatura();
+        const info = await buscarProdutosAssinatura();
         if (ativo) {
-          setProduto(info);
+          setProdutos(info);
         }
       } catch (err) {
         console.warn('[IAP] Erro ao carregar informacoes da assinatura:', err);
@@ -102,18 +118,21 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
 
         await validarEFinalizarTransacao(purchase);
         await refreshSummary();
-        posthog?.capture('subscription_purchase_completed');
+        posthog?.capture('subscription_purchase_completed', propriedadesCompra(purchase.productId));
         posthogLog.info('subscription purchase completed', { result: 'validated' });
       } catch (e) {
         console.warn('[IAP] Erro ao validar transacao:', e);
-        posthog?.capture('subscription_purchase_failed', { stage: 'validation' });
+        posthog?.capture('subscription_purchase_failed', {
+          stage: 'validation',
+          ...propriedadesCompra(purchase.productId),
+        });
         setErro(mensagemDe(e) || 'Não foi possível confirmar sua assinatura com o servidor.');
       } finally {
         transacoesEmProcessamento.current.delete(idTransacao);
         setComprando(false);
       }
     },
-    [refreshSummary],
+    [refreshSummary, propriedadesCompra],
   );
 
   // O cancelamento pode chegar pelos dois caminhos (rejeicao do request e
@@ -122,8 +141,8 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
   const registrarCancelamento = useCallback(() => {
     if (Date.now() - ultimoCancelamento.current < 3000) return;
     ultimoCancelamento.current = Date.now();
-    posthog?.capture('subscription_purchase_cancelled');
-  }, []);
+    posthog?.capture('subscription_purchase_cancelled', propriedadesCompra());
+  }, [propriedadesCompra]);
 
   const processarTransacaoRef = useRef(processarTransacao);
   useEffect(() => {
@@ -143,7 +162,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         const compras = await getAvailablePurchases();
         const pendentes = compras?.filter(
           (c) =>
-            c.productId === IAP_SKU &&
+            c.productId in PLANO_POR_SKU &&
             c.purchaseState === 'purchased' &&
             'isAcknowledgedAndroid' in c &&
             c.isAcknowledgedAndroid === false,
@@ -177,6 +196,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         error_code: String(error.code),
         error_message: error.message,
         platform: Platform.OS,
+        ...propriedadesCompra(),
       });
       setErro('A compra não foi concluída. Tente novamente.');
     });
@@ -188,30 +208,33 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const assinar = useCallback(async (): Promise<boolean> => {
+  const assinar = useCallback(async (plano: PlanoId, origem?: string): Promise<boolean> => {
     if (isSupporter) {
       Alert.alert('Você já é Apoiador!', 'Sua assinatura já está ativa em sua conta.');
       return true;
     }
 
+    origemRef.current = origem;
+    planoCompraRef.current = plano;
+    const sku = produtos?.[plano]?.id;
     try {
       setComprando(true);
       setErro(null);
-      posthog?.capture('subscription_purchase_started');
+      posthog?.capture('subscription_purchase_started', propriedadesCompra());
 
       // Trava de seguranca para liberar o botao caso o iOS nao dispare callbacks
       const timerSeguranca = setTimeout(() => {
         setComprando(false);
       }, 20000);
 
-      await solicitarAssinatura();
+      await solicitarAssinatura(plano);
 
       // Contingencia proativa: assim que o modal da Apple fecha com sucesso,
       // busca transacoes ativas caso o listener nativo demore
       setTimeout(async () => {
         try {
           const compras = await getAvailablePurchases({ onlyIncludeActiveItemsIOS: true });
-          const compraFeith = compras?.find((c) => c.productId === IAP_SKU);
+          const compraFeith = compras?.find((c) => c.productId === sku);
           if (compraFeith) {
             await processarTransacao(compraFeith);
           }
@@ -234,12 +257,16 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         registrarCancelamento();
         return false;
       }
-      posthog?.capture('subscription_purchase_failed', { stage: 'request', error_code: err.code ?? 'unknown' });
+      posthog?.capture('subscription_purchase_failed', {
+        stage: 'request',
+        error_code: err.code ?? 'unknown',
+        ...propriedadesCompra(),
+      });
       const msg = mensagemDe(e) || `Não foi possível iniciar a assinatura na ${NOME_LOJA}.`;
       setErro(msg);
       return false;
     }
-  }, [isSupporter, processarTransacao, registrarCancelamento]);
+  }, [isSupporter, produtos, processarTransacao, registrarCancelamento, propriedadesCompra]);
 
   const restaurar = useCallback(async (): Promise<boolean> => {
     try {
@@ -286,7 +313,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
   return (
     <IapContext.Provider
       value={{
-        produto,
+        produtos,
         carregandoProduto,
         comprando,
         restaurando,

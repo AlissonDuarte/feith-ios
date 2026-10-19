@@ -9,6 +9,7 @@ import { mensagemDe } from '../../src/api/errors';
 import type { Reflection, TrailCatalog } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
+import { ComentariosSecao } from '../../src/components/ComentariosSecao';
 import { CoachTour, type PassoTour } from '../../src/components/CoachTour';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { AccentHalo } from '../../src/components/ornaments';
@@ -252,6 +253,15 @@ export default function Hoje() {
             </View>
           ) : null}
 
+          {reflexao.readers_today > 0 ? (
+            <View style={estilos.leitores}>
+              <Ionicons name="people-outline" size={12} color={scheme.textSecondary} />
+              <Text variant="micro" font="bodySemi" color={scheme.textSecondary}>
+                {reflexao.readers_today} {reflexao.readers_today === 1 ? 'leu' : 'leram'} hoje
+              </Text>
+            </View>
+          ) : null}
+
           {!isSupporter ? (
             <Pressable
               onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'hoje_badge' } })}
@@ -307,6 +317,14 @@ export default function Hoje() {
         <View ref={refCorpo} onLayout={rastreio.onLayoutTexto}>
           <ReflexaoReader reflexao={reflexao} />
         </View>
+
+        <ComentariosSecao
+          reflectionUuid={reflexao.uuid}
+          total={reflexao.comments_count}
+          onTotalChange={(total) =>
+            setReflexao((r) => (r ? { ...r, comments_count: total } : r))
+          }
+        />
 
         {trilhas?.active?.progress && trilhas.active.progress.next_day ? (
           <Pressable
@@ -424,6 +442,16 @@ function criarEstilos(scheme: Scheme) {
     borderWidth: 1,
     borderColor: scheme.goldSoft,
     backgroundColor: scheme.goldSubtle,
+    borderRadius: radius.sharp,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  leitores: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: scheme.borderSoft,
     borderRadius: radius.sharp,
     paddingHorizontal: 10,
     paddingVertical: 7,

@@ -37,12 +37,24 @@ import { posthog } from '../src/config/posthog';
 import { fraseDoLembrete, origemDe } from '../src/iap/guiaAssinatura';
 import { useIap } from '../src/iap/IapContext';
 import { diasDeUso, registrarExibicaoAssinatura } from '../src/iap/lembretesAssinatura';
-import { NOME_LOJA } from '../src/iap/tipos';
+import { NOME_LOJA, type PlanoId } from '../src/iap/tipos';
 import { useTheme } from '../src/theme/ThemeContext';
 import { radius, space, type Scheme } from '../src/theme/tokens';
 
 const APPLE_STANDARD_EULA =
   'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
+const PRECOS_PADRAO: Record<PlanoId, string> = {
+  monthly: 'R$ 9,90',
+  annual: 'R$ 69,90',
+  annual_family: 'R$ 99,90',
+};
+
+const PLANOS: { id: PlanoId; nome: string; destaque?: string }[] = [
+  { id: 'monthly', nome: 'Mensal' },
+  { id: 'annual', nome: 'Anual', destaque: '7 dias grátis' },
+  { id: 'annual_family', nome: 'Anual Família', destaque: 'Até 6 pessoas · 7 dias grátis' },
+];
 
 interface BeneficioItemProps {
   icone: keyof typeof Ionicons.glyphMap;
@@ -70,6 +82,57 @@ function BeneficioItem({ icone, titulo, descricao }: BeneficioItemProps) {
   );
 }
 
+interface CartaoPlanoProps {
+  nome: string;
+  preco: string;
+  periodo: string;
+  destaque?: string;
+  selecionado: boolean;
+  onPress: () => void;
+}
+
+function CartaoPlano({ nome, preco, periodo, destaque, selecionado, onPress }: CartaoPlanoProps) {
+  const { scheme } = useTheme();
+  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: selecionado }}
+      accessibilityLabel={`Plano ${nome}, ${preco} por ${periodo}`}
+    >
+      {({ pressed }) => (
+        <View
+          style={[
+            estilos.cartaoPlano,
+            selecionado && estilos.cartaoPlanoSelecionado,
+            pressed && { opacity: 0.85 },
+          ]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text variant="bodySm" font="bodySemi" color={scheme.textPrimary}>
+              {nome}
+            </Text>
+            {destaque ? (
+              <Text variant="micro" font="bodySemi" color={scheme.gold} style={{ marginTop: 2 }}>
+                {destaque}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text variant="body" font="bodySemi" color={scheme.textPrimary}>
+              {preco}
+            </Text>
+            <Text variant="caption" color={scheme.textSecondary}>
+              {' '}/{periodo}
+            </Text>
+          </View>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 export default function AssinaturaModal() {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
@@ -80,6 +143,7 @@ export default function AssinaturaModal() {
   const marco = typeof params.marco === 'string' ? params.marco : null;
   const convidado = origem === 'onboarding' || origem === 'lembrete';
   const [dias, setDias] = useState<number | null>(null);
+  const [planoSelecionado, setPlanoSelecionado] = useState<PlanoId>('annual');
   const registrado = useRef(false);
 
   useEffect(() => {
@@ -95,7 +159,7 @@ export default function AssinaturaModal() {
     router.back();
   }
   const {
-    produto,
+    produtos,
     carregandoProduto,
     comprando,
     restaurando,
@@ -112,11 +176,26 @@ export default function AssinaturaModal() {
     }
   }, [isSupporter, router]);
 
-  const precoFormatado = produto?.displayPrice ?? 'R$ 9,90';
+  const produtoSelecionado = produtos?.[planoSelecionado] ?? null;
+  const precoFormatado =
+    produtoSelecionado?.displayPrice ?? PRECOS_PADRAO[planoSelecionado];
+  const temTrial = planoSelecionado !== 'monthly';
+  const periodo = planoSelecionado === 'monthly' ? 'mês' : 'ano';
+  const inicioCobranca = temTrial
+    ? `Após 7 dias de teste gratuito, o pagamento de ${precoFormatado} será cobrado`
+    : `O pagamento de ${precoFormatado} será cobrado`;
+  const clausulaFamilia =
+    planoSelecionado === 'annual_family'
+      ? ' Válida para até 6 membros da família via Compartilhamento Familiar.'
+      : '';
+  const textoLegal =
+    Platform.OS === 'android'
+      ? `${inicioCobranca} na sua conta Google Play${temTrial ? ', a menos que você cancele antes' : ' após a confirmação'}. A assinatura é renovada automaticamente a cada ${periodo} até ser cancelada. Você pode gerenciar ou cancelar sua assinatura a qualquer momento em Pagamentos e assinaturas, na Play Store.${clausulaFamilia}`
+      : `${inicioCobranca} na sua conta do ID Apple${temTrial ? ', a menos que você cancele antes' : ' após a confirmação'}. A assinatura é renovada automaticamente a cada ${periodo}, exceto se cancelada pelo menos 24 horas antes do encerramento do ciclo vigente. Você pode gerenciar ou cancelar sua assinatura a qualquer momento nos Ajustes do seu iPhone.${clausulaFamilia}`;
 
   async function handleAssinar() {
     limparErro();
-    await assinar();
+    await assinar(planoSelecionado, origem);
   }
 
   async function handleRestaurar() {
@@ -222,6 +301,21 @@ export default function AssinaturaModal() {
           />
         </Card>
 
+        {/* Seletor de plano */}
+        <View style={{ gap: space.sm, marginBottom: space.lg }}>
+          {PLANOS.map((plano) => (
+            <CartaoPlano
+              key={plano.id}
+              nome={plano.nome}
+              preco={produtos?.[plano.id]?.displayPrice ?? PRECOS_PADRAO[plano.id]}
+              periodo={plano.id === 'monthly' ? 'mês' : 'ano'}
+              destaque={plano.destaque}
+              selecionado={planoSelecionado === plano.id}
+              onPress={() => setPlanoSelecionado(plano.id)}
+            />
+          ))}
+        </View>
+
         {/* Card do Preco */}
         <Card quiet style={estilos.cardPreco}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center' }}>
@@ -233,13 +327,15 @@ export default function AssinaturaModal() {
                   {precoFormatado}
                 </Text>
                 <Text variant="body" color={scheme.textSecondary} style={{ marginLeft: 6 }}>
-                  / mês
+                  / {periodo}
                 </Text>
               </>
             )}
           </View>
           <Text variant="caption" color={scheme.textGhost} style={{ textAlign: 'center', marginTop: 4 }}>
-            Renovação mensal automática • Cancele quando quiser
+            {temTrial
+              ? `7 dias grátis, depois ${precoFormatado}/${periodo} • Cancele quando quiser`
+              : 'Renovação mensal automática • Cancele quando quiser'}
           </Text>
         </Card>
 
@@ -256,7 +352,13 @@ export default function AssinaturaModal() {
         {/* Botoes de Acao */}
         <View style={{ gap: space.md, marginTop: space.lg }}>
           <Button
-            label={comprando ? `Processando na ${NOME_LOJA}...` : `Assinar por ${precoFormatado}/mês`}
+            label={
+              comprando
+                ? `Processando na ${NOME_LOJA}...`
+                : temTrial
+                  ? 'Experimentar 7 dias grátis'
+                  : `Assinar por ${precoFormatado}/${periodo}`
+            }
             variant="quiet"
             loading={comprando}
             disabled={comprando || restaurando}
@@ -286,9 +388,7 @@ export default function AssinaturaModal() {
         {/* Termos Legais Obrigatorios pela Diretriz 3.1.2 da Apple */}
         <View style={estilos.containerLegal}>
           <Text variant="micro" color={scheme.textGhost} style={estilos.textoLegal}>
-            {Platform.OS === 'android'
-              ? `O pagamento de ${precoFormatado} será cobrado na sua conta Google Play após a confirmação. A assinatura é renovada automaticamente a cada mês até ser cancelada. Você pode gerenciar ou cancelar sua assinatura a qualquer momento em Pagamentos e assinaturas, na Play Store.`
-              : `O pagamento de ${precoFormatado} será cobrado na sua conta do ID Apple após a confirmação. A assinatura é renovada automaticamente a cada mês, exceto se cancelada pelo menos 24 horas antes do encerramento do ciclo vigente. Você pode gerenciar ou cancelar sua assinatura a qualquer momento nos Ajustes do seu iPhone.`}
+            {textoLegal}
           </Text>
 
           <View style={estilos.linksLegais}>
@@ -382,6 +482,20 @@ function criarEstilos(scheme: Scheme) {
     paddingVertical: space.xl,
     backgroundColor: scheme.canvasWarm,
     borderRadius: radius.lg,
+  },
+  cartaoPlano: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: space.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: scheme.border,
+    backgroundColor: scheme.surface,
+  },
+  cartaoPlanoSelecionado: {
+    borderColor: scheme.accent,
+    backgroundColor: scheme.canvasWarm,
   },
   bannerErro: {
     flexDirection: 'row',

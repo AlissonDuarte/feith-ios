@@ -70,6 +70,12 @@ const POR_DETALHE: Record<string, string> = {
   'Reflection not found': 'Reflexão não encontrada.',
   'Reflection not found to this user': 'Reflexão não encontrada.',
 
+  // Comentarios
+  'Comment too short': 'Escreva um pouco mais antes de comentar.',
+  'Comment too long': 'Seu comentário passou do limite de 500 caracteres.',
+  'Comment not allowed': 'Este comentário contém um termo não permitido.',
+  'Comment not found': 'Comentário não encontrado.',
+
   // Link compartilhado
   'Shared link not found': 'Link não encontrado.',
   'Shared link is expired or revoked': 'Este link expirou.',
