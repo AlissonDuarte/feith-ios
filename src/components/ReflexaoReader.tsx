@@ -112,10 +112,13 @@ export function ReflexaoReader({
   /** Largura util da coluna de texto. Default: tela menos as margens padrao. */
   largura,
   entreTextoESecoes,
+  abaixoDoTitulo,
 }: {
   reflexao: Lida;
   largura?: number;
   entreTextoESecoes?: ReactNode;
+  /** Legenda discreta sob a data do frontispicio (ex: contador de leitores). */
+  abaixoDoTitulo?: ReactNode;
 }) {
   const { scheme } = useTheme();
   const { width } = useWindowDimensions();
@@ -143,6 +146,8 @@ export function ReflexaoReader({
         <Text variant="micro" color={scheme.textGhost} style={{ marginTop: space.xl }}>
           {formatLongPT(reflexao.publishAt)}
         </Text>
+
+        {abaixoDoTitulo}
       </View>
 
       {/* ── Texto biblico ─────────────────────────────────────────────────

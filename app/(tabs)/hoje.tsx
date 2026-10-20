@@ -253,15 +253,6 @@ export default function Hoje() {
             </View>
           ) : null}
 
-          {reflexao.readers_today > 0 ? (
-            <View style={estilos.leitores}>
-              <Ionicons name="people-outline" size={12} color={scheme.textSecondary} />
-              <Text variant="micro" font="bodySemi" color={scheme.textSecondary}>
-                {reflexao.readers_today} {reflexao.readers_today === 1 ? 'leu' : 'leram'} hoje
-              </Text>
-            </View>
-          ) : null}
-
           {!isSupporter ? (
             <Pressable
               onPress={() => router.push({ pathname: '/assinatura', params: { origem: 'hoje_badge' } })}
@@ -315,7 +306,19 @@ export default function Hoje() {
         }
       >
         <View ref={refCorpo} onLayout={rastreio.onLayoutTexto}>
-          <ReflexaoReader reflexao={reflexao} />
+          <ReflexaoReader
+            reflexao={reflexao}
+            abaixoDoTitulo={
+              reflexao.readers_today > 0 ? (
+                <View style={estilos.leitores}>
+                  <Ionicons name="people-outline" size={12} color={scheme.textMuted} />
+                  <Text variant="micro" color={scheme.textMuted}>
+                    {reflexao.readers_today} {reflexao.readers_today === 1 ? 'pessoa leu' : 'pessoas leram'} esta reflexão hoje
+                  </Text>
+                </View>
+              ) : null
+            }
+          />
         </View>
 
         <ComentariosSecao
@@ -449,12 +452,8 @@ function criarEstilos(scheme: Scheme) {
   leitores: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: scheme.borderSoft,
-    borderRadius: radius.sharp,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    gap: 5,
+    marginTop: space.md,
   },
   badgeApoiador: {
     flexDirection: 'row',
