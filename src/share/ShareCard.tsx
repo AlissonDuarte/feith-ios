@@ -17,7 +17,7 @@ export const SHARE_CARD_TEMPLATES: { valor: ShareCardTemplate; rotulo: string }[
  * pessoa escolhe o visual do CARTÃO, não o da tela. Cores saem de
  * src/theme/palette.js para não duplicar hex à mão.
  */
-const PALETAS: Record<
+export const CARTAO_PALETAS: Record<
   ShareCardTemplate,
   { fundo: string; texto: string; textoFraco: string; divisor: string; borda?: string; selo: string }
 > = {
@@ -46,7 +46,7 @@ const PALETAS: Record<
   },
 };
 
-function Marca({ selo, tamanho = 18 }: { selo: string; tamanho?: number }) {
+export function Marca({ selo, tamanho = 18 }: { selo: string; tamanho?: number }) {
   return (
     <Svg width={tamanho} height={tamanho} viewBox="0 0 100 100">
       <Rect width="100" height="100" rx="22" fill={selo} stroke="rgba(216,199,154,0.5)" strokeWidth="2" />
@@ -67,7 +67,7 @@ interface Props {
 
 /** O cartão em si — capturado como imagem por useShareCardExport. */
 export function ShareCard({ template, scriptureReference, quote, streakDays, width = 280, height = 420 }: Props) {
-  const p = PALETAS[template];
+  const p = CARTAO_PALETAS[template];
   return (
     <View
       style={{

@@ -4,11 +4,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ViewShot from 'react-native-view-shot';
 
 import { WEB_URL, api } from '../../../src/api/client';
 import type { TrailSummary } from '../../../src/api/types';
 import { Button, IconButton, Overline, Text } from '../../../src/components/ui';
 import { posthog } from '../../../src/config/posthog';
+import { TrailBadgeCard } from '../../../src/share/TrailBadgeCard';
+import { useShareCardExport } from '../../../src/share/useShareCardExport';
 import { CapaTrilha } from '../../../src/trilhas/componentes';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { fonts, radius, shadow, space, type Scheme } from '../../../src/theme/tokens';
@@ -30,6 +33,7 @@ export default function TrilhaConcluida() {
   const [atual, setAtual] = useState<TrailSummary | null>(null);
   const [proxima, setProxima] = useState<TrailSummary | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const { ref: refCartao, erro: erroCartao, compartilhar: compartilharImagem } = useShareCardExport();
 
   useEffect(() => {
     api
@@ -52,7 +56,10 @@ export default function TrilhaConcluida() {
 
   async function compartilhar() {
     registrar('sheet');
-    await Share.share({ message: mensagem });
+    // Imagem (e nao Share.share so-texto): e o que faz o Instagram aparecer
+    // no menu nativo — a mesma razao do cartao de reflexao em
+    // leitura/compartilhar-cartao.tsx.
+    await compartilharImagem('Compartilhar conquista');
   }
 
   async function whatsapp() {
@@ -85,6 +92,15 @@ export default function TrilhaConcluida() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }}>
+      {/* Fora da tela: so existe para o ViewShot ter o que capturar quando
+          "Compartilhar" gera a imagem (e' isso que faz o Instagram aparecer
+          no menu nativo — texto puro ele nao aceita). */}
+      <View style={{ position: 'absolute', left: -9999, top: 0 }} pointerEvents="none">
+        <ViewShot ref={refCartao} options={{ format: 'png', quality: 1 }}>
+          <TrailBadgeCard template="oxblood" trailName={nome} days={dias} sealEarned={params.selo === '1'} />
+        </ViewShot>
+      </View>
+
       <View style={{ paddingHorizontal: space.lg, paddingTop: space.sm }}>
         <IconButton name="close" label="Fechar" onPress={() => router.replace('/(tabs)/trilhas')} />
       </View>
@@ -141,6 +157,12 @@ export default function TrilhaConcluida() {
             </Pressable>
           ))}
         </View>
+
+        {erroCartao ? (
+          <Text variant="caption" color={scheme.accent} style={{ textAlign: 'center', marginTop: space.sm }}>
+            {erroCartao}
+          </Text>
+        ) : null}
 
         {proxima ? (
           <Pressable onPress={seguir} accessibilityRole="button">

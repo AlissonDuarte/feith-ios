@@ -19,7 +19,7 @@ export function useShareCardExport() {
     return ref.current.capture();
   }
 
-  async function compartilhar() {
+  async function compartilhar(dialogTitle = 'Compartilhar reflexão') {
     setErro(null);
     setProcessando('compartilhar');
     try {
@@ -34,7 +34,7 @@ export function useShareCardExport() {
         return;
       }
       await Sharing.shareAsync(uri, {
-        dialogTitle: 'Compartilhar reflexão',
+        dialogTitle,
         mimeType: 'image/png',
         UTI: 'public.png',
       });

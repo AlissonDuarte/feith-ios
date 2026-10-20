@@ -16,12 +16,20 @@
  */
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Image } from 'react-native';
 
 import { api } from '../api/client';
 import { posthog } from '../config/posthog';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import type { Transcript } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
+
+/**
+ * Sem isto a Central de Controle e a tela de bloqueio ficam sem nenhuma capa —
+ * o iOS nao cai para o icone do app sozinho, MPMediaItemArtwork so aparece se
+ * alguem fornecer a imagem.
+ */
+const ICONE_URL = Image.resolveAssetSource(require('../../assets/icon.png')).uri;
 
 /** Dez minutos de folga antes dos 60 da assinatura. */
 const RENOVAR_APOS_MS = 50 * 60 * 1000;
@@ -180,6 +188,7 @@ export function useAudioReflexao(
             title: transcript.title,
             artist: transcript.subtitle || 'Feith',
             albumTitle: 'Reflexões Feith',
+            artworkUrl: ICONE_URL,
           },
           {
             showSeekForward: true,

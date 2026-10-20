@@ -106,19 +106,11 @@ export default function DiaDaTrilha() {
         .getTrail(slug)
         .then((detalhe) => agendarLembretesDaTrilha(detalhe, 'trail_day_completed'))
         .catch(() => undefined);
-      if (r.trail_completed) {
-        router.replace({
-          pathname: '/trilha/[slug]/concluida',
-          params: {
-            slug,
-            dias: String(r.stats?.days ?? dia.total_days),
-            minutos: String(r.stats?.minutes ?? 0),
-            notas: String(r.stats?.notes ?? 0),
-            selo: r.progress.badge ? '1' : '0',
-            proxima: r.next_trail?.slug ?? '',
-          },
-        });
-      }
+      // Sem navegacao automatica aqui, nem mesmo quando `r.trail_completed`:
+      // isto dispara tanto ao terminar o audio quanto ao rolar o texto, entao
+      // trocar de tela na hora arrancaria a pessoa do que ainda estiver
+      // ouvindo ou lendo. O progresso ja fica salvo; quem decide a hora de ir
+      // ver a conquista e a pessoa, no cartao que aparece logo abaixo (`fim`).
     } catch (e) {
       const bloqueio = e instanceof ApiError && e.status === 423 ? codigoDoBloqueio(e.data) : null;
       if (bloqueio?.code === 'rapido_demais') {
@@ -130,7 +122,22 @@ export default function DiaDaTrilha() {
     } finally {
       enviando.current = false;
     }
-  }, [dia, slug, n, router]);
+  }, [dia, slug, n]);
+
+  const verConquista = useCallback(() => {
+    if (!resultado || !dia) return;
+    router.replace({
+      pathname: '/trilha/[slug]/concluida',
+      params: {
+        slug,
+        dias: String(resultado.stats?.days ?? dia.total_days),
+        minutos: String(resultado.stats?.minutes ?? 0),
+        notas: String(resultado.stats?.notes ?? 0),
+        selo: resultado.progress.badge ? '1' : '0',
+        proxima: resultado.next_trail?.slug ?? '',
+      },
+    });
+  }, [resultado, dia, slug, router]);
 
   const comoReflexao = useMemo<Reflection | null>(
     () =>
@@ -248,15 +255,34 @@ export default function DiaDaTrilha() {
                 {resultado ? 'Etapa concluída' : 'Você já concluiu este dia'}
               </Text>
             </View>
-            {dia.hook ? (
+            {resultado?.trail_completed ? (
               <>
+                {/* Sem navegacao automatica pra tela de conquista (ver `concluir`
+                    acima) — quem decide a hora e a pessoa, tocando aqui. */}
                 <Overline color={scheme.gold} style={{ marginTop: space.lg }}>
-                  Amanhã
+                  Trilha concluída
                 </Overline>
-                <Text style={estilos.gancho}>{dia.hook}</Text>
+                <Text style={estilos.gancho}>{`Você terminou ${dia.trail_name}. Quando quiser, veja sua conquista.`}</Text>
+                <Button
+                  label="Ver minha conquista"
+                  icon="ribbon-outline"
+                  style={{ marginTop: space.lg }}
+                  onPress={verConquista}
+                />
               </>
-            ) : null}
-            <Button label="Voltar à trilha" variant="quiet" style={{ marginTop: space.lg }} onPress={() => router.back()} />
+            ) : (
+              <>
+                {dia.hook ? (
+                  <>
+                    <Overline color={scheme.gold} style={{ marginTop: space.lg }}>
+                      Amanhã
+                    </Overline>
+                    <Text style={estilos.gancho}>{dia.hook}</Text>
+                  </>
+                ) : null}
+                <Button label="Voltar à trilha" variant="quiet" style={{ marginTop: space.lg }} onPress={() => router.back()} />
+              </>
+            )}
           </View>
         ) : null}
       </ScrollView>
