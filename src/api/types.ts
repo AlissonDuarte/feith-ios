@@ -430,6 +430,16 @@ export interface TrailSummary {
   minutes_per_day: number;
   locked: boolean;
   progress: TrailProgress | null;
+  times_completed: number;
+  last_completed_at: string | null;
+}
+
+export interface TrailBadgeInfo {
+  days: number;
+  minutes: number;
+  notes: number;
+  badge: boolean | null;
+  completed_at: string;
 }
 
 export interface TrailCatalog {
@@ -451,6 +461,7 @@ export interface TrailDayItem {
 
 export interface TrailDetail extends TrailSummary {
   days: TrailDayItem[];
+  last_badge: TrailBadgeInfo | null;
 }
 
 export interface TrailStartPayload {

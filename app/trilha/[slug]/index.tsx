@@ -6,7 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { api } from '../../../src/api/client';
 import { mensagemDe } from '../../../src/api/errors';
-import type { TrailDayItem, TrailDetail } from '../../../src/api/types';
+import type { TrailBadgeInfo, TrailDayItem, TrailDetail } from '../../../src/api/types';
 import { Button, EmptyState, GoldRule, Loading, Overline, Text } from '../../../src/components/ui';
 import { posthog } from '../../../src/config/posthog';
 import { CapaTrilha, Etapas, Pilula, SeloVozes } from '../../../src/trilhas/componentes';
@@ -22,6 +22,13 @@ import {
 } from '../../../src/trilhas/regras';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { fonts, radius, space, type Scheme } from '../../../src/theme/tokens';
+
+function formatarData(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
 
 function Chip({
   rotulo,
@@ -175,6 +182,21 @@ export default function DetalheTrilha() {
     }
   }
 
+  function verConquista(badge: TrailBadgeInfo) {
+    if (!trilha) return;
+    router.push({
+      pathname: '/trilha/[slug]/concluida',
+      params: {
+        slug: trilha.slug,
+        dias: String(badge.days),
+        minutos: String(badge.minutes),
+        notas: String(badge.notes),
+        selo: badge.badge ? '1' : '0',
+        proxima: '',
+      },
+    });
+  }
+
   function abrirDia(dia: TrailDayItem) {
     if (!trilha) return;
     if (dia.state === 'locked') {
@@ -307,14 +329,34 @@ export default function DetalheTrilha() {
           ) : (
             <>
               {concluida ? (
-                <View style={estilos.graca}>
-                  <Ionicons name="ribbon" size={18} color={scheme.gold} />
-                  <Text variant="caption" color={scheme.textSecondary} style={{ flex: 1 }}>
-                    {progresso?.badge
-                      ? 'Você concluiu esta trilha no prazo e ganhou o selo. Pode refazê-la quando quiser.'
-                      : 'Você concluiu esta trilha. Pode refazê-la quando quiser.'}
-                  </Text>
-                </View>
+                <>
+                  <View style={estilos.graca}>
+                    <Ionicons name="ribbon" size={18} color={scheme.gold} />
+                    <View style={{ flex: 1 }}>
+                      <Text variant="caption" color={scheme.textSecondary}>
+                        {progresso?.badge
+                          ? 'Você concluiu esta trilha no prazo e ganhou o selo. Pode refazê-la quando quiser.'
+                          : 'Você concluiu esta trilha. Pode refazê-la quando quiser.'}
+                      </Text>
+                      {trilha.times_completed > 0 ? (
+                        <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 4 }}>
+                          {trilha.times_completed > 1
+                            ? `Concluída ${trilha.times_completed} vezes · última em ${formatarData(trilha.last_completed_at)}`
+                            : `Concluída em ${formatarData(trilha.last_completed_at)}`}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                  {trilha.last_badge ? (
+                    <Button
+                      label="Ver minha conquista"
+                      iconLeft="ribbon-outline"
+                      variant="secondary"
+                      onPress={() => verConquista(trilha.last_badge!)}
+                      style={{ marginTop: space.md }}
+                    />
+                  ) : null}
+                </>
               ) : null}
 
               <View style={{ marginTop: space.lg }}>
