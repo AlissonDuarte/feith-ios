@@ -173,16 +173,29 @@ export interface WidgetTeaser {
 }
 
 /**
- * Onboarding curto de feature, enviado pelo servidor (ver onboarding_service.py
- * no backend). `key` identifica o item no catalogo — e o que volta em
- * resolveOnboarding().
+ * Um passo do walkthrough — mesmo formato do PassoTour (CoachTour.tsx).
+ * `target_key` casa com a chave registrada via useTourTarget
+ * (src/onboarding/TourTargets.tsx); null = cartao central sem destaque,
+ * usado pra acoes fora do app (ex.: tela inicial do aparelho). `screen` e o
+ * pathname do expo-router pra navegar antes de medir o alvo.
+ */
+export interface OnboardingStep {
+  title: string;
+  body: string;
+  target_key?: string | null;
+  screen?: string | null;
+}
+
+/**
+ * Onboarding guiado de feature, enviado pelo servidor (ver onboarding_service.py
+ * no backend) — mesmo mecanismo do CoachTour do onboarding de primeiro uso,
+ * so que dirigido por uma feature especifica. `key` identifica o item no
+ * catalogo — e o que volta em resolveOnboarding().
  */
 export interface FeatureOnboarding {
   key: string;
-  title: string;
-  body: string;
-  steps: string[];
   cta_label: string;
+  steps: OnboardingStep[];
 }
 
 export interface BookmarkToggleResponse {

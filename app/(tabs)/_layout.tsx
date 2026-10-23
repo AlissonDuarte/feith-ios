@@ -4,10 +4,42 @@ import { BlurView } from 'expo-blur';
 // marcado como deprecado (build/exports.d.ts:41) em favor deste ponto de
 // entrada. Mesmo componente, mesmas opcoes — so o import muda.
 import { Tabs } from 'expo-router/js-tabs';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, type ColorValue } from 'react-native';
 
+import { useTourTarget } from '../../src/onboarding/TourTargets';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { fonts } from '../../src/theme/tokens';
+
+/**
+ * Icone da tab, envolto num View com ref registrado no TourTargets — e o que
+ * deixa um onboarding guiado (FeatureWalkthrough) apontar pra uma aba
+ * especifica (ex.: "olha, agora tem Trilhas") sem depender de nada interno
+ * do `expo-router/js-tabs`. So funciona como componente de verdade (JSX),
+ * nunca chamado como funcao solta: e isso que garante que o hook de dentro
+ * (useTourTarget) rode com uma fiber propria e estavel.
+ */
+function TabIcon({
+  target,
+  name,
+  focusedName,
+  color,
+  size,
+  focused,
+}: {
+  target: string;
+  name: keyof typeof Ionicons.glyphMap;
+  focusedName: keyof typeof Ionicons.glyphMap;
+  color: ColorValue;
+  size: number;
+  focused: boolean;
+}) {
+  const ref = useTourTarget(target);
+  return (
+    <View ref={ref}>
+      <Ionicons name={focused ? focusedName : name} color={color} size={size} />
+    </View>
+  );
+}
 
 /**
  * Tab bar com os mesmos 5 destinos do Sidebar.svelte:99-105 da web.
@@ -71,7 +103,7 @@ export default function TabsLayout() {
         options={{
           title: 'Hoje',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'book' : 'book-outline'} color={color} size={size - 1} />
+            <TabIcon target="tab_hoje" name="book-outline" focusedName="book" color={color} size={size - 1} focused={focused} />
           ),
         }}
       />
@@ -80,7 +112,7 @@ export default function TabsLayout() {
         options={{
           title: 'Trilhas',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'trail-sign' : 'trail-sign-outline'} color={color} size={size - 1} />
+            <TabIcon target="tab_trilhas" name="trail-sign-outline" focusedName="trail-sign" color={color} size={size - 1} focused={focused} />
           ),
         }}
       />
@@ -89,11 +121,7 @@ export default function TabsLayout() {
         options={{
           title: 'Caderno',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'document-text' : 'document-text-outline'}
-              color={color}
-              size={size - 1}
-            />
+            <TabIcon target="tab_caderno" name="document-text-outline" focusedName="document-text" color={color} size={size - 1} focused={focused} />
           ),
         }}
       />
@@ -102,7 +130,7 @@ export default function TabsLayout() {
         options={{
           title: 'Histórico',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'time' : 'time-outline'} color={color} size={size - 1} />
+            <TabIcon target="tab_historico" name="time-outline" focusedName="time" color={color} size={size - 1} focused={focused} />
           ),
         }}
       />
@@ -111,7 +139,7 @@ export default function TabsLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size - 1} />
+            <TabIcon target="tab_perfil" name="person-outline" focusedName="person" color={color} size={size - 1} focused={focused} />
           ),
         }}
       />

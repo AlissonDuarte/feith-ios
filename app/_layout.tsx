@@ -32,7 +32,8 @@ import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { IapProvider } from '../src/iap/IapContext';
 import { posthog } from '../src/config/posthog';
 import { useRastreioDeTelas } from '../src/config/useRastreioDeTelas';
-import { FeatureOnboardingModal } from '../src/onboarding/FeatureOnboardingModal';
+import { FeatureWalkthrough } from '../src/onboarding/FeatureWalkthrough';
+import { TourTargetsProvider } from '../src/onboarding/TourTargets';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { fonts, type Scheme } from '../src/theme/tokens';
 import { usePushNotifications } from '../src/push/usePushNotifications';
@@ -194,7 +195,7 @@ function RouteGuard() {
     {/* Fora da Stack: sobrepoe qualquer rota, igual ao AtualizacaoObrigatoria.
         So com sessao ativa e depois do tour de primeiro uso — nunca compete
         com o onboarding obrigatorio nem aparece pra quem esta deslogado. */}
-    {token && summary?.onboarding_completed ? <FeatureOnboardingModal /> : null}
+    {token && summary?.onboarding_completed ? <FeatureWalkthrough /> : null}
     </>
   );
 }
@@ -242,7 +243,9 @@ export default function RootLayout() {
       ) : (
         <AuthProvider>
           <IapProvider>
-            <RouteGuard />
+            <TourTargetsProvider>
+              <RouteGuard />
+            </TourTargetsProvider>
           </IapProvider>
         </AuthProvider>
       )}
