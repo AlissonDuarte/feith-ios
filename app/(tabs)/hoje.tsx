@@ -32,6 +32,7 @@ import {
 } from '../../src/iap/lembretesAssinatura';
 import { ALTURA_BARRA_AUDIO, PlayerAudio } from '../../src/player/PlayerAudio';
 import { ConviteLembrete } from '../../src/push/ConviteLembrete';
+import { useTourTarget } from '../../src/onboarding/TourTargets';
 import { AnelProgresso } from '../../src/trilhas/componentes';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
@@ -99,6 +100,9 @@ export default function Hoje() {
   const refCorpo = useRef<View>(null);
   const refCapsula = useRef<View>(null);
   const refBarra = useRef<View>(null);
+  // Alvo do walkthrough guiado de feature (servidor), nao do CoachTour local
+  // acima — por isso e um useTourTarget e nao mais um useRef<View>(null).
+  const refCartaoCompartilhar = useTourTarget('cartao_compartilhar');
 
   const passosTour: PassoTour[] = [
     {
@@ -307,11 +311,13 @@ export default function Hoje() {
             onMudou={(v) => setReflexao((r) => (r ? { ...r, bookmarked: v } : r))}
             emMoldura
           />
-          <IconButton
-            name="image-outline"
-            label="Cartão para compartilhar"
-            onPress={() => router.push(`/leitura/compartilhar-cartao?key=${reflexao.uuid}`)}
-          />
+          <View ref={refCartaoCompartilhar}>
+            <IconButton
+              name="image-outline"
+              label="Cartão para compartilhar"
+              onPress={() => router.push(`/leitura/compartilhar-cartao?key=${reflexao.uuid}`)}
+            />
+          </View>
           <IconButton name="share-outline" label="Compartilhar" onPress={compartilhar} />
         </View>
       </View>
