@@ -35,6 +35,7 @@ import { ConviteLembrete } from '../../src/push/ConviteLembrete';
 import { AnelProgresso } from '../../src/trilhas/componentes';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { radius, shadow, space, type Scheme } from '../../src/theme/tokens';
+import { reloadWidgets } from '../../src/widgets/reloadWidgets';
 
 const TOUR_HOJE_KEY = 'feith.tour.hoje.v1';
 
@@ -134,6 +135,7 @@ export default function Hoje() {
       // summary DEPOIS dele — e nunca antes — e o que faz o contador subir no
       // mesmo instante em que a pessoa abre a reflexao.
       await refreshSummary();
+      void reloadWidgets();
     } catch (e) {
       setErro(mensagemDe(e));
     }

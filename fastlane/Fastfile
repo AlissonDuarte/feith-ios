@@ -9,6 +9,14 @@ default_platform(:ios)
 APP_IDENTIFIER = ENV['IOS_BUNDLE_ID'] || 'com.feith.app'
 SCHEME = 'feith'
 
+# Extensao do widget de tela inicial (ver targets/widget). E um segundo
+# target no MESMO .xcodeproj gerado pelo prebuild (nao um .xcodeproj
+# separado), mas precisa de App ID e provisioning profile proprios porque
+# cada bundle identifier assina com um profile diferente.
+WIDGET_IDENTIFIER = "#{APP_IDENTIFIER}.widget"
+WIDGET_TARGET = 'VerseWidget'
+BOTH_IDENTIFIERS = [APP_IDENTIFIER, WIDGET_IDENTIFIER].freeze
+
 platform :ios do
   # Chave da App Store Connect API, montada a partir do .p8 em base64 guardado
   # nos secrets. Evita 2FA de Apple ID no CI.
@@ -49,22 +57,38 @@ platform :ios do
       'Associated Domains',
       'marque "Associated Domains"',
     ],
+    [
+      'com.apple.security.application-groups',
+      'App Groups',
+      'marque "App Groups", clique em Edit/Configure e associe ao group.com.feith.app',
+    ],
   ].freeze
 
-  def verify_profile_capabilities
-    path = ENV["sigh_#{APP_IDENTIFIER}_appstore_profile-path"]
-    UI.user_error!('O match nao exportou o caminho do profile.') if path.to_s.empty?
+  # O widget so precisa do App Group (e so por ele que le o cache escrito
+  # pelo app principal) — nao faz sentido exigir Sign In with Apple/Push/
+  # Associated Domains num App ID que nunca vai ter essas capabilities.
+  WIDGET_REQUIRED_CAPABILITIES = [
+    [
+      'com.apple.security.application-groups',
+      'App Groups',
+      'marque "App Groups", clique em Edit/Configure e associe ao group.com.feith.app',
+    ],
+  ].freeze
+
+  def verify_profile_capabilities(identifier:, required:)
+    path = ENV["sigh_#{identifier}_appstore_profile-path"]
+    UI.user_error!("O match nao exportou o caminho do profile de #{identifier}.") if path.to_s.empty?
 
     plist = sh('security', 'cms', '-D', '-i', path, log: false).force_encoding('BINARY')
 
-    missing = REQUIRED_CAPABILITIES.reject { |entitlement, _, _| plist.include?(entitlement) }
+    missing = required.reject { |entitlement, _, _| plist.include?(entitlement) }
     return if missing.empty?
 
     nomes = missing.map { |_, nome, _| nome }.join(' e ')
     passos = missing.map { |_, _, instrucao| "           #{instrucao}" }.join(";\n")
 
     UI.user_error!(<<~MSG)
-      O provisioning profile guardado nao tem #{nomes}.
+      O provisioning profile de #{identifier} guardado nao tem #{nomes}.
 
       O profile e gerado a partir das capabilities que o App ID tinha no momento
       em que ele nasceu, e aqui o match roda em readonly: ele so baixa o que ja
@@ -73,7 +97,7 @@ platform :ios do
 
       Na ordem:
         1. developer.apple.com > Certificates, Identifiers & Profiles >
-           Identifiers > #{APP_IDENTIFIER}:
+           Identifiers > #{identifier}:
 #{passos}
            e SALVE — a confirmacao e um passo separado, e sem ela nao persiste.
         2. Rode o workflow ios-credentials.yml. E ele que regenera o profile
@@ -90,14 +114,30 @@ platform :ios do
 
   # Assinatura manual com o profile do match. Repetido nas tres lanes que
   # buildam, entao vive aqui.
+  #
+  # disable_automatic_code_signing sem `targets:` ja vale pra TODOS os
+  # targets do projeto (app + widget) — e o certo aqui. Mas o segundo
+  # update_code_signing_settings precisa de uma chamada POR TARGET: cada um
+  # tem seu proprio bundle identifier e profile, e sem `targets:` a acao
+  # tentaria aplicar o identifier/profile do app principal no widget tambem.
   def apply_manual_signing
     disable_automatic_code_signing(path: "ios/#{SCHEME}.xcodeproj")
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "ios/#{SCHEME}.xcodeproj",
+      targets: [SCHEME],
       team_id: ENV['APPLE_TEAM_ID'],
       bundle_identifier: APP_IDENTIFIER,
       profile_name: "match AppStore #{APP_IDENTIFIER}",
+      code_sign_identity: 'Apple Distribution'
+    )
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "ios/#{SCHEME}.xcodeproj",
+      targets: [WIDGET_TARGET],
+      team_id: ENV['APPLE_TEAM_ID'],
+      bundle_identifier: WIDGET_IDENTIFIER,
+      profile_name: "match AppStore #{WIDGET_IDENTIFIER}",
       code_sign_identity: 'Apple Distribution'
     )
   end
@@ -113,10 +153,17 @@ platform :ios do
       export_options: {
         method: 'app-store',
         provisioningProfiles: {
-          APP_IDENTIFIER => "match AppStore #{APP_IDENTIFIER}"
+          APP_IDENTIFIER => "match AppStore #{APP_IDENTIFIER}",
+          WIDGET_IDENTIFIER => "match AppStore #{WIDGET_IDENTIFIER}"
         }
       },
-      xcargs: "DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']} CODE_SIGN_IDENTITY=\"Apple Distribution\" PROVISIONING_PROFILE_SPECIFIER=\"match AppStore #{APP_IDENTIFIER}\"",
+      # PROVISIONING_PROFILE_SPECIFIER saiu do xcargs de proposito: com dois
+      # targets (app + widget) um valor global forcaria o profile do app
+      # principal no widget tambem, e o archive quebraria por profile nao
+      # bater com o bundle id. Cada target ja tem o profile certo gravado no
+      # pbxproj por apply_manual_signing; DEVELOPMENT_TEAM/CODE_SIGN_IDENTITY
+      # sao iguais nos dois e continuam globais.
+      xcargs: "DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']} CODE_SIGN_IDENTITY=\"Apple Distribution\"",
       clean: true
     )
   end
@@ -140,7 +187,7 @@ platform :ios do
     setup_ci
     match(
       type: 'appstore',
-      app_identifier: APP_IDENTIFIER,
+      app_identifier: BOTH_IDENTIFIERS,
       api_key: asc_key,
       readonly: false,
       # Sem force, o match ve que o profile guardado ainda e valido e o
@@ -156,8 +203,9 @@ platform :ios do
   desc 'Build assinado, sem upload. Valida prebuild + pods + signing barato.'
   lane :build_only do
     setup_ci
-    match(type: 'appstore', app_identifier: APP_IDENTIFIER, api_key: asc_key, readonly: true)
-    verify_profile_capabilities
+    match(type: 'appstore', app_identifier: BOTH_IDENTIFIERS, api_key: asc_key, readonly: true)
+    verify_profile_capabilities(identifier: APP_IDENTIFIER, required: REQUIRED_CAPABILITIES)
+    verify_profile_capabilities(identifier: WIDGET_IDENTIFIER, required: WIDGET_REQUIRED_CAPABILITIES)
     apply_manual_signing
     archive
   end
@@ -170,8 +218,9 @@ platform :ios do
     setup_ci
     key = asc_key
 
-    match(type: 'appstore', app_identifier: APP_IDENTIFIER, api_key: key, readonly: true)
-    verify_profile_capabilities
+    match(type: 'appstore', app_identifier: BOTH_IDENTIFIERS, api_key: key, readonly: true)
+    verify_profile_capabilities(identifier: APP_IDENTIFIER, required: REQUIRED_CAPABILITIES)
+    verify_profile_capabilities(identifier: WIDGET_IDENTIFIER, required: WIDGET_REQUIRED_CAPABILITIES)
     apply_manual_signing
     bump_build_number(key)
     # Debug para o dev client carregar o bundle do Metro em vez de embutir um.
@@ -189,8 +238,9 @@ platform :ios do
     setup_ci
     key = asc_key
 
-    match(type: 'appstore', app_identifier: APP_IDENTIFIER, api_key: key, readonly: true)
-    verify_profile_capabilities
+    match(type: 'appstore', app_identifier: BOTH_IDENTIFIERS, api_key: key, readonly: true)
+    verify_profile_capabilities(identifier: APP_IDENTIFIER, required: REQUIRED_CAPABILITIES)
+    verify_profile_capabilities(identifier: WIDGET_IDENTIFIER, required: WIDGET_REQUIRED_CAPABILITIES)
     apply_manual_signing
     bump_build_number(key)
     archive

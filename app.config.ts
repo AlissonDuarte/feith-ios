@@ -102,6 +102,10 @@ const config: ExpoConfig = {
       // o entitlement que sai do prebuild fica visivel no config, e o CI
       // consegue conferir o valor.
       'aps-environment': apsEnvironment,
+      // App Group compartilhado com a extensao do widget (targets/widget) —
+      // o @bacons/apple-targets espelha este mesmo array no target do widget
+      // automaticamente, nao precisa repetir la.
+      'com.apple.security.application-groups': ['group.com.feith.app'],
     },
     infoPlist: {
       // O player continua tocando com a tela apagada e aparece no lockscreen.
@@ -133,6 +137,10 @@ const config: ExpoConfig = {
     },
   },
   plugins: [
+    // Gera a extensao de widget do iOS a partir de targets/widget (ver
+    // README do pacote) — a entitlement de App Group acima e espelhada
+    // automaticamente nesse target, sem precisar declarar de novo.
+    '@bacons/apple-targets',
     'expo-router',
     'expo-secure-store',
     'expo-font',
@@ -181,6 +189,29 @@ const config: ExpoConfig = {
         // galeria (salvar o cartão), nunca lê, então zero permissões de
         // leitura — sem isso o Google Play exige declarar uso de fotos/vídeo.
         granularPermissions: [],
+      },
+    ] as [string, Record<string, unknown>],
+    // Widget de tela inicial com um trecho da leitura de hoje (Android). Nome
+    // 'VerseOfTheDay' fixo de proposito: e usado tambem no nome da classe
+    // Java gerada e no handler em src/widgets/widgetTaskHandler.tsx — mudar
+    // aqui sem mudar la quebra o requestWidgetUpdate silenciosamente.
+    [
+      'react-native-android-widget',
+      {
+        widgets: [
+          {
+            name: 'VerseOfTheDay',
+            label: 'Versículo do dia',
+            description: 'Um trecho da leitura de hoje, direto na tela inicial.',
+            minWidth: '250dp',
+            minHeight: '120dp',
+            resizeMode: 'horizontal|vertical',
+            // Rede de seguranca (minimo permitido pela lib); o refresh real
+            // vem do app chamando reloadAndroidWidget() apos buscar a
+            // reflexao do dia (ver reloadWidgets.ts e app/(tabs)/hoje.tsx).
+            updatePeriodMillis: 21600000,
+          },
+        ],
       },
     ] as [string, Record<string, unknown>],
     // No SDK 57 a splash deixou de ser chave de topo e virou config do plugin.

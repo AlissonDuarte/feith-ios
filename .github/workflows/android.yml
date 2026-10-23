@@ -105,6 +105,10 @@ jobs:
             || { echo "::error::versionCode nao e $ANDROID_VERSION_CODE."; exit 1; }
           grep -q "com.facebook.sdk.ApplicationId" android/app/src/main/AndroidManifest.xml \
             || { echo "::error::SDK da Meta ausente do AndroidManifest."; exit 1; }
+          grep -q '<receiver android:name=".widget.VerseOfTheDay"' android/app/src/main/AndroidManifest.xml \
+            || { echo "::error::Receiver do widget Versiculo do Dia ausente do AndroidManifest."; exit 1; }
+          test -f android/app/src/main/res/xml/widgetprovider_verseoftheday.xml \
+            || { echo "::error::XML do widget provider nao foi gerado pelo prebuild."; exit 1; }
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             test -f android/app/google-services.json \
               || { echo "::error::google-services.json nao foi copiado para android/app."; exit 1; }

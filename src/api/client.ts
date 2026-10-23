@@ -53,6 +53,7 @@ import {
   type TranscriptResponse,
   type UserProfile,
   type UserSummary,
+  type WidgetTeaser,
 } from './types';
 
 const BASE_URL =
@@ -410,6 +411,12 @@ export const api = {
       ...r,
       publishAt: parseDateBR(r.publish_at),
     })),
+
+  /**
+   * Publico, sem sessao — e o que o widget de tela inicial (Android/iOS)
+   * chama. Nunca lanca 401: `allowAnonymous` via `publicRequest`.
+   */
+  getWidgetTeaser: () => publicRequest<WidgetTeaser>('/reflections/daily/public'),
 
   // Assinatura
   getSubscriptionStatus: () => request<SubscriptionStatus>('/subscriptions/status'),

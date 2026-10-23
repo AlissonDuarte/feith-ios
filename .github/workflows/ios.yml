@@ -191,6 +191,17 @@ jobs:
           grep -q "com.apple.developer.associated-domains" "$ENT" \
             || { echo "::error::Associated Domains ausente — os links /r/<token> nao abririam o app."; exit 1; }
 
+          # App Group do widget de tela inicial (ver targets/widget). Precisa
+          # bater nos dois lados — app principal e extensao — ou o widget
+          # fica mudo (sem erro de build nenhum, so dado vazio em runtime).
+          WIDGET_ENT=ios/.targets/VerseWidget/generated.entitlements
+          grep -A2 "com.apple.security.application-groups" "$ENT" | grep -q "group.com.feith.app" \
+            || { echo "::error::App Group ausente do entitlements do app principal."; exit 1; }
+          test -f "$WIDGET_ENT" \
+            || { echo "::error::Entitlements da extensao do widget nao foi gerado — confira targets/widget/expo-target.config.js."; exit 1; }
+          grep -A2 "com.apple.security.application-groups" "$WIDGET_ENT" | grep -q "group.com.feith.app" \
+            || { echo "::error::App Group ausente do entitlements da extensao do widget."; exit 1; }
+
           # O player precisa continuar tocando com a tela apagada.
           grep -A2 "UIBackgroundModes" "$PLIST" | grep -q "<string>audio</string>" \
             || { echo "::error::UIBackgroundModes sem 'audio'. O audio pararia ao ir para background."; \

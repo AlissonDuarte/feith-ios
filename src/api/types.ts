@@ -159,6 +159,19 @@ export interface Reflection {
 /** GET /shorts/r/{token} — igual a Reflection, menos uuid e bookmarked. */
 export type SharedReflection = Omit<Reflection, 'uuid' | 'bookmarked'>;
 
+/**
+ * GET /reflections/daily/public — teaser sem autenticacao para o widget de
+ * tela inicial. `is_fallback` indica que nao veio da reflexao do dia, e sim
+ * do nivel 2 (reflexao antiga) ou 3 (lista estatica) do backend.
+ */
+export interface WidgetTeaser {
+  scripture_reference: string;
+  version: string;
+  excerpt: string;
+  publish_at: string;
+  is_fallback: boolean;
+}
+
 export interface BookmarkToggleResponse {
   bookmarked: boolean;
   status: boolean;

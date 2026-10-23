@@ -3,4 +3,10 @@
 git_url(ENV['MATCH_GIT_URL'])
 storage_mode('git')
 type('appstore')
-app_identifier([ENV['IOS_BUNDLE_ID'] || 'com.feith.app'])
+# O segundo identifier e a extensao do widget de tela inicial (targets/widget
+# — PRODUCT_BUNDLE_IDENTIFIER = com.feith.app.widget). Precisa de profile
+# proprio porque e um target separado no mesmo .xcodeproj.
+app_identifier([
+  ENV['IOS_BUNDLE_ID'] || 'com.feith.app',
+  "#{ENV['IOS_BUNDLE_ID'] || 'com.feith.app'}.widget",
+])
