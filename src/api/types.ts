@@ -219,18 +219,6 @@ export interface ReflectionNote {
   createdAt: Date | null;
 }
 
-// ── Comentarios ──────────────────────────────────────────────────────────────
-
-export interface CommentItem {
-  comment_uuid: string;
-  content: string;
-  author: string;
-  is_own: boolean;
-  /** dd/mm/aaaa HH:MM */
-  created_at: string;
-  createdAt: Date | null;
-}
-
 // ── Paginacao ────────────────────────────────────────────────────────────────
 
 /**

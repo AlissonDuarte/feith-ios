@@ -61,6 +61,10 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
 
   // Evita re-processamento concorrente da mesma transacao
   const transacoesEmProcessamento = useRef<Set<string>>(new Set());
+  // Evita reprocessar uma transacao ja validada com sucesso: o listener nativo
+  // (dedupeTransactionIOS: false) e a checagem proativa em `assinar` podem
+  // entregar a mesma compra mais de uma vez em sequencia, nao so concorrente.
+  const transacoesConcluidas = useRef<Set<string>>(new Set());
 
   const planoCompraRef = useRef<PlanoId | null>(null);
   const origemRef = useRef<string | undefined>(undefined);
@@ -107,7 +111,10 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
   const processarTransacao = useCallback(
     async (purchase: Purchase) => {
       const idTransacao = purchase.id || purchase.transactionId || 'desconhecida';
-      if (transacoesEmProcessamento.current.has(idTransacao)) {
+      if (
+        transacoesEmProcessamento.current.has(idTransacao) ||
+        transacoesConcluidas.current.has(idTransacao)
+      ) {
         return;
       }
       transacoesEmProcessamento.current.add(idTransacao);
@@ -117,6 +124,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         setErro(null);
 
         await validarEFinalizarTransacao(purchase);
+        transacoesConcluidas.current.add(idTransacao);
         await refreshSummary();
         posthog?.capture('subscription_purchase_completed', propriedadesCompra(purchase.productId));
         posthogLog.info('subscription purchase completed', { result: 'validated' });

@@ -9,7 +9,6 @@ import { mensagemDe } from '../../src/api/errors';
 import type { Reflection, TrailCatalog } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthContext';
 import { BotaoFavorito } from '../../src/components/BotaoFavorito';
-import { ComentariosSecao } from '../../src/components/ComentariosSecao';
 import { CoachTour, type PassoTour } from '../../src/components/CoachTour';
 import { NotaSheet } from '../../src/components/NotaSheet';
 import { AccentHalo } from '../../src/components/ornaments';
@@ -56,6 +55,7 @@ export default function Hoje() {
   const [prefixoNota, setPrefixoNota] = useState<string | undefined>(undefined);
   const [tourVisivel, setTourVisivel] = useState(false);
   const [trilhas, setTrilhas] = useState<TrailCatalog | null>(null);
+  const [trilhaDiaDisponivel, setTrilhaDiaDisponivel] = useState(false);
   const { paywall } = useLocalSearchParams<{ paywall?: string }>();
   const focado = useIsFocused();
 
@@ -145,7 +145,33 @@ export default function Hoje() {
 
   useFocusEffect(
     useCallback(() => {
-      api.getTrails().then(setTrilhas).catch(() => undefined);
+      let ativo = true;
+      setTrilhaDiaDisponivel(false);
+      api
+        .getTrails()
+        .then((catalogo) => {
+          if (!ativo) return;
+          setTrilhas(catalogo);
+          const slug = catalogo.active?.slug;
+          if (!slug) return;
+          // So existe um campo autoritativo de disponibilidade (que considera
+          // o limite diario de dias concluidos) no detalhe da trilha — ver
+          // trail_rules.estados() no backend. Sem essa confirmacao, o botao
+          // fica escondido (falha fechada) em vez de assumir que ha dia pendente.
+          api
+            .getTrail(slug)
+            .then((detalhe) => {
+              if (!ativo) return;
+              setTrilhaDiaDisponivel(detalhe.days.some((dia) => dia.state === 'available'));
+            })
+            .catch(() => {
+              if (ativo) setTrilhaDiaDisponivel(false);
+            });
+        })
+        .catch(() => undefined);
+      return () => {
+        ativo = false;
+      };
     }, []),
   );
 
@@ -321,15 +347,7 @@ export default function Hoje() {
           />
         </View>
 
-        <ComentariosSecao
-          reflectionUuid={reflexao.uuid}
-          total={reflexao.comments_count}
-          onTotalChange={(total) =>
-            setReflexao((r) => (r ? { ...r, comments_count: total } : r))
-          }
-        />
-
-        {trilhas?.active?.progress && trilhas.active.progress.next_day ? (
+        {trilhas?.active?.progress && trilhaDiaDisponivel ? (
           <Pressable
             onPress={() => {
               posthog?.capture('trail_continue_tapped', { trail: trilhas.active?.slug ?? null, source: 'hoje' });

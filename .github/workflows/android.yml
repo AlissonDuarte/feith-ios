@@ -82,12 +82,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: "[TEMP] Gerar key hash pro Meta App Dashboard — remover depois de usar"
-        run: |
-          echo "=== Key hash para colar no Meta App Dashboard ==="
-          keytool -exportcert -alias "$ANDROID_KEY_ALIAS" -keystore "$ANDROID_KEYSTORE_FILE" -storepass "$ANDROID_KEYSTORE_PASSWORD" | openssl sha1 -binary | openssl base64
-          echo "=================================================="
-
       - uses: gradle/actions/setup-gradle@v4
 
       - uses: actions/setup-node@v4

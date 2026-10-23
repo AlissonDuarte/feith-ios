@@ -188,7 +188,11 @@ export async function solicitarAssinatura(plano: PlanoId): Promise<void> {
     }
     const offerToken = offerTokensAndroid[plano];
     if (!offerToken) {
-      throw new Error('A assinatura ainda não está disponível na Play Store. Tente novamente mais tarde.');
+      const err = new Error(
+        'A assinatura ainda não está disponível na Play Store. Tente novamente mais tarde.',
+      ) as Error & { code: string };
+      err.code = 'offer_token_missing';
+      throw err;
     }
 
     await requestPurchase({
