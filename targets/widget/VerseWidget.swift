@@ -60,25 +60,49 @@ struct VerseProvider: TimelineProvider {
     }
 }
 
+private let oxblood = Color(red: 0.478, green: 0.122, blue: 0.122)
+private let inkSoft = Color(red: 0.165, green: 0.165, blue: 0.165)
+private let goldLight = Color(red: 0.722, green: 0.612, blue: 0.361)
+private let cream = Color(red: 0.980, green: 0.973, blue: 0.957)
+
 struct VerseWidgetView: View {
     var entry: VerseEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(entry.teaser.scriptureReference)
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundColor(Color(red: 0.478, green: 0.122, blue: 0.122))
+                // `.serif` e o design embutido do sistema (New York no iOS) —
+                // mesmo espirito editorial do Cormorant Garamond do app, sem
+                // empacotar fonte customizada na extensao do widget.
+                .font(.system(.subheadline, design: .serif))
+                .fontWeight(.semibold)
+                .foregroundColor(oxblood)
+
+            // Fio de ouro curto que desvanece pra direita — mesma funcao do
+            // GoldRule do app, nao uma linha solida de ponta a ponta.
+            LinearGradient(colors: [goldLight, goldLight.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                .frame(width: 32, height: 2)
+                .padding(.top, 7)
+                .padding(.bottom, 9)
+
             Text(entry.teaser.excerpt)
-                .font(.caption)
-                .foregroundColor(Color(red: 0.102, green: 0.102, blue: 0.102))
+                .font(.system(.footnote, design: .serif))
+                .foregroundColor(inkSoft)
                 .lineLimit(4)
-            Spacer()
+
+            Spacer(minLength: 8)
+
+            Text("feith")
+                .font(.system(.caption2, design: .serif))
+                .italic()
+                .fontWeight(.semibold)
+                .foregroundColor(goldLight)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .widgetURL(URL(string: "feith://hoje"))
-        .containerBackground(Color(red: 0.980, green: 0.973, blue: 0.957), for: .widget)
+        .containerBackground(cream, for: .widget)
     }
 }
 
