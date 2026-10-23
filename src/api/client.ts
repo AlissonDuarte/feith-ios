@@ -29,6 +29,7 @@ import {
   type BookmarkItem,
   type BookmarkToggleResponse,
   type ErrorPayload,
+  type FeatureOnboarding,
   type FeedbackPayload,
   type TrailCatalog,
   type TrailCompleteResult,
@@ -417,6 +418,22 @@ export const api = {
    * chama. Nunca lanca 401: `allowAnonymous` via `publicRequest`.
    */
   getWidgetTeaser: () => publicRequest<WidgetTeaser>('/reflections/daily/public'),
+
+  /**
+   * Proximo onboarding de feature elegivel pra esta conta (ou null: nada
+   * pendente agora). O servidor decide o FIFO e o intervalo entre eles —
+   * o app so exibe o que vier, sem logica de fila aqui.
+   */
+  getNextOnboarding: () =>
+    request<FeatureOnboarding | null>('/onboardings/next', {
+      query: { platform: Platform.OS === 'android' ? 'android' : 'ios' },
+    }),
+
+  resolveOnboarding: (key: string, outcome: 'completed' | 'dismissed') =>
+    request<{ status: string }>(`/onboardings/${key}/resolve`, {
+      method: 'POST',
+      body: { outcome },
+    }),
 
   // Assinatura
   getSubscriptionStatus: () => request<SubscriptionStatus>('/subscriptions/status'),

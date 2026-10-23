@@ -32,6 +32,7 @@ import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { IapProvider } from '../src/iap/IapContext';
 import { posthog } from '../src/config/posthog';
 import { useRastreioDeTelas } from '../src/config/useRastreioDeTelas';
+import { FeatureOnboardingModal } from '../src/onboarding/FeatureOnboardingModal';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { fonts, type Scheme } from '../src/theme/tokens';
 import { usePushNotifications } from '../src/push/usePushNotifications';
@@ -145,6 +146,7 @@ function RouteGuard() {
   // politicas) precisam de header nativo, botao de voltar e do gesto de
   // arrastar da borda. Com Slot elas apareceriam sem nenhuma forma de sair.
   return (
+    <>
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: scheme.canvas } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -189,6 +191,11 @@ function RouteGuard() {
           logada com o onboarding pendente, e o guard a traria de volta. */}
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
     </Stack>
+    {/* Fora da Stack: sobrepoe qualquer rota, igual ao AtualizacaoObrigatoria.
+        So com sessao ativa e depois do tour de primeiro uso — nunca compete
+        com o onboarding obrigatorio nem aparece pra quem esta deslogado. */}
+    {token && summary?.onboarding_completed ? <FeatureOnboardingModal /> : null}
+    </>
   );
 }
 

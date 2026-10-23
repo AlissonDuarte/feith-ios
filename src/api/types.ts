@@ -172,6 +172,19 @@ export interface WidgetTeaser {
   is_fallback: boolean;
 }
 
+/**
+ * Onboarding curto de feature, enviado pelo servidor (ver onboarding_service.py
+ * no backend). `key` identifica o item no catalogo — e o que volta em
+ * resolveOnboarding().
+ */
+export interface FeatureOnboarding {
+  key: string;
+  title: string;
+  body: string;
+  steps: string[];
+  cta_label: string;
+}
+
 export interface BookmarkToggleResponse {
   bookmarked: boolean;
   status: boolean;
