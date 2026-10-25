@@ -16,6 +16,7 @@ SCHEME = 'feith'
 WIDGET_IDENTIFIER = "#{APP_IDENTIFIER}.widget"
 WIDGET_TARGET = 'VerseWidget'
 BOTH_IDENTIFIERS = [APP_IDENTIFIER, WIDGET_IDENTIFIER].freeze
+APP_TARGET = 'Feith'
 
 platform :ios do
   # Chave da App Store Connect API, montada a partir do .p8 em base64 guardado
@@ -125,7 +126,7 @@ platform :ios do
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "ios/#{SCHEME}.xcodeproj",
-      targets: [SCHEME],
+      targets: [APP_TARGET],
       team_id: ENV['APPLE_TEAM_ID'],
       bundle_identifier: APP_IDENTIFIER,
       profile_name: "match AppStore #{APP_IDENTIFIER}",
