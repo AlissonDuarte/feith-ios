@@ -459,6 +459,7 @@ export interface TrailSummary {
   progress: TrailProgress | null;
   times_completed: number;
   last_completed_at: string | null;
+  started_count: number;
 }
 
 export interface TrailBadgeInfo {

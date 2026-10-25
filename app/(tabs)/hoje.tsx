@@ -102,7 +102,12 @@ export default function Hoje() {
   const refBarra = useRef<View>(null);
   // Alvo do walkthrough guiado de feature (servidor), nao do CoachTour local
   // acima — por isso e um useTourTarget e nao mais um useRef<View>(null).
-  const refCartaoCompartilhar = useTourTarget('cartao_compartilhar');
+  const refCartaoCompartilhar = useTourTarget('cartao_compartilhar', {
+    onPress: () => {
+      if (!reflexao?.uuid) return;
+      router.push(`/leitura/compartilhar-cartao?key=${reflexao.uuid}`);
+    },
+  });
 
   const passosTour: PassoTour[] = [
     {

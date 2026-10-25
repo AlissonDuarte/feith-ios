@@ -10,7 +10,7 @@ import type { TrailBadgeInfo, TrailDayItem, TrailDetail } from '../../../src/api
 import { Button, EmptyState, GoldRule, Loading, Overline, Text } from '../../../src/components/ui';
 import { posthog } from '../../../src/config/posthog';
 import { CapaTrilha, Etapas, Pilula, SeloVozes } from '../../../src/trilhas/componentes';
-import { agendarLembretesDaTrilha } from '../../../src/trilhas/lembretes';
+import { agendarLembretesDaTrilha, cancelarLembretesDaTrilha } from '../../../src/trilhas/lembretes';
 import {
   HORARIOS,
   descricaoDoDia,
@@ -22,6 +22,13 @@ import {
 } from '../../../src/trilhas/regras';
 import { useTheme } from '../../../src/theme/ThemeContext';
 import { fonts, radius, space, type Scheme } from '../../../src/theme/tokens';
+
+const MINIMO_PESSOAS_INICIARAM = 5;
+
+function formatarContagemIniciaram(quantidade: number): string {
+  const formatado = quantidade.toLocaleString('pt-BR');
+  return quantidade === 1 ? `${formatado} pessoa já começou esta trilha` : `${formatado} pessoas já começaram esta trilha`;
+}
 
 function formatarData(iso: string | null): string {
   if (!iso) return '';
@@ -131,7 +138,14 @@ export default function DetalheTrilha() {
       const detalhe = await api.getTrail(slug);
       setTrilha(detalhe);
       setErro(null);
-      if (detalhe.progress?.status === 'active') void agendarLembretesDaTrilha(detalhe);
+      if (detalhe.progress?.status === 'active') {
+        void agendarLembretesDaTrilha(detalhe);
+      } else {
+        // Backend pode ter desinscrito a trilha (lembrete de trilha parada,
+        // ver trail_stall_service) sem o app saber: limpa lembretes locais
+        // de uma trilha que o servidor ja considera "nao iniciada".
+        void cancelarLembretesDaTrilha(detalhe.slug);
+      }
       if (detalhe.locked && !registrouBloqueio.current) {
         registrouBloqueio.current = true;
         posthog?.capture('trail_locked_viewed', { trail: detalhe.slug, kind: detalhe.kind });
@@ -274,6 +288,15 @@ export default function DetalheTrilha() {
           <Text variant="bodySm" color={scheme.textSecondary} style={{ marginTop: space.sm }}>
             {trilha.description}
           </Text>
+
+          {trilha.started_count >= MINIMO_PESSOAS_INICIARAM ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.sm }}>
+              <Ionicons name="people-outline" size={14} color={scheme.textMuted} />
+              <Text variant="micro" color={scheme.textMuted} numberOfLines={1}>
+                {formatarContagemIniciaram(trilha.started_count)}
+              </Text>
+            </View>
+          ) : null}
 
           {ativa && progresso ? (
             <>

@@ -76,8 +76,8 @@ export function FeatureWalkthrough() {
 
     const medir = () => {
       if (cancelado) return;
-      const ref = registro.get(passo.target_key!);
-      ref?.current?.measureInWindow((x, y, w, h) => {
+      const alvo = registro.get(passo.target_key!);
+      alvo?.ref.current?.measureInWindow((x, y, w, h) => {
         if (cancelado) return;
         if (w > 0 && h > 0) {
           setRetangulo({ x, y, width: w, height: h });
@@ -85,7 +85,7 @@ export function FeatureWalkthrough() {
         }
         tentarDeNovo();
       });
-      if (!ref?.current) tentarDeNovo();
+      if (!alvo?.ref.current) tentarDeNovo();
     };
 
     const tentarDeNovo = () => {
@@ -116,7 +116,13 @@ export function FeatureWalkthrough() {
   if (!item || !passo) return null;
 
   function avancarOuConcluir() {
+    if (!passo) return;
     if (ultimo) {
+      // Produz o mesmo efeito de tocar no elemento de verdade (ex.: abrir a
+      // tela que o botao abriria), em vez de so fechar o walkthrough. Se o
+      // alvo nunca foi encontrado (pulo por timeout), nao ha acao pra
+      // disparar — o optional chaining cobre isso sem precisar de outro ramo.
+      if (passo.target_key) registro.get(passo.target_key)?.onPress?.();
       void completar();
       return;
     }

@@ -66,7 +66,7 @@ const webUrl = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://feith.space';
 const webHost = webUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
 const config: ExpoConfig = {
-  name: 'feith',
+  name: 'Feith',
   slug: 'feith',
   version: '1.0.7',
   orientation: 'portrait',
