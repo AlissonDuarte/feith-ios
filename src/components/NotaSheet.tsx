@@ -13,6 +13,7 @@
  * `presentationStyle="pageSheet"` o iOS ja entrega a folha nativa, com o gesto
  * de arrastar para fechar incluido, e sem mais uma dependencia nativa.
  */
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Keyboard, Modal, Platform, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api } from '../api/client';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
+import { posthog } from '../config/posthog';
 import { useTheme } from '../theme/ThemeContext';
 import { fonts, space } from '../theme/tokens';
 import { Button, GoldRule, Overline, Text } from './ui';
@@ -42,6 +44,7 @@ interface Props {
 export function NotaSheet({ visivel, reflectionUuid, onFechar, onSalvou, textoInicial }: Props) {
   const { scheme } = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { summary, refreshSummary } = useAuth();
   const [texto, setTexto] = useState('');
   const [salvando, setSalvando] = useState(false);
@@ -89,10 +92,14 @@ export function NotaSheet({ visivel, reflectionUuid, onFechar, onSalvou, textoIn
   async function salvar() {
     setSalvando(true);
     try {
-      await api.createNote(reflectionUuid, texto.trim());
+      const resultado = await api.createNote(reflectionUuid, texto.trim());
       void refreshSummary();
       setTexto('');
       onSalvou();
+      if (resultado.show_subscription_prompt) {
+        posthog?.capture('notes_paywall_opened', { source: 'anotacao' });
+        router.push({ pathname: '/assinatura', params: { origem: 'anotacao' } });
+      }
     } catch (e) {
       if (ehLimiteDePlano(e)) {
         const limite = summary?.quotas.notes_limit;

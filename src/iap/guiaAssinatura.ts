@@ -9,6 +9,8 @@ export type OrigemPaywall =
   | 'historico'
   | 'perfil'
   | 'trilha'
+  | 'anotacao'
+  | 'favorito'
   | 'desconhecida';
 
 export interface ConfigLembretes {
@@ -40,6 +42,8 @@ const ORIGENS: OrigemPaywall[] = [
   'historico',
   'perfil',
   'trilha',
+  'anotacao',
+  'favorito',
 ];
 
 export function origemDe(valor: unknown): OrigemPaywall {

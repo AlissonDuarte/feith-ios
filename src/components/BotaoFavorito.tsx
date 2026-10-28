@@ -19,12 +19,14 @@
  */
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { api } from '../api/client';
 import { ehLimiteDePlano, mensagemDe } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
+import { posthog } from '../config/posthog';
 import { useTheme } from '../theme/ThemeContext';
 import { radius, type Scheme } from '../theme/tokens';
 
@@ -46,6 +48,7 @@ export function BotaoFavorito({
 }: Props) {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
+  const router = useRouter();
   const { summary, refreshSummary } = useAuth();
   const [ocupado, setOcupado] = useState(false);
 
@@ -61,7 +64,11 @@ export function BotaoFavorito({
       if (anterior) {
         await api.removeBookmark(reflectionUuid);
       } else {
-        await api.toggleBookmark(reflectionUuid);
+        const resultado = await api.toggleBookmark(reflectionUuid);
+        if (resultado.show_subscription_prompt) {
+          posthog?.capture('bookmarks_paywall_opened', { source: 'favorito' });
+          router.push({ pathname: '/assinatura', params: { origem: 'favorito' } });
+        }
       }
       // O contador de quota vive no summary; sem isto a tela de perfil ficaria
       // mostrando um numero velho.

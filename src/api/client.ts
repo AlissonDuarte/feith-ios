@@ -28,6 +28,7 @@ import {
   type AuthResponse,
   type BookmarkItem,
   type BookmarkToggleResponse,
+  type CreateNoteResult,
   type ErrorPayload,
   type FeatureOnboarding,
   type FeedbackPayload,
@@ -337,7 +338,7 @@ export const api = {
 
   // Anotacoes
   createNote: (reflectionUuid: string, note: string) =>
-    request<{ status: boolean; message: string }>('/user_notes/create', {
+    request<CreateNoteResult>('/user_notes/create', {
       method: 'POST',
       body: { reflection_uuid: reflectionUuid, note, public: false },
     }).then(assertStatus('/user_notes/create')),

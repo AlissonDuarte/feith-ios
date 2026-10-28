@@ -14,6 +14,7 @@ import React, {
   useState,
 } from 'react';
 import { Alert, Platform } from 'react-native';
+import { AppEventsLogger } from 'react-native-fbsdk-next';
 import {
   ErrorCode,
   getAvailablePurchases,
@@ -24,6 +25,7 @@ import {
 } from 'react-native-iap';
 
 import { mensagemDe } from '../api/errors';
+import { metaSdkAvailable } from '../ads/metaSdk';
 import { useAuth } from '../auth/AuthContext';
 import { posthog, posthogLog } from '../config/posthog';
 import {
@@ -126,7 +128,13 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         await validarEFinalizarTransacao(purchase);
         transacoesConcluidas.current.add(idTransacao);
         await refreshSummary();
-        posthog?.capture('subscription_purchase_completed', propriedadesCompra(purchase.productId));
+        const infoCompra = propriedadesCompra(purchase.productId);
+        if (metaSdkAvailable && infoCompra.price != null && infoCompra.currency) {
+          AppEventsLogger.logPurchase(infoCompra.price, infoCompra.currency, {
+            plan: infoCompra.plan ?? '',
+          });
+        }
+        posthog?.capture('subscription_purchase_completed', infoCompra);
         posthogLog.info('subscription purchase completed', { result: 'validated' });
       } catch (e) {
         console.warn('[IAP] Erro ao validar transacao:', e);

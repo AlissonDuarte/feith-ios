@@ -50,10 +50,15 @@ const PRECOS_PADRAO: Record<PlanoId, string> = {
   annual_family: 'R$ 99,90',
 };
 
-const PLANOS: { id: PlanoId; nome: string; destaque?: string }[] = [
+const PLANOS: { id: PlanoId; nome: string; destaque?: string; economia?: string }[] = [
   { id: 'monthly', nome: 'Mensal' },
-  { id: 'annual', nome: 'Anual', destaque: '7 dias grátis' },
-  { id: 'annual_family', nome: 'Anual Família', destaque: 'Até 6 pessoas · 7 dias grátis' },
+  { id: 'annual', nome: 'Anual', destaque: '7 dias grátis', economia: '40% mais barato que o mensal' },
+  {
+    id: 'annual_family',
+    nome: 'Anual Família',
+    destaque: 'Até 6 pessoas · 7 dias grátis',
+    economia: '85% mais barato, por pessoa',
+  },
 ];
 
 const PLANOS_DISPONIVEIS =
@@ -90,11 +95,12 @@ interface CartaoPlanoProps {
   preco: string;
   periodo: string;
   destaque?: string;
+  economia?: string;
   selecionado: boolean;
   onPress: () => void;
 }
 
-function CartaoPlano({ nome, preco, periodo, destaque, selecionado, onPress }: CartaoPlanoProps) {
+function CartaoPlano({ nome, preco, periodo, destaque, economia, selecionado, onPress }: CartaoPlanoProps) {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
@@ -122,13 +128,25 @@ function CartaoPlano({ nome, preco, periodo, destaque, selecionado, onPress }: C
               </Text>
             ) : null}
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text variant="body" font="bodySemi" color={scheme.textPrimary}>
-              {preco}
-            </Text>
-            <Text variant="caption" color={scheme.textSecondary}>
-              {' '}/{periodo}
-            </Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+              <Text variant="body" font="bodySemi" color={scheme.textPrimary}>
+                {preco}
+              </Text>
+              <Text variant="caption" color={scheme.textSecondary}>
+                {' '}/{periodo}
+              </Text>
+            </View>
+            {economia ? (
+              <Text
+                variant="micro"
+                font="bodySemi"
+                color={scheme.gold}
+                style={{ marginTop: 3, maxWidth: 150, textAlign: 'right' }}
+              >
+                {economia}
+              </Text>
+            ) : null}
           </View>
         </View>
       )}
@@ -254,6 +272,26 @@ export default function AssinaturaModal() {
               {fraseDoLembrete(summary?.streak ?? 0, dias)}
             </Text>
           ) : null}
+          {origem === 'anotacao' ? (
+            <Text
+              variant="bodySm"
+              font="bodySemi"
+              color={scheme.accent}
+              style={{ textAlign: 'center', marginBottom: space.md }}
+            >
+              Você já escreveu 6 anotações! Vire apoiador e continue registrando sem limites.
+            </Text>
+          ) : null}
+          {origem === 'favorito' ? (
+            <Text
+              variant="bodySm"
+              font="bodySemi"
+              color={scheme.accent}
+              style={{ textAlign: 'center', marginBottom: space.md }}
+            >
+              Você já guardou 6 favoritos! Vire apoiador e guarde sem limites.
+            </Text>
+          ) : null}
           <View style={estilos.badge}>
             <Ionicons name="ribbon-outline" size={14} color={scheme.gold} />
             <Text
@@ -313,6 +351,7 @@ export default function AssinaturaModal() {
               preco={produtos?.[plano.id]?.displayPrice ?? PRECOS_PADRAO[plano.id]}
               periodo={plano.id === 'monthly' ? 'mês' : 'ano'}
               destaque={plano.destaque}
+              economia={plano.economia}
               selecionado={planoSelecionado === plano.id}
               onPress={() => setPlanoSelecionado(plano.id)}
             />

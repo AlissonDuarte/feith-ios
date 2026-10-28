@@ -202,6 +202,7 @@ export interface BookmarkToggleResponse {
   bookmarked: boolean;
   status: boolean;
   message: string;
+  show_subscription_prompt: boolean;
 }
 
 export interface BookmarkItem {
@@ -247,6 +248,13 @@ export interface NoteItem {
   /** So vem preenchido quando a nota e de uma reflexao de trilha. */
   trail_slug: string | null;
   trail_day_number: number | null;
+}
+
+/** POST /user_notes/create */
+export interface CreateNoteResult {
+  status: boolean;
+  message: string;
+  show_subscription_prompt: boolean;
 }
 
 /** GET /user_notes/reflection/notes — versao enxuta, sem os campos da reflexao. */
