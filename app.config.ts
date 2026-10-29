@@ -68,7 +68,7 @@ const webHost = webUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 const config: ExpoConfig = {
   name: 'Feith',
   slug: 'feith',
-  version: '1.0.7',
+  version: '1.0.8',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'feith',
