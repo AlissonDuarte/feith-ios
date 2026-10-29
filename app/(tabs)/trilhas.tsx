@@ -9,29 +9,34 @@ import { mensagemDe } from '../../src/api/errors';
 import type { TrailCatalog, TrailSummary } from '../../src/api/types';
 import { EmptyState, Loading, ScreenHeader, Text, useEspacoTabBar } from '../../src/components/ui';
 import { posthog } from '../../src/config/posthog';
-import { AnelProgresso, CartaoTrilha } from '../../src/trilhas/componentes';
+import { AnelProgresso, CartaoTrilha, CartaoVerMais } from '../../src/trilhas/componentes';
+import { CATEGORIAS, LIMITE_PRATELEIRA, type CategoriaTrilha } from '../../src/trilhas/categorias';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { fonts, radius, shadow, space } from '../../src/theme/tokens';
 
 function Prateleira({
-  titulo,
-  legenda,
+  categoria,
   trilhas,
   abrir,
+  verMais,
 }: {
-  titulo: string;
-  legenda: string;
+  categoria: CategoriaTrilha;
   trilhas: TrailSummary[];
   abrir: (t: TrailSummary) => void;
+  verMais: (categoria: CategoriaTrilha) => void;
 }) {
   const { scheme } = useTheme();
   if (trilhas.length === 0) return null;
+  const { titulo, legenda } = CATEGORIAS[categoria];
+  const excede = trilhas.length > LIMITE_PRATELEIRA;
+  const visiveis = excede ? trilhas.slice(0, LIMITE_PRATELEIRA - 1) : trilhas;
+  const restantes = trilhas.length - visiveis.length;
   return (
     <View style={{ marginTop: space.xl }}>
       <View style={estilos.prateleiraTopo}>
         <Text style={{ fontFamily: fonts.serifSemi, fontSize: 21, lineHeight: 24, color: scheme.textPrimary }}>{titulo}</Text>
         <Text variant="micro" color={scheme.textMuted}>
-          {legenda}
+          {`${legenda} · ${trilhas.length}`}
         </Text>
       </View>
       <ScrollView
@@ -39,9 +44,12 @@ function Prateleira({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter, marginTop: space.sm }}
       >
-        {trilhas.map((t) => (
-          <CartaoTrilha key={t.slug} trilha={t} onPress={() => abrir(t)} />
+        {visiveis.map((t) => (
+          <CartaoTrilha key={t.slug} trilha={t} onPress={() => abrir(t)} style={{ width: 152 }} />
         ))}
+        {restantes > 0 ? (
+          <CartaoVerMais restantes={restantes} onPress={() => verMais(categoria)} style={{ width: 152 }} />
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -75,12 +83,17 @@ export default function Trilhas() {
     router.push({ pathname: '/trilha/[slug]', params: { slug: t.slug } });
   };
 
+  const verMais = (categoria: CategoriaTrilha) => {
+    posthog?.capture('trail_shelf_more_clicked', { categoria });
+    router.push({ pathname: '/trilhas/[categoria]', params: { categoria } });
+  };
+
   if (!catalogo && !erro) return <Loading />;
 
   const trilhas = catalogo?.trails ?? [];
-  const gratis = trilhas.filter((t) => t.tier === 'free');
-  const duasVozes = trilhas.filter((t) => t.tier !== 'free' && t.kind === 'duas_vozes');
-  const apoiadores = trilhas.filter((t) => t.tier !== 'free' && t.kind !== 'duas_vozes');
+  const gratis = trilhas.filter(CATEGORIAS.gratis.filtro);
+  const duasVozes = trilhas.filter(CATEGORIAS.duas_vozes.filtro);
+  const apoiadores = trilhas.filter(CATEGORIAS.apoiadores.filtro);
   const ativa = catalogo?.active;
   const progressoAtiva = ativa?.progress;
   const corDestaque = effectiveMode === 'dark' ? scheme.onAccentMuted : scheme.goldSoft;
@@ -149,9 +162,9 @@ export default function Trilhas() {
           </Pressable>
         ) : null}
 
-        <Prateleira titulo="Para começar" legenda="Grátis" trilhas={gratis} abrir={(t) => abrir(t, 'prateleira')} />
-        <Prateleira titulo="Em Duas Vozes" legenda="Protestante e católica" trilhas={duasVozes} abrir={(t) => abrir(t, 'prateleira')} />
-        <Prateleira titulo="Para Apoiadores" legenda="Trilhas completas" trilhas={apoiadores} abrir={(t) => abrir(t, 'prateleira')} />
+        <Prateleira categoria="gratis" trilhas={gratis} abrir={(t) => abrir(t, 'prateleira')} verMais={verMais} />
+        <Prateleira categoria="duas_vozes" trilhas={duasVozes} abrir={(t) => abrir(t, 'prateleira')} verMais={verMais} />
+        <Prateleira categoria="apoiadores" trilhas={apoiadores} abrir={(t) => abrir(t, 'prateleira')} verMais={verMais} />
       </ScrollView>
     </SafeAreaView>
   );

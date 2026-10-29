@@ -152,7 +152,15 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
   );
 }
 
-export function CartaoTrilha({ trilha, onPress }: { trilha: TrailSummary; onPress: () => void }) {
+export function CartaoTrilha({
+  trilha,
+  onPress,
+  style,
+}: {
+  trilha: TrailSummary;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
   const { scheme } = useTheme();
   const emAndamento = trilha.progress?.status === 'active';
   const concluida = trilha.progress?.status === 'completed';
@@ -172,6 +180,7 @@ export function CartaoTrilha({ trilha, onPress }: { trilha: TrailSummary; onPres
           style={[
             estilos.cartao,
             { backgroundColor: scheme.surface, borderColor: scheme.border },
+            style,
             pressed && { opacity: 0.8 },
           ]}
         >
@@ -213,6 +222,43 @@ export function CartaoTrilha({ trilha, onPress }: { trilha: TrailSummary; onPres
   );
 }
 
+export function CartaoVerMais({
+  restantes,
+  onPress,
+  style,
+}: {
+  restantes: number;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { scheme } = useTheme();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Ver mais, ${restantes} trilhas`}>
+      {({ pressed }) => (
+        <View
+          style={[
+            estilos.cartao,
+            estilos.cartaoMais,
+            { backgroundColor: scheme.canvasWarm, borderColor: scheme.gold },
+            style,
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <View style={[estilos.anelMais, { backgroundColor: scheme.surface, borderColor: scheme.border }]}>
+            <Ionicons name="arrow-forward" size={16} color={scheme.gold} />
+          </View>
+          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 16, color: scheme.textPrimary, marginTop: 8 }}>
+            Ver mais
+          </Text>
+          <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 2 }}>
+            {`+${restantes} trilha${restantes === 1 ? '' : 's'}`}
+          </Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 const estilos = StyleSheet.create({
   pilula: {
     flexDirection: 'row',
@@ -231,6 +277,22 @@ const estilos = StyleSheet.create({
     overflow: 'hidden',
   },
   cartaoCapa: { height: 80, justifyContent: 'flex-end', padding: 9 },
+  cartaoMais: {
+    height: 150,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  anelMais: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   canto: {
     position: 'absolute',
     right: 8,

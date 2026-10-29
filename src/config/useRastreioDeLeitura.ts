@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   AppState,
@@ -14,6 +15,47 @@ const PALAVRAS_POR_MINUTO = 230;
 const FRACAO_MINIMA_DO_TEMPO = 0.25;
 const ROLAGEM_FIM = 0.9;
 const INTERVALO_CHECAGEM_MS = 5000;
+const PREFIXO_CHAVE_PROGRESSO = '@leitura_progresso:';
+const EXPIRACAO_PROGRESSO_MS = 48 * 60 * 60 * 1000;
+
+interface ProgressoSalvo {
+  totalMs: number;
+  maxRolagem: number;
+  salvoEm: number;
+}
+
+function chaveProgresso(uuid: string): string {
+  return `${PREFIXO_CHAVE_PROGRESSO}${uuid}`;
+}
+
+async function carregarProgresso(uuid: string): Promise<ProgressoSalvo | null> {
+  try {
+    const bruto = await AsyncStorage.getItem(chaveProgresso(uuid));
+    if (!bruto) return null;
+    const salvo = JSON.parse(bruto) as ProgressoSalvo;
+    if (Date.now() - salvo.salvoEm > EXPIRACAO_PROGRESSO_MS) return null;
+    return salvo;
+  } catch {
+    return null;
+  }
+}
+
+async function salvarProgresso(uuid: string, totalMs: number, maxRolagem: number): Promise<void> {
+  try {
+    const dados: ProgressoSalvo = { totalMs, maxRolagem, salvoEm: Date.now() };
+    await AsyncStorage.setItem(chaveProgresso(uuid), JSON.stringify(dados));
+  } catch {
+    /* noop */
+  }
+}
+
+async function limparProgresso(uuid: string): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(chaveProgresso(uuid));
+  } catch {
+    /* noop */
+  }
+}
 
 export type OrigemLeitura = 'hoje' | 'leitura' | 'trilha';
 
@@ -78,8 +120,12 @@ export function useRastreioDeLeitura(
     if (!s || s.leu) return;
     const ativo = tempoAtivoMs(s) / 1000;
     const minimo = minSegundosRef.current ?? base.current.tempoEstimado * FRACAO_MINIMA_DO_TEMPO;
-    if (s.maxRolagem < rolagemMinimaRef.current || ativo < minimo) return;
+    if (s.maxRolagem < rolagemMinimaRef.current || ativo < minimo) {
+      void salvarProgresso(s.uuid, tempoAtivoMs(s), s.maxRolagem);
+      return;
+    }
     s.leu = true;
+    void limparProgresso(s.uuid);
     posthog?.capture('reflection_read', {
       ...propriedades(s),
       active_seconds: Math.round(ativo),
@@ -111,6 +157,7 @@ export function useRastreioDeLeitura(
 
   useEffect(() => {
     if (!uuid) return;
+    let cancelado = false;
     sessao.current = {
       uuid,
       inicio: AppState.currentState === 'active' ? Date.now() : null,
@@ -121,8 +168,17 @@ export function useRastreioDeLeitura(
     };
     posthog?.capture('reflection_opened', propriedades(sessao.current));
 
+    void carregarProgresso(uuid).then((salvo) => {
+      if (cancelado || !salvo) return;
+      const s = sessao.current;
+      if (!s || s.uuid !== uuid) return;
+      s.totalMs = Math.max(s.totalMs, salvo.totalMs);
+      s.maxRolagem = Math.max(s.maxRolagem, salvo.maxRolagem);
+    });
+
     const timer = setInterval(checarLeitura, INTERVALO_CHECAGEM_MS);
     return () => {
+      cancelado = true;
       clearInterval(timer);
       reportar('navigation');
       sessao.current = null;
