@@ -32,6 +32,8 @@ import {
   type ErrorPayload,
   type FeatureOnboarding,
   type FeedbackPayload,
+  type ForgotPasswordPayload,
+  type ForgotPasswordResponse,
   type TrailCatalog,
   type TrailCompleteResult,
   type TrailDayContent,
@@ -45,6 +47,8 @@ import {
   type Reflection,
   type ReflectionNote,
   type RegisterPayload,
+  type ResetPasswordPayload,
+  type ResetPasswordResponse,
   type SharedLink,
   type SharedLinkResponse,
   type SharedReflection,
@@ -256,6 +260,17 @@ export const api = {
       method: 'POST',
       body: { identity_token: identityToken, ...profile },
     }),
+
+  /**
+   * Resposta sempre igual, exista ou nao a conta — protecao contra
+   * enumeracao (password_reset_service.py). A tela nunca deve inferir se o
+   * e-mail existe a partir desta chamada.
+   */
+  forgotPassword: (body: ForgotPasswordPayload) =>
+    publicRequest<ForgotPasswordResponse>('/users/forgot-password', { method: 'POST', body }),
+
+  resetPassword: (body: ResetPasswordPayload) =>
+    publicRequest<ResetPasswordResponse>('/users/reset-password', { method: 'POST', body }),
 
   /**
    * So invalida o cookie no servidor (user_views.py:57), o que e no-op para

@@ -170,24 +170,47 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
     if (Platform.OS !== 'ios' && Platform.OS !== 'android') return;
 
     void conectarStoreKit().then(async (conectado) => {
-      // O StoreKit reentrega pelo listener as transacoes nao finalizadas; o Play
-      // Billing nao. Uma compra paga cujo verify falhou (rede caiu) ficaria sem
-      // acknowledge e o Google estornaria em 3 dias — entao reprocessa aqui.
-      if (!conectado || Platform.OS !== 'android') return;
-      try {
-        const compras = await getAvailablePurchases();
-        const pendentes = compras?.filter(
-          (c) =>
-            c.productId in PLANO_POR_SKU &&
-            c.purchaseState === 'purchased' &&
-            'isAcknowledgedAndroid' in c &&
-            c.isAcknowledgedAndroid === false,
-        );
-        for (const compra of pendentes ?? []) {
-          await processarTransacaoRef.current(compra);
+      if (!conectado) return;
+
+      if (Platform.OS === 'android') {
+        // O StoreKit reentrega pelo listener as transacoes nao finalizadas; o
+        // Play Billing nao. Uma compra paga cujo verify falhou (rede caiu)
+        // ficaria sem acknowledge e o Google estornaria em 3 dias — entao
+        // reprocessa aqui.
+        try {
+          const compras = await getAvailablePurchases();
+          const pendentes = compras?.filter(
+            (c) =>
+              c.productId in PLANO_POR_SKU &&
+              c.purchaseState === 'purchased' &&
+              'isAcknowledgedAndroid' in c &&
+              c.isAcknowledgedAndroid === false,
+          );
+          for (const compra of pendentes ?? []) {
+            await processarTransacaoRef.current(compra);
+          }
+        } catch (e) {
+          console.warn('[IAP] Falha ao recuperar compras sem acknowledge:', e);
         }
-      } catch (e) {
-        console.warn('[IAP] Falha ao recuperar compras sem acknowledge:', e);
+        return;
+      }
+
+      if (Platform.OS === 'ios') {
+        // Entitlements que o StoreKit 2 ja entrega localmente sem precisar
+        // de uma compra feita por esta conta — e o caso do Plano Família:
+        // um familiar nunca "compra" nada, so recebe a transacao do titular
+        // via Compartilhamento Familiar. Sem este passo, a pessoa so seria
+        // reconhecida como Apoiador se achasse e tocasse "Restaurar compras"
+        // manualmente na tela de assinatura.
+        try {
+          const compras = await getAvailablePurchases({ onlyIncludeActiveItemsIOS: true });
+          const doFeith = compras?.filter((c) => c.productId in PLANO_POR_SKU);
+          for (const compra of doFeith ?? []) {
+            await processarTransacaoRef.current(compra);
+          }
+        } catch (e) {
+          console.warn('[IAP] Falha ao verificar entitlements existentes (iOS):', e);
+        }
       }
     });
 

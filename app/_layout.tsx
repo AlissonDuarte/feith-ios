@@ -48,9 +48,10 @@ SplashScreen.preventAutoHideAsync().catch(() => undefined);
  * `r` e o link compartilhado: alguem recebe no WhatsApp e abre sem ter conta —
  * e o canal de aquisicao do produto, entao mandar para o login seria perder a
  * visita. `politicas` precisa ser alcancavel deslogado porque a App Review
- * exige.
+ * exige. `redefinir-senha` chega pelo link do e-mail de recuperacao de senha,
+ * sem sessao nenhuma — mandar pro login antes de montar quebraria o fluxo.
  */
-const ROTAS_PUBLICAS = ['r', 'politicas'];
+const ROTAS_PUBLICAS = ['r', 'politicas', 'redefinir-senha'];
 
 /**
  * Header nativo no estilo editorial, para as telas fora das abas.
@@ -188,6 +189,7 @@ function RouteGuard() {
         }}
       />
       <Stack.Screen name="r/[token]" options={{ headerShown: false }} />
+      <Stack.Screen name="redefinir-senha/[token]" options={{ headerShown: false }} />
       {/* Sem gesto de voltar: sair pelo swipe deixaria a pessoa numa tela
           logada com o onboarding pendente, e o guard a traria de volta. */}
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />

@@ -72,6 +72,26 @@ export interface RegisterPayload {
   gender: 'male' | 'female' | 'other';
 }
 
+/** POST /users/forgot-password. Resposta sempre a mesma, exista ou não a conta. */
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+/** POST /users/reset-password */
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+  confirm_password: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
 /** Perfil da Apple. Nome e e-mail so existem na PRIMEIRA autorizacao. */
 export interface AppleProfile {
   email?: string;

@@ -133,6 +133,15 @@ export default function Login() {
             />
           </View>
 
+          <Link href="/(auth)/esqueci-senha" asChild>
+            <Button
+              label="Esqueci minha senha"
+              variant="ghost"
+              disabled={ocupado}
+              style={{ alignSelf: 'flex-end', marginTop: space.sm }}
+            />
+          </Link>
+
           {erro ? (
             <Text variant="caption" color={scheme.accent} style={{ marginTop: space.md }}>
               {erro}

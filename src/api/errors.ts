@@ -80,6 +80,10 @@ const POR_DETALHE: Record<string, string> = {
   'Shared link not found': 'Link não encontrado.',
   'Shared link is expired or revoked': 'Este link expirou.',
   'Shared link read limit exceeded': 'Este link já atingiu o limite de leituras.',
+
+  // Redefinicao de senha
+  'Reset token not found': 'Link inválido.',
+  'Reset token is expired or already used': 'Este link expirou ou já foi usado.',
 };
 
 /**
