@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -15,10 +15,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Text } from '../components/ui';
+import { Button, Text } from '../components/ui';
 import { posthog } from '../config/posthog';
 import { useTheme } from '../theme/ThemeContext';
-import { radius, space, type Scheme } from '../theme/tokens';
+import { fonts, radius, space, type Scheme } from '../theme/tokens';
 import { formatarTempo } from './tempo';
 import { SALTO_SEGUNDOS, useAudioReflexao, type AudioReflexao } from './useAudioReflexao';
 
@@ -30,6 +30,9 @@ interface Props {
   onAnotar?: (prefixo?: string) => void;
   /** Chamado quando o audio toca ate o fim — ouvir conta como ler. */
   aoConcluir?: () => void;
+  aoTocar?: () => void;
+  abrirAoCarregar?: boolean;
+  textoApoio?: string | null;
 }
 
 function vibrar() {
@@ -42,12 +45,22 @@ function duracaoLegivel(segundos: number): string | null {
   return `${minutos} min`;
 }
 
-export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }: Props) {
+export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir, aoTocar, abrirAoCarregar, textoApoio }: Props) {
   const { scheme, effectiveMode } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const router = useRouter();
   const audio = useAudioReflexao(reflectionUuid, aoConcluir);
   const [aberto, setAberto] = useState(false);
+  const abriuSozinho = useRef(false);
+
+  useEffect(() => {
+    if (!abrirAoCarregar || abriuSozinho.current || !audio.transcript) return;
+    abriuSozinho.current = true;
+    setAberto(true);
+    aoTocar?.();
+    if (!audio.tocando) audio.alternar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abrirAoCarregar, audio.transcript]);
 
   const origem = onAnotar ? 'hoje' : 'leitura';
   const titulo = audio.transcript?.title ?? referencia ?? 'Leitura do dia';
@@ -104,7 +117,18 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }
   let linha2: ReactNode;
   let acaoMeta: (() => void) | null;
 
-  if (audio.semAcesso) {
+  if (audio.amostraConcluida) {
+    acaoPrincipal = abrirAssinatura;
+    iconePrincipal = 'headset';
+    rotuloPrincipal = 'Ouvir a reflexão inteira';
+    acaoMeta = abrirAssinatura;
+    linha1 = 'Ouvir a reflexão inteira';
+    linha2 = (
+      <Text variant="caption" font="bodySemi" color={scheme.gold}>
+        7 dias grátis no plano anual
+      </Text>
+    );
+  } else if (audio.semAcesso) {
     acaoPrincipal = abrirAssinatura;
     iconePrincipal = 'headset';
     rotuloPrincipal = 'Ouvir a reflexão, exclusivo do Plano Apoiador';
@@ -140,7 +164,9 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }
     linha1 = titulo;
     linha2 = (
       <Text variant="caption" font="bodyMedium" color={scheme.textMuted} style={estilos.numeros}>
-        {`${formatarTempo(audio.posicao)} de ${formatarTempo(audio.duracao)} · ${audio.velocidade}×`}
+        {audio.amostra
+          ? `${formatarTempo(audio.posicao)} · amostra até ${formatarTempo(audio.amostra.segundos)}`
+          : `${formatarTempo(audio.posicao)} de ${formatarTempo(audio.duracao)} · ${audio.velocidade}×`}
       </Text>
     );
   } else {
@@ -152,7 +178,13 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }
     const duracao = duracaoLegivel(audio.duracao);
     linha2 = (
       <Text variant="caption" font="bodyMedium" color={scheme.textMuted}>
-        {audio.carregando ? 'Carregando…' : duracao ? `${duracao} · versão narrada` : 'Versão narrada'}
+        {audio.carregando
+          ? 'Carregando…'
+          : audio.amostra
+            ? `Amostra grátis · ${formatarTempo(audio.amostra.segundos)}`
+            : duracao
+              ? `${duracao} · versão narrada`
+              : 'Versão narrada'}
       </Text>
     );
   }
@@ -165,6 +197,7 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }
         <Pressable
           onPress={() => {
             vibrar();
+            if (acaoPrincipal === audio.alternar && !audio.tocando) aoTocar?.();
             acaoPrincipal();
           }}
           disabled={carregandoPlay}
@@ -245,6 +278,11 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir }
         onFechar={() => setAberto(false)}
         onFechou={dispararNotaPendente}
         onAnotarNoTrecho={onAnotar ? anotarNoTrecho : undefined}
+        onAssinar={() => {
+          setAberto(false);
+          abrirAssinatura();
+        }}
+        textoApoio={textoApoio}
       />
     </>
   );
@@ -321,7 +359,11 @@ function FolhaPlayer({
   onFechar,
   onFechou,
   onAnotarNoTrecho,
+  onAssinar,
+  textoApoio,
 }: {
+  onAssinar: () => void;
+  textoApoio?: string | null;
   visivel: boolean;
   audio: AudioReflexao;
   titulo: string;
@@ -359,7 +401,7 @@ function FolhaPlayer({
         <View {...arrasto.panHandlers} style={estilos.folhaTopo}>
           <View style={estilos.alca} />
           <Text variant="overline" font="bodySemi" color={scheme.gold} style={estilos.sobretitulo}>
-            REFLEXÃO NARRADA
+            {audio.amostra ? 'Amostra grátis de hoje' : 'Reflexão narrada'}
           </Text>
           <Text variant="title" style={{ textAlign: 'center', marginTop: space.sm }} numberOfLines={2}>
             {titulo}
@@ -376,9 +418,19 @@ function FolhaPlayer({
           ) : null}
         </View>
 
+        {textoApoio ? (
+          <Text
+            numberOfLines={5}
+            style={{ fontFamily: fonts.serif, fontSize: 21, lineHeight: 29, color: scheme.textPrimary, marginTop: space.md }}
+          >
+            {textoApoio}
+          </Text>
+        ) : null}
+
         <Scrubber
           posicao={audio.posicao}
-          duracao={audio.duracao}
+          duracao={audio.amostra?.totalSegundos ?? audio.duracao}
+          fimDaAmostra={audio.amostra?.segundos}
           onSoltar={audio.irPara}
           estilos={estilos}
         />
@@ -386,8 +438,13 @@ function FolhaPlayer({
           <Text variant="micro" color={scheme.textMuted} style={estilos.numeros}>
             {formatarTempo(audio.posicao)}
           </Text>
+          {audio.amostra ? (
+            <Text variant="micro" font="bodySemi" color={scheme.gold} style={estilos.numeros}>
+              {`amostra até ${formatarTempo(audio.amostra.segundos)}`}
+            </Text>
+          ) : null}
           <Text variant="micro" color={scheme.textMuted} style={estilos.numeros}>
-            {`−${formatarTempo(restante)}`}
+            {audio.amostra?.totalSegundos ? formatarTempo(audio.amostra.totalSegundos) : `−${formatarTempo(restante)}`}
           </Text>
         </View>
 
@@ -474,6 +531,15 @@ function FolhaPlayer({
           </Pressable>
         </View>
 
+        {audio.amostra ? (
+          <View style={{ marginTop: space.xl }}>
+            <Button label="Ouvir inteira · 7 dias grátis" onPress={onAssinar} />
+            <Text variant="caption" color={scheme.textMuted} style={{ textAlign: 'center', marginTop: space.sm }}>
+              A leitura em texto continua grátis, sempre.
+            </Text>
+          </View>
+        ) : null}
+
         {onAnotarNoTrecho ? (
           <Pressable
             onPress={() => {
@@ -501,11 +567,13 @@ function FolhaPlayer({
 function Scrubber({
   posicao,
   duracao,
+  fimDaAmostra,
   onSoltar,
   estilos,
 }: {
   posicao: number;
   duracao: number;
+  fimDaAmostra?: number;
   onSoltar: (segundos: number) => void;
   estilos: ReturnType<typeof criarEstilos>;
 }) {
@@ -550,6 +618,12 @@ function Scrubber({
       <View style={estilos.trilho} pointerEvents="none">
         <View style={[estilos.trilhoCheio, { width: `${razao * 100}%` }]} />
       </View>
+      {fimDaAmostra && duracao > 0 ? (
+        <View
+          pointerEvents="none"
+          style={[estilos.fimAmostra, { left: Math.min(1, fimDaAmostra / duracao) * largura - 1 }]}
+        />
+      ) : null}
       <View
         pointerEvents="none"
         style={[
@@ -675,6 +749,7 @@ function criarEstilos(scheme: Scheme) {
       elevation: 2,
     },
     polegarAtivo: { top: 5, width: 22, height: 22, borderRadius: 11 },
+    fimAmostra: { position: 'absolute', top: 8, width: 2, height: 16, backgroundColor: scheme.gold },
     tempos: { flexDirection: 'row', justifyContent: 'space-between' },
     transporte: {
       flexDirection: 'row',

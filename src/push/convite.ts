@@ -1,4 +1,5 @@
 export type MomentoConvite = 'onboarding' | 'pos_leitura' | 'sequencia' | 'ajustes';
+export type MomentoRegistro = MomentoConvite | 'primeiro_dia';
 
 export const INTERVALO_APOS_RECUSA_MS = 7 * 24 * 60 * 60 * 1000;
 

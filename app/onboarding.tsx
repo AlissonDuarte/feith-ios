@@ -8,6 +8,7 @@ import { useAuth } from '../src/auth/AuthContext';
 import { AccentHalo } from '../src/components/ornaments';
 import { Button, GoldRule, Overline, Text } from '../src/components/ui';
 import { posthog, posthogLog } from '../src/config/posthog';
+import { marcarPaywallOnboarding } from '../src/iap/lembretesAssinatura';
 import { getPushState } from '../src/push/registerDevice';
 import { ativarLembretes, registrarExibicao, registrarRecusa } from '../src/push/useConviteLembrete';
 import { useTheme } from '../src/theme/ThemeContext';
@@ -95,6 +96,7 @@ export default function Onboarding() {
 
   async function concluir() {
     setConcluindo(true);
+    if (!isSupporter) marcarPaywallOnboarding();
     try {
       await api.completeOnboarding();
       posthogLog.info('onboarding completed', {
@@ -109,9 +111,7 @@ export default function Onboarding() {
       // para a leitura, e o onboarding reaparece na proxima vez.
     } finally {
       setConcluindo(false);
-      router.replace(
-        isSupporter ? '/(tabs)/hoje' : { pathname: '/(tabs)/hoje', params: { paywall: 'onboarding' } },
-      );
+      router.replace('/(tabs)/hoje');
     }
   }
 

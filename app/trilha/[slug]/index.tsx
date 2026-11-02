@@ -9,7 +9,7 @@ import { mensagemDe } from '../../../src/api/errors';
 import type { TrailBadgeInfo, TrailDayItem, TrailDetail } from '../../../src/api/types';
 import { Button, EmptyState, GoldRule, Loading, Overline, Text } from '../../../src/components/ui';
 import { posthog } from '../../../src/config/posthog';
-import { CapaTrilha, Etapas, Pilula, SeloVozes } from '../../../src/trilhas/componentes';
+import { CapaTrilha, Etapas, SeloVozes } from '../../../src/trilhas/componentes';
 import { agendarLembretesDaTrilha, cancelarLembretesDaTrilha } from '../../../src/trilhas/lembretes';
 import {
   HORARIOS,
@@ -28,6 +28,11 @@ const MINIMO_PESSOAS_INICIARAM = 5;
 function formatarContagemIniciaram(quantidade: number): string {
   const formatado = quantidade.toLocaleString('pt-BR');
   return quantidade === 1 ? `${formatado} pessoa já começou esta trilha` : `${formatado} pessoas já começaram esta trilha`;
+}
+
+function descricaoComHorario(dia: TrailDayItem, hoje: Date, limite: boolean, horario: string): string {
+  const descricao = descricaoDoDia(dia, hoje, limite);
+  return dia.state === 'locked' && descricao.startsWith('Libera') ? `${descricao} às ${rotuloHorario(horario)}` : descricao;
 }
 
 function formatarData(iso: string | null): string {
@@ -73,11 +78,13 @@ function Linha({
   ultimo,
   descricao,
   onPress,
+  gancho,
 }: {
   dia: TrailDayItem;
   ultimo: boolean;
   descricao: string;
   onPress: () => void;
+  gancho?: string | null;
 }) {
   const { scheme } = useTheme();
   const feito = dia.state === 'done';
@@ -88,26 +95,52 @@ function Linha({
         <View
           style={[
             estilosFixos.ponto,
-            feito && { backgroundColor: scheme.gold },
+            feito && { backgroundColor: scheme.goldSoft },
             aberto && { backgroundColor: scheme.accent },
-            !feito && !aberto && { backgroundColor: scheme.canvasWarm, borderWidth: 1, borderStyle: 'dashed', borderColor: scheme.textGhost },
+            !feito && !aberto && { backgroundColor: scheme.surface, borderWidth: 1, borderColor: scheme.border },
           ]}
         >
           <Ionicons
             name={feito ? 'checkmark' : aberto ? 'book-outline' : 'lock-closed'}
-            size={13}
-            color={feito || aberto ? scheme.onAccent : scheme.textGhost}
+            size={14}
+            color={feito || aberto ? scheme.onAccent : scheme.gold}
           />
         </View>
         {!ultimo ? <View style={{ width: 1, flex: 1, backgroundColor: scheme.border, minHeight: 14 }} /> : null}
       </View>
       <View style={{ flex: 1, paddingBottom: space.md }}>
-        <Text style={{ fontFamily: fonts.serifSemi, fontSize: 16, lineHeight: 20, color: feito || aberto ? scheme.textPrimary : scheme.textMuted }}>
-          {dia.title}
-        </Text>
-        <Text variant="micro" color={aberto ? scheme.accent : scheme.textMuted} style={{ marginTop: 2 }}>
-          {`${dia.scripture_reference} · ${descricao}`}
-        </Text>
+        {aberto ? (
+          <View style={{ padding: 14, borderRadius: radius.sm, borderWidth: 1, borderColor: scheme.border, backgroundColor: scheme.surface }}>
+            <Overline>Hoje</Overline>
+            <Text style={{ fontFamily: fonts.serifSemi, fontSize: 23, lineHeight: 28, color: scheme.textPrimary, marginTop: 2 }}>
+              {dia.title}
+            </Text>
+            <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 2 }}>
+              {`${dia.scripture_reference} · ${dia.estimated_minutes} min`}
+            </Text>
+            {gancho ? (
+              <Text style={{ fontFamily: fonts.serifItalic, fontSize: 19, lineHeight: 25, color: scheme.textSecondary, marginTop: space.sm }}>
+                {gancho}
+              </Text>
+            ) : null}
+            <Button
+              label={`Ler o dia ${dia.number}`}
+              icon="arrow-forward"
+              size="sm"
+              onPress={onPress}
+              style={{ marginTop: space.md }}
+            />
+          </View>
+        ) : (
+          <>
+            <Text style={{ fontFamily: fonts.serifSemi, fontSize: 20, lineHeight: 24, color: feito ? scheme.textPrimary : scheme.textSecondary }}>
+              {dia.title}
+            </Text>
+            <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 2 }}>
+              {feito ? `${dia.scripture_reference} · ${descricao}` : descricao}
+            </Text>
+          </>
+        )}
       </View>
     </Pressable>
   );
@@ -270,24 +303,27 @@ export default function DetalheTrilha() {
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
         <CapaTrilha cover={trilha.cover} style={estilos.capa}>
           {trilha.kind === 'duas_vozes' ? (
-            <View style={{ position: 'absolute', left: 14, top: 14 }}>
+            <View style={{ position: 'absolute', right: 14, top: 14 }}>
               <SeloVozes tamanho={26} />
             </View>
           ) : null}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-            <Pilula icone="calendar-outline" rotulo={`${trilha.days_count} dias`} />
-            <Pilula icone="time-outline" rotulo={`${trilha.minutes_per_day} min por dia`} />
-            <Pilula icone="ribbon-outline" rotulo={trilha.tier === 'free' ? 'Grátis' : 'Apoiador'} />
-          </View>
+          <Text style={{ fontFamily: fonts.display, fontSize: 56, lineHeight: 60, color: 'rgba(40,28,12,0.66)' }}>
+            {`${trilha.days_count} dias`}
+          </Text>
         </CapaTrilha>
 
         <View style={{ paddingHorizontal: space.gutter }}>
           <Text variant="display" style={{ marginTop: space.lg }}>
             {trilha.name}
           </Text>
-          <Text variant="bodySm" color={scheme.textSecondary} style={{ marginTop: space.sm }}>
-            {trilha.description}
+          <Text variant="caption" color={scheme.textMuted} style={{ marginTop: 2 }}>
+            {`${trilha.subtitle} · ${trilha.minutes_per_day} min por dia · ${trilha.tier === 'free' ? 'Grátis' : 'Apoiador'}`}
           </Text>
+          {!ativa ? (
+            <Text variant="bodySm" color={scheme.textSecondary} style={{ marginTop: space.sm }}>
+              {trilha.description}
+            </Text>
+          ) : null}
 
           {trilha.started_count >= MINIMO_PESSOAS_INICIARAM ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.sm }}>
@@ -318,8 +354,9 @@ export default function DetalheTrilha() {
                     key={dia.number}
                     dia={dia}
                     ultimo={i === trilha.days.length - 1}
-                    descricao={descricaoDoDia(dia, hoje, limiteHoje)}
+                    descricao={descricaoComHorario(dia, hoje, limiteHoje, progresso.reading_time)}
                     onPress={() => abrirDia(dia)}
+                    gancho={i > 0 ? trilha.days[i - 1].hook : null}
                   />
                 ))}
               </View>
@@ -339,6 +376,19 @@ export default function DetalheTrilha() {
                   </Text>
                 </View>
               ) : (
+                <>
+                <View style={estilos.graca}>
+                  <Ionicons name="ribbon-outline" size={18} color={scheme.gold} />
+                  <Text variant="caption" color={scheme.textSecondary} style={{ flex: 1 }}>
+                    Ao terminar: selo e cartão para compartilhar
+                  </Text>
+                </View>
+                <View style={estilos.graca}>
+                  <Ionicons name="notifications-outline" size={18} color={scheme.gold} />
+                  <Text variant="caption" color={scheme.textSecondary} style={{ flex: 1 }}>
+                    {`Lembrete às ${rotuloHorario(progresso.reading_time)}`}
+                  </Text>
+                </View>
                 <View style={estilos.graca}>
                   <Ionicons name="shield-checkmark-outline" size={18} color={scheme.gold} />
                   <Text variant="caption" color={scheme.textSecondary} style={{ flex: 1 }}>
@@ -347,6 +397,7 @@ export default function DetalheTrilha() {
                       : 'Você usou seu dia de graça. Dá para recuperar até 2 dias por dia, sem perder a trilha.'}
                   </Text>
                 </View>
+                </>
               )}
             </>
           ) : (
@@ -449,20 +500,14 @@ export default function DetalheTrilha() {
         </View>
       </ScrollView>
 
+      {ativa && disponivel ? null : (
       <View
         style={[
           estilos.rodape,
           { backgroundColor: scheme.canvas, borderTopColor: scheme.border, paddingBottom: insets.bottom + space.md },
         ]}
       >
-        {ativa && disponivel ? (
-          <Button
-            label={`Ler o dia ${disponivel.number}`}
-            icon="arrow-forward"
-            onPress={() => abrirDia(disponivel)}
-            style={{ backgroundColor: scheme.accent }}
-          />
-        ) : ativa ? (
+        {ativa ? (
           <Text variant="caption" color={scheme.textMuted} style={{ textAlign: 'center' }}>
             {progresso?.next_unlock_date
               ? `Próxima etapa: ${quandoLibera(progresso.next_unlock_date, hoje).replace('Libera ', '').toLowerCase()}.`
@@ -487,6 +532,7 @@ export default function DetalheTrilha() {
           </>
         )}
       </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -515,8 +561,8 @@ function criarEstilos(scheme: Scheme) {
     capa: {
       marginHorizontal: space.gutter,
       marginTop: space.sm,
-      height: 104,
-      borderRadius: radius.lg,
+      height: 124,
+      borderRadius: radius.md,
       justifyContent: 'flex-end',
       padding: 14,
     },

@@ -81,7 +81,7 @@ export function SeloVozes({ tamanho = 20 }: { tamanho?: number }) {
 export function Pilula({ icone, rotulo }: { icone?: keyof typeof Ionicons.glyphMap; rotulo: string }) {
   return (
     <View style={estilos.pilula}>
-      {icone ? <Ionicons name={icone} size={12} color="#8B6914" /> : null}
+      {icone ? <Ionicons name={icone} size={12} color="#7A5C10" /> : null}
       <Text style={estilos.pilulaTexto}>{rotulo}</Text>
     </View>
   );
@@ -107,7 +107,17 @@ export function Etapas({ total, feitas, atual }: { total: number; feitas: number
   );
 }
 
-export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number; total: number; tamanho?: number }) {
+export function AnelProgresso({
+  feitos,
+  total,
+  tamanho = 50,
+  quieto = false,
+}: {
+  feitos: number;
+  total: number;
+  tamanho?: number;
+  quieto?: boolean;
+}) {
   const { scheme, effectiveMode } = useTheme();
   const raio = (tamanho - 6) / 2;
   const perimetro = 2 * Math.PI * raio;
@@ -116,8 +126,8 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
   // screenshots/proposta-trilhas.html): sem ele, o numero so fica legivel se o
   // card por tras tambem estiver com o fundo de acento aplicado.
   const miolo = tamanho - 10;
-  const trilhaCor = effectiveMode === 'dark' ? 'rgba(21,18,15,0.22)' : 'rgba(255,255,255,0.18)';
-  const arcoCor = effectiveMode === 'dark' ? scheme.onAccent : scheme.goldSoft;
+  const trilhaCor = quieto ? scheme.border : effectiveMode === 'dark' ? 'rgba(21,18,15,0.22)' : 'rgba(255,255,255,0.18)';
+  const arcoCor = quieto ? scheme.gold : effectiveMode === 'dark' ? scheme.onAccent : scheme.goldSoft;
   return (
     <View style={{ width: tamanho, height: tamanho, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={tamanho} height={tamanho} style={StyleSheet.absoluteFill}>
@@ -139,12 +149,12 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
           width: miolo,
           height: miolo,
           borderRadius: miolo / 2,
-          backgroundColor: scheme.accent,
+          backgroundColor: quieto ? 'transparent' : scheme.accent,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 16, color: scheme.onAccent }}>
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 16, color: quieto ? scheme.textPrimary : scheme.onAccent }}>
           {`${feitos}/${total}`}
         </Text>
       </View>
@@ -152,23 +162,15 @@ export function AnelProgresso({ feitos, total, tamanho = 50 }: { feitos: number;
   );
 }
 
-export function CartaoTrilha({
-  trilha,
-  onPress,
-  style,
-}: {
-  trilha: TrailSummary;
-  onPress: () => void;
-  style?: StyleProp<ViewStyle>;
-}) {
+export function LinhaTrilha({ trilha, onPress }: { trilha: TrailSummary; onPress: () => void }) {
   const { scheme } = useTheme();
   const emAndamento = trilha.progress?.status === 'active';
   const concluida = trilha.progress?.status === 'completed';
-  const legenda = emAndamento
+  const situacao = emAndamento
     ? `Em andamento · ${trilha.progress?.completed_days}/${trilha.days_count}`
     : concluida
       ? 'Concluída'
-      : trilha.subtitle;
+      : `${trilha.days_count} dias · ${trilha.tier === 'free' ? 'Grátis' : 'Apoiador'}`;
   return (
     <Pressable
       onPress={onPress}
@@ -176,83 +178,37 @@ export function CartaoTrilha({
       accessibilityLabel={`${trilha.name}, ${trilha.days_count} dias${trilha.locked ? ', exclusiva para Apoiadores' : ''}`}
     >
       {({ pressed }) => (
-        <View
-          style={[
-            estilos.cartao,
-            { backgroundColor: scheme.surface, borderColor: scheme.border },
-            style,
-            pressed && { opacity: 0.8 },
-          ]}
-        >
-          <CapaTrilha cover={trilha.cover} style={estilos.cartaoCapa}>
+        <View style={[estilos.linha, { borderBottomColor: scheme.borderSoft }, pressed && { opacity: 0.7 }]}>
+          <View>
+            <CapaTrilha cover={trilha.cover} style={estilos.linhaCapa}>
+              <Text style={estilos.linhaNumero}>{trilha.days_count}</Text>
+            </CapaTrilha>
             {trilha.kind === 'duas_vozes' ? (
-              <View style={{ position: 'absolute', left: 9, top: 9 }}>
-                <SeloVozes />
+              <View style={{ position: 'absolute', right: -5, top: -5 }}>
+                <SeloVozes tamanho={18} />
               </View>
             ) : null}
-            {trilha.tier === 'free' ? (
-              <View style={[estilos.canto, { backgroundColor: 'rgba(26,26,26,0.45)' }]}>
-                <Text style={[estilos.cantoTexto, { color: '#FFFFFF' }]}>GRÁTIS</Text>
-              </View>
-            ) : trilha.locked ? (
-              <View style={[estilos.cadeado, { backgroundColor: 'rgba(255,255,255,0.9)' }]}>
-                <Ionicons name="lock-closed" size={12} color="#8B6914" />
-              </View>
-            ) : null}
-            {concluida ? (
-              <View style={[estilos.cadeado, { backgroundColor: scheme.gold }]}>
-                <Ionicons name="checkmark" size={14} color={scheme.onAccent} />
-              </View>
-            ) : null}
-            <View style={estilos.dias}>
-              <Text style={estilos.diasTexto}>{`${trilha.days_count} DIAS`}</Text>
-            </View>
-          </CapaTrilha>
-          <View style={{ paddingHorizontal: 10, paddingTop: 9, paddingBottom: 11 }}>
-            <Text style={{ fontFamily: fonts.serifSemi, fontSize: 17, lineHeight: 20, color: scheme.textPrimary }} numberOfLines={2}>
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ fontFamily: fonts.serifSemi, fontSize: 20, lineHeight: 24, color: scheme.textPrimary }} numberOfLines={2}>
               {trilha.name}
             </Text>
-            <Text variant="micro" color={emAndamento ? scheme.accent : scheme.textMuted} style={{ marginTop: 3 }} numberOfLines={1}>
-              {legenda}
+            <Text variant="micro" color={scheme.textMuted} numberOfLines={1} style={{ marginTop: 1 }}>
+              {trilha.subtitle}
             </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              {trilha.locked ? <Ionicons name="lock-closed" size={12} color={scheme.gold} /> : null}
+              {concluida ? <Ionicons name="checkmark-circle" size={13} color={scheme.gold} /> : null}
+              <Text
+                variant="micro"
+                font="bodySemi"
+                color={trilha.locked || concluida ? scheme.gold : emAndamento ? scheme.accent : scheme.textSecondary}
+              >
+                {situacao}
+              </Text>
+            </View>
           </View>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-export function CartaoVerMais({
-  restantes,
-  onPress,
-  style,
-}: {
-  restantes: number;
-  onPress: () => void;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const { scheme } = useTheme();
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Ver mais, ${restantes} trilhas`}>
-      {({ pressed }) => (
-        <View
-          style={[
-            estilos.cartao,
-            estilos.cartaoMais,
-            { backgroundColor: scheme.canvasWarm, borderColor: scheme.gold },
-            style,
-            pressed && { opacity: 0.8 },
-          ]}
-        >
-          <View style={[estilos.anelMais, { backgroundColor: scheme.surface, borderColor: scheme.border }]}>
-            <Ionicons name="arrow-forward" size={16} color={scheme.gold} />
-          </View>
-          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 13, lineHeight: 16, color: scheme.textPrimary, marginTop: 8 }}>
-            Ver mais
-          </Text>
-          <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 2 }}>
-            {`+${restantes} trilha${restantes === 1 ? '' : 's'}`}
-          </Text>
+          <Ionicons name="chevron-forward" size={18} color={scheme.textGhost} />
         </View>
       )}
     </Pressable>
@@ -270,55 +226,14 @@ const estilos = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
   },
   pilulaTexto: { fontFamily: fonts.bodySemi, fontSize: 11, lineHeight: 14, color: '#1A1A1A' },
-  cartao: {
-    width: 152,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  cartaoCapa: { height: 80, justifyContent: 'flex-end', padding: 9 },
-  cartaoMais: {
-    height: 150,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
+  linha: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
+    gap: 14,
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  anelMais: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  canto: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  cantoTexto: { fontFamily: fonts.bodySemi, fontSize: 9, lineHeight: 12, letterSpacing: 1.2 },
-  cadeado: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dias: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  diasTexto: { fontFamily: fonts.bodySemi, fontSize: 10, lineHeight: 13, letterSpacing: 1.2, color: '#1A1A1A' },
+  linhaCapa: { width: 66, height: 66, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  linhaNumero: { fontFamily: fonts.serif, fontSize: 36, lineHeight: 42, color: 'rgba(40,28,12,0.76)' },
 });
 

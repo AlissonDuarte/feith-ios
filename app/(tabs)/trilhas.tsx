@@ -7,53 +7,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/api/client';
 import { mensagemDe } from '../../src/api/errors';
 import type { TrailCatalog, TrailSummary } from '../../src/api/types';
-import { EmptyState, Loading, ScreenHeader, Text, useEspacoTabBar } from '../../src/components/ui';
+import { EmptyState, Loading, Overline, Text, useEspacoTabBar } from '../../src/components/ui';
 import { posthog } from '../../src/config/posthog';
-import { AnelProgresso, CartaoTrilha, CartaoVerMais } from '../../src/trilhas/componentes';
-import { CATEGORIAS, LIMITE_PRATELEIRA, type CategoriaTrilha } from '../../src/trilhas/categorias';
+import { filtrarTrilhas, type FiltroTrilhas } from '../../src/leitura/regras';
 import { useTheme } from '../../src/theme/ThemeContext';
 import { fonts, radius, shadow, space } from '../../src/theme/tokens';
+import { AnelProgresso, LinhaTrilha } from '../../src/trilhas/componentes';
 
-function Prateleira({
-  categoria,
-  trilhas,
-  abrir,
-  verMais,
-}: {
-  categoria: CategoriaTrilha;
-  trilhas: TrailSummary[];
-  abrir: (t: TrailSummary) => void;
-  verMais: (categoria: CategoriaTrilha) => void;
-}) {
-  const { scheme } = useTheme();
-  if (trilhas.length === 0) return null;
-  const { titulo, legenda } = CATEGORIAS[categoria];
-  const excede = trilhas.length > LIMITE_PRATELEIRA;
-  const visiveis = excede ? trilhas.slice(0, LIMITE_PRATELEIRA - 1) : trilhas;
-  const restantes = trilhas.length - visiveis.length;
-  return (
-    <View style={{ marginTop: space.xl }}>
-      <View style={estilos.prateleiraTopo}>
-        <Text style={{ fontFamily: fonts.serifSemi, fontSize: 21, lineHeight: 24, color: scheme.textPrimary }}>{titulo}</Text>
-        <Text variant="micro" color={scheme.textMuted}>
-          {`${legenda} · ${trilhas.length}`}
-        </Text>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 10, paddingHorizontal: space.gutter, marginTop: space.sm }}
-      >
-        {visiveis.map((t) => (
-          <CartaoTrilha key={t.slug} trilha={t} onPress={() => abrir(t)} style={{ width: 152 }} />
-        ))}
-        {restantes > 0 ? (
-          <CartaoVerMais restantes={restantes} onPress={() => verMais(categoria)} style={{ width: 152 }} />
-        ) : null}
-      </ScrollView>
-    </View>
-  );
-}
+const FILTROS: { valor: FiltroTrilhas; rotulo: string }[] = [
+  { valor: 'para_voce', rotulo: 'Para você' },
+  { valor: 'curtas', rotulo: 'Curtas' },
+  { valor: 'livros', rotulo: 'Livros' },
+  { valor: 'duas_vozes', rotulo: 'Duas Vozes' },
+];
 
 export default function Trilhas() {
   const { scheme, effectiveMode } = useTheme();
@@ -62,6 +28,7 @@ export default function Trilhas() {
   const [catalogo, setCatalogo] = useState<TrailCatalog | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [atualizando, setAtualizando] = useState(false);
+  const [filtro, setFiltro] = useState<FiltroTrilhas>('para_voce');
 
   const carregar = useCallback(async () => {
     try {
@@ -78,30 +45,23 @@ export default function Trilhas() {
     }, [carregar]),
   );
 
-  const abrir = (t: TrailSummary, origem: 'continuar' | 'prateleira') => {
-    posthog?.capture('trail_card_clicked', { trail: t.slug, tier: t.tier, kind: t.kind, locked: t.locked, origem });
+  const abrir = (t: TrailSummary, origem: 'continuar' | 'lista') => {
+    posthog?.capture('trail_card_clicked', { trail: t.slug, tier: t.tier, kind: t.kind, locked: t.locked, origem, filtro });
     router.push({ pathname: '/trilha/[slug]', params: { slug: t.slug } });
-  };
-
-  const verMais = (categoria: CategoriaTrilha) => {
-    posthog?.capture('trail_shelf_more_clicked', { categoria });
-    router.push({ pathname: '/trilhas/[categoria]', params: { categoria } });
   };
 
   if (!catalogo && !erro) return <Loading />;
 
   const trilhas = catalogo?.trails ?? [];
-  const gratis = trilhas.filter(CATEGORIAS.gratis.filtro);
-  const duasVozes = trilhas.filter(CATEGORIAS.duas_vozes.filtro);
-  const apoiadores = trilhas.filter(CATEGORIAS.apoiadores.filtro);
   const ativa = catalogo?.active;
   const progressoAtiva = ativa?.progress;
   const corDestaque = effectiveMode === 'dark' ? scheme.onAccentMuted : scheme.goldSoft;
+  const visiveis = filtrarTrilhas(trilhas, filtro, ativa?.slug);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top']}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: respiro }}
+        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingTop: space.md, paddingBottom: respiro }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -115,7 +75,9 @@ export default function Trilhas() {
           />
         }
       >
-        <ScreenHeader overline="Trilhas" title="Pequenos passos, todo dia" />
+        <Text variant="display" accessibilityRole="header">
+          Pequenos passos, todo dia
+        </Text>
 
         {erro && !catalogo ? (
           <EmptyState icone="cloud-offline-outline" titulo="Não foi possível carregar" descricao={erro} />
@@ -137,54 +99,103 @@ export default function Trilhas() {
               <View
                 style={[
                   estilos.continuar,
-                  { backgroundColor: scheme.accent, ...shadow.raised },
+                  { backgroundColor: scheme.accent, ...shadow.card },
                   pressed && { opacity: 0.9 },
                 ]}
               >
-                <AnelProgresso feitos={progressoAtiva.completed_days} total={ativa.days_count} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[estilos.continuarRotulo, { color: corDestaque }]}>CONTINUAR</Text>
+                <AnelProgresso feitos={progressoAtiva.completed_days} total={ativa.days_count} tamanho={46} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text variant="overline" font="bodySemi" color={scheme.onAccentMuted}>
+                    Continuar trilha
+                  </Text>
                   <Text
-                    style={{ fontFamily: fonts.serifSemi, fontSize: 21, lineHeight: 24, color: scheme.onAccent, marginTop: 2 }}
-                    numberOfLines={2}
+                    style={{ fontFamily: fonts.serifSemi, fontSize: 21, lineHeight: 25, color: scheme.onAccent }}
+                    numberOfLines={1}
                   >
                     {ativa.name}
                   </Text>
                   {catalogo?.active_next_title && progressoAtiva.next_day ? (
-                    <Text variant="micro" color={scheme.onAccentMuted} style={{ marginTop: 3 }} numberOfLines={1}>
-                      {`Dia ${progressoAtiva.next_day} · "${catalogo.active_next_title}" · ${ativa.minutes_per_day} min`}
+                    <Text variant="micro" color={scheme.onAccentMuted} numberOfLines={1}>
+                      {`Dia ${progressoAtiva.next_day} · ${catalogo.active_next_title} · ${ativa.minutes_per_day} min`}
                     </Text>
                   ) : null}
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={corDestaque} />
+                <Ionicons name="chevron-forward" size={20} color={corDestaque} />
               </View>
             )}
           </Pressable>
         ) : null}
 
-        <Prateleira categoria="gratis" trilhas={gratis} abrir={(t) => abrir(t, 'prateleira')} verMais={verMais} />
-        <Prateleira categoria="duas_vozes" trilhas={duasVozes} abrir={(t) => abrir(t, 'prateleira')} verMais={verMais} />
-        <Prateleira categoria="apoiadores" trilhas={apoiadores} abrir={(t) => abrir(t, 'prateleira')} verMais={verMais} />
+        {trilhas.length > 0 ? (
+          <>
+            <View style={estilos.filtros} accessibilityRole="tablist">
+              {FILTROS.map((f) => {
+                const ativo = f.valor === filtro;
+                return (
+                  <Pressable
+                    key={f.valor}
+                    onPress={() => {
+                      setFiltro(f.valor);
+                      posthog?.capture('trail_filter_selected', { filtro: f.valor });
+                    }}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: ativo }}
+                    style={[
+                      estilos.filtro,
+                      { borderColor: scheme.border, backgroundColor: scheme.surface },
+                      ativo && { backgroundColor: scheme.textPrimary, borderColor: scheme.textPrimary },
+                    ]}
+                  >
+                    <Text
+                      variant="caption"
+                      font={ativo ? 'bodySemi' : 'bodyMedium'}
+                      color={ativo ? scheme.canvas : scheme.textSecondary}
+                    >
+                      {f.rotulo}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {filtro === 'para_voce' ? (
+              <Overline style={{ marginTop: space.lg }}>{ativa ? 'O próximo degrau' : 'Para começar'}</Overline>
+            ) : null}
+
+            <View style={{ marginTop: space.xs }}>
+              {visiveis.map((t) => (
+                <LinhaTrilha key={t.slug} trilha={t} onPress={() => abrir(t, 'lista')} />
+              ))}
+              {visiveis.length === 0 ? (
+                <Text variant="bodySm" color={scheme.textMuted} style={{ marginTop: space.lg, textAlign: 'center' }}>
+                  Nenhuma trilha neste filtro por enquanto.
+                </Text>
+              ) : null}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const estilos = StyleSheet.create({
-  prateleiraTopo: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    paddingHorizontal: space.gutter,
-  },
   continuar: {
-    marginHorizontal: space.gutter,
-    marginTop: space.xl,
-    padding: space.lg,
-    borderRadius: radius.md,
+    marginTop: space.md,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: radius.sm,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
   },
-  continuarRotulo: { fontFamily: fonts.bodySemi, fontSize: 10, lineHeight: 14, letterSpacing: 2 },
+  filtros: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.lg },
+  filtro: {
+    minHeight: 38,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
 });

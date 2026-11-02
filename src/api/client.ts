@@ -59,6 +59,7 @@ import {
   type TranscriptResponse,
   type UserProfile,
   type UserSummary,
+  type AudioSampleResponse,
   type WidgetTeaser,
 } from './types';
 
@@ -240,6 +241,11 @@ export const api = {
       body,
     }),
 
+  createGuest: () => publicRequest<AuthResponse>('/users/guest', { method: 'POST' }),
+
+  upgradeGuest: (body: { username: string; email: string; password: string; confirm_password: string }) =>
+    request<AuthResponse>('/users/guest/upgrade', { method: 'POST', body }),
+
   login: (body: LoginPayload) =>
     publicRequest<AuthResponse>('/users/login', { method: 'POST', body }),
 
@@ -322,12 +328,14 @@ export const api = {
    * uuid: "" em vez de 404. Trate `uuid === ''` como "sem conteudo hoje".
    */
   getDailyReflection: () =>
-    request<Reflection>('/reflections/daily').then(hydrateReflection),
+    request<Reflection>('/reflections/daily', { query: { log: false } }).then(hydrateReflection),
 
   getReflection: (reflectionUuid: string) =>
     request<Reflection>('/reflections/daily', {
-      query: { ref_key: reflectionUuid },
+      query: { ref_key: reflectionUuid, log: false },
     }).then(hydrateReflection),
+
+  markReflectionRead: () => request<{ logged: boolean }>('/reflections/read', { method: 'POST' }),
 
   /** GET alterna o favorito; DELETE remove. Mesmo path, semanticas diferentes. */
   toggleBookmark: (reflectionUuid: string) =>
@@ -392,6 +400,20 @@ export const api = {
    * minutos (transcription_service.py:33). Quem toca o audio usa esse carimbo
    * para renovar antes de expirar — ver src/player/.
    */
+  getAudioSample: async (reflectionUuid: string): Promise<Transcript> => {
+    const raw = await request<AudioSampleResponse>('/transcriptions/sample', {
+      query: { ref_key: reflectionUuid },
+    });
+    return {
+      title: raw.title || 'Amostra grátis',
+      subtitle: raw.subtitle,
+      audioUrl: raw.audio_url,
+      sampleSeconds: raw.sample_seconds,
+      fullSeconds: raw.full_seconds ?? null,
+      issuedAt: Date.now(),
+    };
+  },
+
   getTranscript: async (reflectionUuid: string): Promise<Transcript> => {
     const raw = await request<TranscriptResponse>('/transcriptions/transcript', {
       query: { ref_key: reflectionUuid },

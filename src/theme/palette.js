@@ -36,9 +36,9 @@ module.exports = {
   // briga com o pergaminho.
   ink: '#1A1A1A',
   'ink-soft': '#2A2A2A',
-  'ink-muted': '#5A5A5A',
-  'ink-faint': '#8A8A8A',
-  'ink-ghost': '#AFA89C',
+  'ink-muted': '#4A453D',
+  'ink-faint': '#625B50',
+  'ink-ghost': '#6E675C',
 
   // ── Fios ───────────────────────────────────────────────────────────────────
   // Hairlines quentes. O #F1F5F9 anterior era um cinza-azulado que sobre creme
@@ -54,7 +54,7 @@ module.exports = {
   'oxblood-veil': 'rgba(122,31,31,0.10)',
 
   // ── Ouro: fios, numerais e ornamentos ──────────────────────────────────────
-  gold: '#8B6914',
+  gold: '#7A5C10',
   'gold-light': '#B89C5C',
   'gold-pale': '#D8C79A',
   'gold-tint': '#F7F1E2',

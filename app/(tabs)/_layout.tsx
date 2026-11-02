@@ -91,8 +91,8 @@ export default function TabsLayout() {
           ) : null,
         tabBarLabelStyle: {
           fontFamily: fonts.bodyMedium,
-          fontSize: 10,
-          letterSpacing: 0.6,
+          fontSize: 11.5,
+          letterSpacing: 0.1,
           marginTop: 2,
         },
         tabBarItemStyle: { paddingTop: 6 },
@@ -117,20 +117,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="caderno"
+        name="acervo"
         options={{
-          title: 'Caderno',
+          title: 'Acervo',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon target="tab_caderno" name="document-text-outline" focusedName="document-text" color={color} size={size - 1} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="historico"
-        options={{
-          title: 'Histórico',
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon target="tab_historico" name="time-outline" focusedName="time" color={color} size={size - 1} focused={focused} />
+            <TabIcon target="tab_acervo" name="library-outline" focusedName="library" color={color} size={size - 1} focused={focused} />
           ),
         }}
       />

@@ -56,7 +56,7 @@ function Regra({ texto, atendida }: { texto: string; atendida: boolean }) {
 
 export default function Register() {
   const { scheme } = useTheme();
-  const { signIn } = useAuth();
+  const { signIn, isGuest } = useAuth();
   const router = useRouter();
 
   const [username, setUsername] = useState('');
@@ -82,6 +82,19 @@ export default function Register() {
     setErro(null);
     setCarregando('email');
     try {
+      if (isGuest) {
+        await signIn(
+          await api.upgradeGuest({
+            username: username.trim(),
+            email: email.trim(),
+            password: senha,
+            confirm_password: confirmacao,
+          }),
+        );
+        router.replace('/(tabs)/hoje');
+        return;
+      }
+
       await api.register({
         username: username.trim(),
         email: email.trim(),

@@ -92,7 +92,7 @@ export default function LinkCompartilhado() {
             <Button
               label={sessao ? 'Ir para a reflexão de hoje' : 'Conhecer o feith'}
               icon="arrow-forward"
-              onPress={() => router.replace(sessao ? '/(tabs)/hoje' : '/(auth)/login')}
+              onPress={() => router.replace(sessao ? '/(tabs)/hoje' : '/abertura')}
             />
           }
         />

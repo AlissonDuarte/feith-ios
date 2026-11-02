@@ -3,17 +3,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Linking } from 'react-native';
 
 import { posthog } from '../config/posthog';
-import { momentoNaHoje, type MomentoConvite } from './convite';
+import { momentoNaHoje, type MomentoConvite, type MomentoRegistro } from './convite';
 import { getPushState, optedOut, registerForPush, type PushStatus } from './registerDevice';
 
 const RECUSADO_EM_KEY = 'feith.push.convite.recusado_em';
 
-export async function registrarRecusa(momento: MomentoConvite) {
+export async function registrarRecusa(momento: MomentoRegistro) {
   await AsyncStorage.setItem(RECUSADO_EM_KEY, String(Date.now()));
   posthog?.capture('push_prompt_dismissed', { moment: momento });
 }
 
-export async function ativarLembretes(momento: MomentoConvite): Promise<PushStatus> {
+export async function ativarLembretes(momento: MomentoRegistro): Promise<PushStatus> {
   const status = await registerForPush({ promptIfNeeded: true });
   if (status === 'granted') {
     posthog?.capture('push_permission_granted', { moment: momento });
@@ -29,7 +29,7 @@ export function abrirAjustes(momento: MomentoConvite) {
   void Linking.openSettings();
 }
 
-export function registrarExibicao(momento: MomentoConvite) {
+export function registrarExibicao(momento: MomentoRegistro) {
   posthog?.capture('push_prompt_shown', { moment: momento });
 }
 

@@ -15,6 +15,18 @@ const PRIMEIRO_ACESSO_KEY = 'feith.paywall.primeiro_acesso';
 const ULTIMA_EXIBICAO_KEY = 'feith.paywall.ultima_exibicao';
 const LEMBRETES_KEY = 'feith.paywall.lembretes';
 
+let paywallOnboardingPendente = false;
+
+export function marcarPaywallOnboarding() {
+  paywallOnboardingPendente = true;
+}
+
+export function consumirPaywallOnboarding(): boolean {
+  const pendente = paywallOnboardingPendente;
+  paywallOnboardingPendente = false;
+  return pendente;
+}
+
 function configAtual() {
   return configDoFlag(posthog?.getFeatureFlag(FLAG), posthog?.getFeatureFlagPayload(FLAG));
 }

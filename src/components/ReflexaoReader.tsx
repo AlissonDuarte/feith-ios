@@ -36,7 +36,7 @@ type Lida = Reflection | SharedReflection;
  * aninhada num ScrollView, nao herda largura nenhuma: sem um numero explicito
  * os paragrafos colapsam para a largura da palavra mais longa.
  */
-function Corpo({ texto, largura }: { texto: string; largura: number }) {
+function Corpo({ texto, largura, escala }: { texto: string; largura: number; escala: number }) {
   const { scheme } = useTheme();
   return (
     <Markdown
@@ -71,7 +71,8 @@ function Corpo({ texto, largura }: { texto: string; largura: number }) {
       }}
       styles={{
         text: {
-          ...type.body,
+          fontSize: type.body.fontSize * escala,
+          lineHeight: type.body.lineHeight * escala,
           fontFamily: fonts.body,
           color: scheme.textPrimary,
         },
@@ -89,7 +90,12 @@ function Corpo({ texto, largura }: { texto: string; largura: number }) {
           marginVertical: space.md,
         },
         list: { width: largura, marginVertical: space.xs },
-        li: { ...type.body, fontFamily: fonts.body, color: scheme.textPrimary },
+        li: {
+          fontSize: type.body.fontSize * escala,
+          lineHeight: type.body.lineHeight * escala,
+          fontFamily: fonts.body,
+          color: scheme.textPrimary,
+        },
         // Subtitulos dentro de uma secao: serifada, para nao competirem com o
         // titulo da secao nem virarem outro bloco em negrito.
         h1: { ...type.heading, fontFamily: fonts.serifSemi, color: scheme.textPrimary },
@@ -113,8 +119,12 @@ export function ReflexaoReader({
   largura,
   entreTextoESecoes,
   abaixoDoTitulo,
+  escala = 1,
+  aoMedirSecao,
 }: {
   reflexao: Lida;
+  escala?: number;
+  aoMedirSecao?: (chave: string, y: number) => void;
   largura?: number;
   entreTextoESecoes?: ReactNode;
   /** Legenda discreta sob a data do frontispicio (ex: contador de leitores). */
@@ -168,9 +178,9 @@ export function ReflexaoReader({
           <Text
             style={{
               fontFamily: fonts.serif,
-              fontSize: 22,
-              lineHeight: 34,
-              color: scheme.textSecondary,
+              fontSize: 24 * escala,
+              lineHeight: 33 * escala,
+              color: scheme.textPrimary,
               marginTop: -6,
             }}
           >
@@ -188,7 +198,11 @@ export function ReflexaoReader({
         const conteudo = reflexao[secao.key];
 
         return (
-          <View key={secao.key} style={{ marginTop: space.section }}>
+          <View
+            key={secao.key}
+            style={{ marginTop: space.section }}
+            onLayout={(e) => aoMedirSecao?.(secao.key, e.nativeEvent.layout.y)}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <SectionNumeral n={i + 1} />
               <Text variant="title" accessibilityRole="header" style={{ flex: 1 }}>
@@ -198,7 +212,7 @@ export function ReflexaoReader({
 
             <GoldRule align="left" width={40} style={{ marginTop: space.lg, marginBottom: space.md }} />
 
-            <Corpo texto={conteudo} largura={coluna} />
+            <Corpo texto={conteudo} largura={coluna} escala={escala} />
           </View>
         );
       })}

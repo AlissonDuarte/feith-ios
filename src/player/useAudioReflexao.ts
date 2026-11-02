@@ -74,6 +74,8 @@ export interface AudioReflexao {
   erro: string | null;
   /** true quando o erro e "voce nao e apoiador" — a tela nao mostra o player. */
   semAcesso: boolean;
+  amostra: { segundos: number; totalSegundos: number | null } | null;
+  amostraConcluida: boolean;
   tocando: boolean;
   bufferizando: boolean;
   posicao: number;
@@ -123,6 +125,18 @@ export function useAudioReflexao(
       setSemAcesso(false);
     } catch (e) {
       if (!montado.current) return;
+      if (ehLimiteDePlano(e)) {
+        try {
+          const amostra = await api.getAudioSample(reflectionUuid);
+          if (!montado.current) return;
+          setTranscript(amostra);
+          setSemAcesso(false);
+          setErro(null);
+          return;
+        } catch {
+          if (!montado.current) return;
+        }
+      }
       // "Nao e apoiador" nao e erro a mostrar: e ausencia de feature, e a tela
       // simplesmente nao desenha o player. `ehLimiteDePlano` ja sabe quais
       // status e detalhes significam isso (errors.ts) — replicar a regra aqui
@@ -156,7 +170,9 @@ export function useAudioReflexao(
         const posicao = status.currentTime;
         const estavaTocando = status.playing;
         try {
-          const novo = await api.getTranscript(reflectionUuid);
+          const novo = transcript.sampleSeconds
+            ? await api.getAudioSample(reflectionUuid)
+            : await api.getTranscript(reflectionUuid);
           if (!montado.current) return;
           setTranscript(novo);
           player.replace({ uri: novo.audioUrl });
@@ -211,6 +227,7 @@ export function useAudioReflexao(
 
   const ouvido = useRef({ segundos: 0, ultimaPosicao: 0, maxPosicao: 0, duracao: 0 });
   const concluiuRegistrado = useRef(false);
+  const [amostraConcluida, setAmostraConcluida] = useState(false);
 
   useEffect(() => {
     const o = ouvido.current;
@@ -249,12 +266,17 @@ export function useAudioReflexao(
   useEffect(() => {
     if (!status.didJustFinish || concluiuRegistrado.current) return;
     concluiuRegistrado.current = true;
+    if (transcript?.sampleSeconds) {
+      setAmostraConcluida(true);
+      posthog?.capture('audio_sample_completed', { reflection_uuid: reflectionUuid ?? null, ...resumoOuvido() });
+      return;
+    }
     posthog?.capture('audio_completed', {
       reflection_uuid: reflectionUuid ?? null,
       ...resumoOuvido(),
     });
     aoConcluirRef.current?.();
-  }, [status.didJustFinish, reflectionUuid, resumoOuvido]);
+  }, [status.didJustFinish, reflectionUuid, resumoOuvido, transcript?.sampleSeconds]);
 
   const alternar = useCallback(() => {
     void configurarSessao().then(() => {
@@ -270,10 +292,11 @@ export function useAudioReflexao(
         posthog?.capture('audio_played', {
           reflection_uuid: reflectionUuid ?? null,
           position_seconds: Math.round(player.currentTime),
+          sample: Boolean(transcript?.sampleSeconds),
         });
       }
     });
-  }, [player, reflectionUuid, resumoOuvido]);
+  }, [player, reflectionUuid, resumoOuvido, transcript?.sampleSeconds]);
 
   const irPara = useCallback(
     (segundos: number) => {
@@ -299,6 +322,10 @@ export function useAudioReflexao(
     carregando,
     erro,
     semAcesso,
+    amostra: transcript?.sampleSeconds
+      ? { segundos: transcript.sampleSeconds, totalSegundos: transcript.fullSeconds ?? null }
+      : null,
+    amostraConcluida,
     tocando: status.playing,
     bufferizando: status.isBuffering,
     posicao: status.currentTime,

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
+import { precoPorMes, tituloDaOrigem,
   CONFIG_PADRAO,
   DIA_MS,
   configDoFlag,
@@ -75,4 +75,16 @@ test('frase usa a sequencia e depois o tempo de uso', () => {
   assert.equal(fraseDoLembrete(0, 31), 'Você caminha com o feith há um mês.');
   assert.equal(fraseDoLembrete(0, 65), 'Você caminha com o feith há 2 meses.');
   assert.equal(fraseDoLembrete(0, 2), 'Que bom ter você por aqui.');
+});
+
+test('titulo do paywall muda conforme a origem', () => {
+  assert.equal(tituloDaOrigem('audio'), 'Ouça a reflexão inteira, todo dia.');
+  assert.equal(tituloDaOrigem('hoje_badge'), 'Aprofunde seu momento diário com Deus.');
+});
+
+test('preco por mes usa o valor numerico quando existe e le o texto quando nao', () => {
+  assert.equal(precoPorMes('R$ 69,90', 69.9), 'R$ 5,83 por mês');
+  assert.equal(precoPorMes('R$ 69,90'), 'R$ 5,83 por mês');
+  assert.equal(precoPorMes('R$ 1.200,00'), 'R$ 100,00 por mês');
+  assert.equal(precoPorMes('grátis'), null);
 });

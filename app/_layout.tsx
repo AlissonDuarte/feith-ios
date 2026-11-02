@@ -51,7 +51,7 @@ SplashScreen.preventAutoHideAsync().catch(() => undefined);
  * exige. `redefinir-senha` chega pelo link do e-mail de recuperacao de senha,
  * sem sessao nenhuma — mandar pro login antes de montar quebraria o fluxo.
  */
-const ROTAS_PUBLICAS = ['r', 'politicas', 'redefinir-senha'];
+const ROTAS_PUBLICAS = ['r', 'politicas', 'redefinir-senha', 'abertura'];
 
 /**
  * Header nativo no estilo editorial, para as telas fora das abas.
@@ -118,7 +118,7 @@ function RouteGuard() {
     const naRaiz = pathname === '/';
 
     if (!token && !inAuthGroup && !inPublicRoute) {
-      router.replace('/(auth)/login');
+      router.replace('/abertura');
       return;
     }
 
@@ -139,7 +139,7 @@ function RouteGuard() {
     // sozinha, e se o summary chegar depois dizendo que o onboarding esta
     // pendente, o ramo acima roda de novo (o efeito depende de `summary`) e
     // leva para la.
-    if (inAuthGroup || naRaiz || (noOnboarding && summary?.onboarding_completed)) {
+    if ((inAuthGroup && !summary?.is_guest) || naRaiz || (noOnboarding && summary?.onboarding_completed)) {
       router.replace('/(tabs)/hoje');
     }
   }, [token, loading, summary, segments, pathname, router]);
@@ -171,7 +171,7 @@ function RouteGuard() {
       />
       <Stack.Screen
         name="perfil/sequencia"
-        options={header({ title: 'Sequência', voltar: 'Histórico', scheme })}
+        options={header({ title: 'Sequência', voltar: 'Hoje', scheme })}
       />
       <Stack.Screen
         name="perfil/aparencia"
@@ -188,6 +188,17 @@ function RouteGuard() {
           headerShown: false,
         }}
       />
+      <Stack.Screen name="abertura" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="primeiro-dia" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen
+        name="conta"
+        options={{
+          headerShown: false,
+          presentation: 'formSheet',
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: [0.72, 0.95],
+        }}
+      />
       <Stack.Screen name="r/[token]" options={{ headerShown: false }} />
       <Stack.Screen name="redefinir-senha/[token]" options={{ headerShown: false }} />
       {/* Sem gesto de voltar: sair pelo swipe deixaria a pessoa numa tela
@@ -197,7 +208,7 @@ function RouteGuard() {
     {/* Fora da Stack: sobrepoe qualquer rota, igual ao AtualizacaoObrigatoria.
         So com sessao ativa e depois do tour de primeiro uso — nunca compete
         com o onboarding obrigatorio nem aparece pra quem esta deslogado. */}
-    {token && summary?.onboarding_completed ? <FeatureWalkthrough /> : null}
+    {token && summary?.onboarding_completed && !summary.is_guest ? <FeatureWalkthrough /> : null}
     </>
   );
 }

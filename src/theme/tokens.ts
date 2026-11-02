@@ -82,8 +82,8 @@ export const schemes: Record<ReadingMode, Scheme> = {
     borderSoft: '#241F1A',
     textPrimary: palette['dark-text'],
     textSecondary: '#B8AE9E',
-    textMuted: '#8C8375',
-    textGhost: '#6B6459',
+    textMuted: '#B0A696',
+    textGhost: '#A79D8D',
     accent: '#C9736A',
     accentPressed: '#D98A80',
     accentSubtle: 'rgba(201,115,106,0.12)',
@@ -102,8 +102,8 @@ export const schemes: Record<ReadingMode, Scheme> = {
     borderSoft: '#EBE1C9',
     textPrimary: '#3B3226',
     textSecondary: '#6B5D49',
-    textMuted: '#8A7A62',
-    textGhost: '#A2917A',
+    textMuted: '#6B5D49',
+    textGhost: '#75664F',
     accent: palette.oxblood,
     accentPressed: palette['oxblood-light'],
     accentSubtle: '#EFE0BF',
@@ -175,7 +175,7 @@ export const fonts = {
  * toque, entao `sharp` e 2: le como reto, sem a aresta viva.
  */
 export const radius = {
-  sharp: 2,
+  sharp: 4,
   sm: 10,
   md: 14,
   lg: 20,
@@ -200,10 +200,10 @@ export const type = {
   heading: { fontSize: 19, lineHeight: 26, letterSpacing: -0.1 },
   body: { fontSize: 17, lineHeight: 28 },
   bodySm: { fontSize: 15, lineHeight: 24 },
-  caption: { fontSize: 13, lineHeight: 20 },
+  caption: { fontSize: 13.5, lineHeight: 20 },
   /** Etiquetas maiusculas com o `letter-spacing: 0.3em` da landing. */
-  overline: { fontSize: 10, lineHeight: 14, letterSpacing: 3 },
-  micro: { fontSize: 11, lineHeight: 16, letterSpacing: 0.4 },
+  overline: { fontSize: 12.5, lineHeight: 16, letterSpacing: 0.5 },
+  micro: { fontSize: 12.5, lineHeight: 17, letterSpacing: 0.1 },
 } as const;
 
 /** Ritmo vertical. Multiplos de 4, nomeados pelo uso e nao pelo numero. */

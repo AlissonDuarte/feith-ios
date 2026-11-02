@@ -204,7 +204,7 @@ export function Separador({ children = 'ou' }: { children?: string }) {
   return (
     <View style={estilos.separador}>
       <View style={estilos.fio} />
-      <Text variant="overline" color={scheme.textGhost} style={{ textTransform: 'uppercase' }}>
+      <Text variant="overline" color={scheme.textGhost}>
         {children}
       </Text>
       <View style={estilos.fio} />

@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
 import { api } from '../api/client';
@@ -7,31 +6,18 @@ import { formatRelativePT } from '../api/dates';
 import type { BookmarkItem } from '../api/types';
 import { BotaoFavorito } from '../components/BotaoFavorito';
 import { FeedList } from '../components/FeedList';
-import { GoldRule, ScreenHeader, Text, TouchableCard } from '../components/ui';
+import { GoldRule, Text, TouchableCard } from '../components/ui';
 import { useListaPaginada } from '../hooks/useListaPaginada';
 import { useTheme } from '../theme/ThemeContext';
 import { space } from '../theme/tokens';
 
-export function Favoritos({ seletor }: { seletor: ReactNode }) {
+export function Favoritos() {
   const { scheme } = useTheme();
   const router = useRouter();
   const lista = useListaPaginada<BookmarkItem>(api.getBookmarks);
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader
-        overline="Caderno"
-        title="Favoritos"
-        right={
-          lista.total > 0 ? (
-            <Text variant="micro" color={scheme.textGhost}>
-              {lista.total}
-            </Text>
-          ) : null
-        }
-      />
-
-      {seletor}
 
       <FeedList
         lista={lista}

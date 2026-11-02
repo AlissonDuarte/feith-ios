@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useCallback, type ReactNode } from 'react';
+import { useCallback } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
 import { api } from '../api/client';
@@ -9,12 +9,12 @@ import { mensagemDe } from '../api/errors';
 import type { NoteItem } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { FeedList } from '../components/FeedList';
-import { GoldRule, Overline, ScreenHeader, Text, TouchableCard } from '../components/ui';
+import { GoldRule, Overline, Text, TouchableCard } from '../components/ui';
 import { useListaPaginada } from '../hooks/useListaPaginada';
 import { useTheme } from '../theme/ThemeContext';
 import { space } from '../theme/tokens';
 
-export function Anotacoes({ seletor }: { seletor: ReactNode }) {
+export function Anotacoes() {
   const { scheme } = useTheme();
   const router = useRouter();
   const { refreshSummary } = useAuth();
@@ -46,19 +46,6 @@ export function Anotacoes({ seletor }: { seletor: ReactNode }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader
-        overline="Caderno"
-        title="Anotações"
-        right={
-          lista.total > 0 ? (
-            <Text variant="micro" color={scheme.textGhost}>
-              {lista.total}
-            </Text>
-          ) : null
-        }
-      />
-
-      {seletor}
 
       <FeedList
         lista={lista}

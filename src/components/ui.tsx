@@ -74,7 +74,7 @@ export function Text({ variant = 'body', font, color, style, ...rest }: TextProp
       maxFontSizeMultiplier={MAX_FONT_SCALE}
       style={[
         type[variant],
-        { fontFamily: fonts[font ?? FONTE_PADRAO[variant]], color: color ?? scheme.textPrimary },
+        { fontFamily: fonts[font ?? FONTE_PADRAO[variant]], color: color ?? scheme.textPrimary, fontVariant: ['lining-nums'] },
         style,
       ]}
       {...rest}
@@ -100,7 +100,7 @@ export function Overline({
 }) {
   const { scheme } = useTheme();
   return (
-    <Text variant="overline" color={color ?? scheme.textGhost} style={[{ textTransform: 'uppercase' }, style]}>
+    <Text variant="overline" color={color ?? scheme.gold} style={style}>
       {children}
     </Text>
   );
@@ -400,12 +400,12 @@ export function Button({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {iconLeft ? <Ionicons name={iconLeft} size={16} color={corDoRotulo} /> : null}
               <Text
-                variant={comoLink ? 'bodySm' : 'micro'}
+                variant="bodySm"
                 font={comoLink ? 'bodyMedium' : 'bodySemi'}
                 color={corDoRotulo}
                 style={comoLink ? undefined : styles.buttonLabel}
               >
-                {comoLink ? label : label.toUpperCase()}
+                {label}
               </Text>
               {icon ? <Ionicons name={icon} size={comoLink ? 14 : 13} color={corDoRotulo} /> : null}
             </View>
@@ -553,7 +553,7 @@ export function Tag({
   return (
     <View style={[styles.tag, { borderColor: borderFinal, backgroundColor: background }]}>
       {icon ? <Ionicons name={icon} size={11} color={corFinal} /> : null}
-      <Text variant="overline" font="bodySemi" color={corFinal} style={{ textTransform: 'uppercase' }}>
+      <Text variant="overline" font="bodySemi" color={corFinal}>
         {children}
       </Text>
     </View>
@@ -824,8 +824,8 @@ function criarEstilos(scheme: Scheme) {
       borderRadius: radius.sm,
     },
     buttonLabel: {
-      // `letter-spacing: 0.25em` da landing, no tamanho do rotulo.
-      letterSpacing: 2.4,
+      fontSize: 15.5,
+      lineHeight: 20,
     },
     iconButton: {
       width: 40,

@@ -162,6 +162,7 @@ export interface Reflection {
   doctrine: string;
   application: string;
   prayer: string;
+  core_idea?: string | null;
   bookmarked: boolean;
   /** dd/mm/aaaa */
   publish_at: string;
@@ -328,10 +329,20 @@ export interface TranscriptResponse {
   audio_url: string;
 }
 
+export interface AudioSampleResponse {
+  title?: string;
+  subtitle: string;
+  audio_url: string;
+  sample_seconds: number;
+  full_seconds?: number | null;
+}
+
 export interface Transcript {
   title: string;
   subtitle: string;
   audioUrl: string;
+  sampleSeconds?: number;
+  fullSeconds?: number | null;
   /** Quando esta URL foi emitida — base do refresh aos 50 min. */
   issuedAt: number;
 }
@@ -428,7 +439,8 @@ export interface UserQuotas {
  */
 export interface UserSummary {
   username: string;
-  email: string;
+  email: string | null;
+  is_guest?: boolean;
   plan: Plan | string;
   provider?: SubscriptionProvider;
   onboarding_completed: boolean;

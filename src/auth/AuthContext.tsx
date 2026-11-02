@@ -61,6 +61,7 @@ interface AuthContextValue extends AuthState {
   refreshSummary: () => Promise<void>;
   /** `plan === 'supporter'`. Fonte unica de entitlement no app. */
   isSupporter: boolean;
+  isGuest: boolean;
   /** Dias ate a sessao expirar quando ja esta perto; null caso contrario. */
   diasParaExpirar: number | null;
 }
@@ -228,6 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       refreshSummary,
       isSupporter: plan === 'supporter',
+      isGuest: Boolean(state.summary?.is_guest),
       diasParaExpirar,
     };
   }, [state, signIn, signOut, refreshSummary]);

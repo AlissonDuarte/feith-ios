@@ -46,6 +46,25 @@ const ORIGENS: OrigemPaywall[] = [
   'favorito',
 ];
 
+const TITULOS: Partial<Record<OrigemPaywall, string>> = {
+  audio: 'Ouça a reflexão inteira, todo dia.',
+  trilha: 'Siga todas as trilhas, no seu ritmo.',
+  anotacao: 'Guarde todas as suas anotações.',
+  favorito: 'Guarde todos os seus favoritos.',
+  historico: 'Volte a qualquer reflexão do acervo.',
+};
+
+export function tituloDaOrigem(origem: OrigemPaywall): string {
+  return TITULOS[origem] ?? 'Aprofunde seu momento diário com Deus.';
+}
+
+export function precoPorMes(precoAnual: string, valor?: number | null): string | null {
+  const numero = valor ?? Number(precoAnual.replace(/[^\d,.]/g, '').replace(/\./g, '').replace(',', '.'));
+  if (!Number.isFinite(numero) || numero <= 0) return null;
+  const prefixo = precoAnual.match(/^[^\d]*/)?.[0] ?? '';
+  return `${prefixo}${(numero / 12).toFixed(2).replace('.', ',')} por mês`;
+}
+
 export function origemDe(valor: unknown): OrigemPaywall {
   return ORIGENS.includes(valor as OrigemPaywall) ? (valor as OrigemPaywall) : 'desconhecida';
 }

@@ -14,7 +14,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Linking,
   Platform,
   Pressable,
@@ -25,16 +24,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../src/auth/AuthContext';
-import { AccentHalo } from '../src/components/ornaments';
-import {
-  Button,
-  Card,
-  GoldRule,
-  Overline,
-  Text,
-} from '../src/components/ui';
+import { Button, Overline, Text } from '../src/components/ui';
 import { posthog } from '../src/config/posthog';
-import { fraseDoLembrete, origemDe } from '../src/iap/guiaAssinatura';
+import { agendarAvisoDoTeste, avisoDoTestePossivel } from '../src/iap/avisoTeste';
+import { fraseDoLembrete, origemDe, precoPorMes, tituloDaOrigem } from '../src/iap/guiaAssinatura';
 import { useIap } from '../src/iap/IapContext';
 import { diasDeUso, registrarExibicaoAssinatura } from '../src/iap/lembretesAssinatura';
 import { NOME_LOJA, type PlanoId } from '../src/iap/tipos';
@@ -50,42 +43,41 @@ const PRECOS_PADRAO: Record<PlanoId, string> = {
   annual_family: 'R$ 99,90',
 };
 
-const PLANOS: { id: PlanoId; nome: string; destaque?: string; economia?: string }[] = [
-  { id: 'monthly', nome: 'Mensal' },
-  { id: 'annual', nome: 'Anual', destaque: '7 dias grátis', economia: '40% mais barato que o mensal' },
-  {
-    id: 'annual_family',
-    nome: 'Anual Família',
-    destaque: 'Até 6 pessoas · 7 dias grátis',
-    economia: '85% mais barato, por pessoa',
-  },
+const PLANOS: { id: PlanoId; nome: string; destaque?: string }[] = [
+  { id: 'annual', nome: 'Anual', destaque: '7 dias grátis' },
+  { id: 'annual_family', nome: 'Anual Família', destaque: 'Até 6 pessoas · 7 dias grátis' },
+  { id: 'monthly', nome: 'Mensal', destaque: 'Sem período grátis' },
 ];
 
 const PLANOS_DISPONIVEIS =
   Platform.OS === 'android' ? PLANOS.filter((p) => p.id !== 'annual_family') : PLANOS;
 
-interface BeneficioItemProps {
-  icone: keyof typeof Ionicons.glyphMap;
-  titulo: string;
-  descricao: string;
+function BeneficioItem({ icone, titulo }: { icone: keyof typeof Ionicons.glyphMap; titulo: string }) {
+  const { scheme } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <Ionicons name={icone} size={18} color={scheme.gold} />
+      <Text variant="bodySm" font="bodyMedium" style={{ flex: 1 }}>
+        {titulo}
+      </Text>
+    </View>
+  );
 }
 
-function BeneficioItem({ icone, titulo, descricao }: BeneficioItemProps) {
+function PassoTeste({ titulo, texto, linha }: { titulo: string; texto: string; linha?: boolean }) {
   const { scheme } = useTheme();
-  const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
-    <View style={estilos.beneficioRow}>
-      <View style={estilos.iconeContainer}>
-        <Ionicons name={icone} size={20} color={scheme.gold} />
+    <View style={{ flex: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', height: 11 }}>
+        <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: scheme.goldSoft }} />
+        {linha ? <View style={{ flex: 1, height: 1, backgroundColor: scheme.goldSoft }} /> : null}
       </View>
-      <View style={{ flex: 1 }}>
-        <Text variant="bodySm" font="bodySemi" color={scheme.textPrimary}>
-          {titulo}
-        </Text>
-        <Text variant="caption" color={scheme.textSecondary} style={{ marginTop: 2 }}>
-          {descricao}
-        </Text>
-      </View>
+      <Text variant="micro" font="bodySemi" style={{ marginTop: 5 }}>
+        {titulo}
+      </Text>
+      <Text variant="micro" color={scheme.textSecondary} style={{ paddingRight: 6 }}>
+        {texto}
+      </Text>
     </View>
   );
 }
@@ -95,56 +87,43 @@ interface CartaoPlanoProps {
   preco: string;
   periodo: string;
   destaque?: string;
-  economia?: string;
+  detalhePreco?: string | null;
   selecionado: boolean;
   onPress: () => void;
 }
 
-function CartaoPlano({ nome, preco, periodo, destaque, economia, selecionado, onPress }: CartaoPlanoProps) {
+function CartaoPlano({ nome, preco, periodo, destaque, detalhePreco, selecionado, onPress }: CartaoPlanoProps) {
   const { scheme } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
+      accessibilityRole="radio"
       accessibilityState={{ selected: selecionado }}
       accessibilityLabel={`Plano ${nome}, ${preco} por ${periodo}`}
     >
       {({ pressed }) => (
-        <View
-          style={[
-            estilos.cartaoPlano,
-            selecionado && estilos.cartaoPlanoSelecionado,
-            pressed && { opacity: 0.85 },
-          ]}
-        >
-          <View style={{ flex: 1 }}>
-            <Text variant="bodySm" font="bodySemi" color={scheme.textPrimary}>
+        <View style={[estilos.cartaoPlano, selecionado && estilos.cartaoPlanoSelecionado, pressed && { opacity: 0.85 }]}>
+          <View style={[estilos.radio, selecionado && { borderColor: scheme.accent }]}>
+            {selecionado ? <View style={estilos.radioMiolo} /> : null}
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text variant="bodySm" font="bodySemi">
               {nome}
             </Text>
             {destaque ? (
-              <Text variant="micro" font="bodySemi" color={scheme.gold} style={{ marginTop: 2 }}>
+              <Text variant="micro" font="bodySemi" color={scheme.gold} style={{ marginTop: 1 }}>
                 {destaque}
               </Text>
             ) : null}
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text variant="body" font="bodySemi" color={scheme.textPrimary}>
-                {preco}
-              </Text>
-              <Text variant="caption" color={scheme.textSecondary}>
-                {' '}/{periodo}
-              </Text>
-            </View>
-            {economia ? (
-              <Text
-                variant="micro"
-                font="bodySemi"
-                color={scheme.gold}
-                style={{ marginTop: 3, maxWidth: 150, textAlign: 'right' }}
-              >
-                {economia}
+            <Text variant="bodySm" font="bodySemi" style={{ fontSize: 16 }}>
+              {`${preco}/${periodo}`}
+            </Text>
+            {detalhePreco ? (
+              <Text variant="micro" color={scheme.textMuted} style={{ marginTop: 1 }}>
+                {detalhePreco}
               </Text>
             ) : null}
           </View>
@@ -166,6 +145,8 @@ export default function AssinaturaModal() {
   const [dias, setDias] = useState<number | null>(null);
   const [planoSelecionado, setPlanoSelecionado] = useState<PlanoId>('annual');
   const registrado = useRef(false);
+  const planoComprado = useRef<PlanoId | null>(null);
+  const [avisoNoDia5, setAvisoNoDia5] = useState(true);
 
   useEffect(() => {
     if (registrado.current) return;
@@ -192,7 +173,12 @@ export default function AssinaturaModal() {
 
   // Fecha o modal caso o usuario ja seja ou acabe de virar apoiador
   useEffect(() => {
+    void avisoDoTestePossivel().then(setAvisoNoDia5);
+  }, []);
+
+  useEffect(() => {
     if (isSupporter) {
+      if (planoComprado.current && planoComprado.current !== 'monthly') void agendarAvisoDoTeste();
       router.back();
     }
   }, [isSupporter, router]);
@@ -216,6 +202,7 @@ export default function AssinaturaModal() {
 
   async function handleAssinar() {
     limparErro();
+    planoComprado.current = planoSelecionado;
     await assinar(planoSelecionado, origem);
   }
 
@@ -239,8 +226,6 @@ export default function AssinaturaModal() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: scheme.canvas }} edges={['top', 'bottom']}>
-      <AccentHalo height={360} opacity={0.6} />
-
       {/* Barra de Fechar */}
       <View style={estilos.headerModal}>
         <Pressable
@@ -261,127 +246,64 @@ export default function AssinaturaModal() {
         contentContainerStyle={estilos.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ alignItems: 'center' }}>
-          {origem === 'lembrete' && dias !== null ? (
-            <Text
-              variant="bodySm"
-              font="bodySemi"
-              color={scheme.accent}
-              style={{ textAlign: 'center', marginBottom: space.md }}
-            >
-              {fraseDoLembrete(summary?.streak ?? 0, dias)}
-            </Text>
-          ) : null}
-          {origem === 'anotacao' ? (
-            <Text
-              variant="bodySm"
-              font="bodySemi"
-              color={scheme.accent}
-              style={{ textAlign: 'center', marginBottom: space.md }}
-            >
-              Você já escreveu 6 anotações! Vire apoiador e continue registrando sem limites.
-            </Text>
-          ) : null}
-          {origem === 'favorito' ? (
-            <Text
-              variant="bodySm"
-              font="bodySemi"
-              color={scheme.accent}
-              style={{ textAlign: 'center', marginBottom: space.md }}
-            >
-              Você já guardou 6 favoritos! Vire apoiador e guarde sem limites.
-            </Text>
-          ) : null}
-          <View style={estilos.badge}>
-            <Ionicons name="ribbon-outline" size={14} color={scheme.gold} />
-            <Text
-              variant="micro"
-              font="bodySemi"
-              color={scheme.gold}
-              style={{ letterSpacing: 1.2, textTransform: 'uppercase' }}
-            >
-              Apoiador Feith
-            </Text>
-          </View>
-
-          <Text variant="display" style={estilos.tituloPrincipal}>
-            Aprofunde seu momento diário com Deus.
+        {origem === 'lembrete' && dias !== null ? (
+          <Text variant="bodySm" font="bodySemi" color={scheme.accent} style={{ marginBottom: space.sm }}>
+            {fraseDoLembrete(summary?.streak ?? 0, dias)}
           </Text>
-
-          <GoldRule width={56} style={{ marginTop: space.lg, marginBottom: space.xl }} />
-
-          <Text variant="body" color={scheme.textSecondary} style={estilos.subtitulo}>
-            Torne-se um apoiador e tenha acesso ilimitado a todas as ferramentas do seu devocional diário.
+        ) : null}
+        {origem === 'anotacao' ? (
+          <Text variant="bodySm" font="bodySemi" color={scheme.accent} style={{ marginBottom: space.sm }}>
+            Você já escreveu 6 anotações.
           </Text>
+        ) : null}
+        {origem === 'favorito' ? (
+          <Text variant="bodySm" font="bodySemi" color={scheme.accent} style={{ marginBottom: space.sm }}>
+            Você já guardou 6 favoritos.
+          </Text>
+        ) : null}
+
+        <Text variant="display" accessibilityRole="header" style={{ paddingRight: 36 }}>
+          {tituloDaOrigem(origem)}
+        </Text>
+        <Text color={scheme.textSecondary} style={{ fontSize: 15, lineHeight: 22, marginTop: 6 }}>
+          A leitura em texto continua grátis, sempre.
+        </Text>
+
+        <View style={{ gap: 10, marginTop: space.lg }}>
+          <BeneficioItem icone="headset" titulo="Áudio narrado de todas as reflexões" />
+          <BeneficioItem icone="trail-sign" titulo="Todas as trilhas, incluindo Duas Vozes" />
+          <BeneficioItem icone="library" titulo="Acervo completo e notas sem limite" />
         </View>
 
-        {/* Beneficios */}
-        <Card style={{ marginVertical: space.xl, padding: space.lg }}>
-          <Overline style={{ marginBottom: space.md }}>O que você recebe</Overline>
-
-          <BeneficioItem
-            icone="headset-outline"
-            titulo="Reflexões narradas em áudio"
-            descricao="Ouça a reflexão e os versículos de cada dia onde estiver, no seu ritmo."
-          />
-
-          <View style={estilos.divisor} />
-
-          <BeneficioItem
-            icone="calendar-outline"
-            titulo="Histórico completo do acervo"
-            descricao="Acesse qualquer dia do histórico sem o limite de 30 dias do plano gratuito."
-          />
-
-          <View style={estilos.divisor} />
-
-          <BeneficioItem
-            icone="create-outline"
-            titulo="Anotações e favoritos ilimitados"
-            descricao="Guarde todos os seus aprendizados e reflexões sem limite mensal."
-          />
-        </Card>
-
-        {/* Seletor de plano */}
-        <View style={{ gap: space.sm, marginBottom: space.lg }}>
-          {PLANOS_DISPONIVEIS.map((plano) => (
-            <CartaoPlano
-              key={plano.id}
-              nome={plano.nome}
-              preco={produtos?.[plano.id]?.displayPrice ?? PRECOS_PADRAO[plano.id]}
-              periodo={plano.id === 'monthly' ? 'mês' : 'ano'}
-              destaque={plano.destaque}
-              economia={plano.economia}
-              selecionado={planoSelecionado === plano.id}
-              onPress={() => setPlanoSelecionado(plano.id)}
-            />
-          ))}
+        <View style={{ gap: 10, marginTop: space.lg }} accessibilityRole="radiogroup">
+          {PLANOS_DISPONIVEIS.map((plano) => {
+            const preco = produtos?.[plano.id]?.displayPrice ?? PRECOS_PADRAO[plano.id];
+            return (
+              <CartaoPlano
+                key={plano.id}
+                nome={plano.nome}
+                preco={preco}
+                periodo={plano.id === 'monthly' ? 'mês' : 'ano'}
+                destaque={plano.destaque}
+                detalhePreco={plano.id === 'annual' ? precoPorMes(preco, produtos?.annual?.price) : null}
+                selecionado={planoSelecionado === plano.id}
+                onPress={() => setPlanoSelecionado(plano.id)}
+              />
+            );
+          })}
         </View>
 
-        {/* Card do Preco */}
-        <Card quiet style={estilos.cardPreco}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center' }}>
-            {carregandoProduto ? (
-              <ActivityIndicator size="small" color={scheme.accent} />
-            ) : (
-              <>
-                <Text variant="display" font="serifSemi" color={scheme.accent} style={{ fontSize: 36 }}>
-                  {precoFormatado}
-                </Text>
-                <Text variant="body" color={scheme.textSecondary} style={{ marginLeft: 6 }}>
-                  / {periodo}
-                </Text>
-              </>
-            )}
+        {temTrial ? (
+          <View style={estilos.calendario}>
+            <Overline>Como funciona o período grátis</Overline>
+            <View style={{ flexDirection: 'row', marginTop: space.sm }}>
+              <PassoTeste titulo="Hoje" texto="Acesso total" linha />
+              {avisoNoDia5 ? <PassoTeste titulo="Dia 5" texto="Avisamos você" linha /> : null}
+              <PassoTeste titulo="Dia 7" texto="Primeira cobrança" />
+            </View>
           </View>
-          <Text variant="caption" color={scheme.textGhost} style={{ textAlign: 'center', marginTop: 4 }}>
-            {temTrial
-              ? `7 dias grátis, depois ${precoFormatado}/${periodo} • Cancele quando quiser`
-              : 'Renovação mensal automática • Cancele quando quiser'}
-          </Text>
-        </Card>
+        ) : null}
 
-        {/* Mensagem de Erro (se houver) */}
         {erro ? (
           <View style={estilos.bannerErro}>
             <Ionicons name="alert-circle-outline" size={18} color={scheme.accent} />
@@ -391,30 +313,19 @@ export default function AssinaturaModal() {
           </View>
         ) : null}
 
-        {/* Botoes de Acao */}
-        <View style={{ gap: space.md, marginTop: space.lg }}>
+        <View style={{ marginTop: space.lg }}>
           <Button
             label={
               comprando
                 ? `Processando na ${NOME_LOJA}...`
                 : temTrial
-                  ? 'Experimentar 7 dias grátis'
+                  ? 'Começar 7 dias grátis'
                   : `Assinar por ${precoFormatado}/${periodo}`
             }
-            variant="quiet"
             loading={comprando}
-            disabled={comprando || restaurando}
+            disabled={comprando || restaurando || carregandoProduto}
             onPress={handleAssinar}
           />
-
-          <Button
-            label="Restaurar compras"
-            variant="quiet"
-            loading={restaurando}
-            disabled={comprando || restaurando}
-            onPress={handleRestaurar}
-          />
-
           {convidado ? (
             <Button
               label="Continuar grátis"
@@ -422,7 +333,7 @@ export default function AssinaturaModal() {
               textColor={scheme.textSecondary}
               disabled={comprando}
               onPress={() => fechar('continue_free')}
-              style={{ alignSelf: 'center' }}
+              style={{ alignSelf: 'center', marginTop: space.xs }}
             />
           ) : null}
         </View>
@@ -434,17 +345,19 @@ export default function AssinaturaModal() {
           </Text>
 
           <View style={estilos.linksLegais}>
-            <Pressable onPress={abrirTermos} hitSlop={8}>
-              <Text variant="caption" color={scheme.textSecondary} style={estilos.link}>
-                Termos de Uso (EULA)
+            <Pressable onPress={handleRestaurar} disabled={comprando || restaurando} hitSlop={8}>
+              <Text variant="caption" font="bodyMedium" color={scheme.textSecondary}>
+                {restaurando ? 'Restaurando…' : 'Restaurar compras'}
               </Text>
             </Pressable>
-            <Text variant="caption" color={scheme.textGhost}>
-              •
-            </Text>
+            <Pressable onPress={abrirTermos} hitSlop={8}>
+              <Text variant="caption" font="bodyMedium" color={scheme.textSecondary}>
+                Termos
+              </Text>
+            </Pressable>
             <Pressable onPress={abrirPrivacidade} hitSlop={8}>
-              <Text variant="caption" color={scheme.textSecondary} style={estilos.link}>
-                Política de Privacidade
+              <Text variant="caption" font="bodyMedium" color={scheme.textSecondary}>
+                Privacidade
               </Text>
             </Pressable>
           </View>
@@ -478,64 +391,36 @@ function criarEstilos(scheme: Scheme) {
     paddingTop: space.sm,
     paddingBottom: space.xxl,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: space.md,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(139,105,20,0.25)',
-    backgroundColor: 'rgba(139,105,20,0.08)',
-    marginBottom: space.lg,
-  },
-  tituloPrincipal: {
-    textAlign: 'center',
-    fontSize: 28,
-    lineHeight: 34,
-    color: scheme.textPrimary,
-  },
-  subtitulo: {
-    textAlign: 'center',
-    maxWidth: 320,
-    lineHeight: 22,
-  },
-  beneficioRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.md,
-  },
-  iconeContainer: {
-    width: 36,
-    height: 36,
+  calendario: {
+    marginTop: space.md,
+    padding: 14,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(139,105,20,0.10)',
+    backgroundColor: scheme.canvasWarm,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: scheme.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  divisor: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: scheme.border,
-    marginVertical: space.md,
-  },
-  cardPreco: {
-    alignItems: 'center',
-    paddingVertical: space.xl,
-    backgroundColor: scheme.canvasWarm,
-    borderRadius: radius.lg,
-  },
+  radioMiolo: { width: 12, height: 12, borderRadius: 6, backgroundColor: scheme.accent },
   cartaoPlano: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: space.lg,
-    borderRadius: radius.md,
+    gap: space.md,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    minHeight: 62,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: scheme.border,
     backgroundColor: scheme.surface,
   },
   cartaoPlanoSelecionado: {
+    borderWidth: 1.5,
     borderColor: scheme.accent,
     backgroundColor: scheme.canvasWarm,
   },
@@ -549,11 +434,8 @@ function criarEstilos(scheme: Scheme) {
     marginVertical: space.sm,
   },
   containerLegal: {
-    marginTop: space.xxl,
-    paddingTop: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: scheme.border,
-    gap: space.md,
+    marginTop: space.md,
+    gap: space.sm,
   },
   textoLegal: {
     textAlign: 'center',
@@ -565,9 +447,6 @@ function criarEstilos(scheme: Scheme) {
     justifyContent: 'center',
     gap: space.md,
     paddingBottom: space.lg,
-  },
-  link: {
-    textDecorationLine: 'underline',
   },
   });
 }

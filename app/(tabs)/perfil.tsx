@@ -66,7 +66,7 @@ function Medidor({ rotulo, usado, limite }: { rotulo: string; usado: number; lim
 export default function Perfil() {
   const { scheme, mode } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
-  const { summary, isSupporter, diasParaExpirar, signOut } = useAuth();
+  const { summary, isSupporter, isGuest, diasParaExpirar, signOut } = useAuth();
   const { gerenciar } = useIap();
   const router = useRouter();
   const { respiro } = useEspacoTabBar();
@@ -162,7 +162,7 @@ export default function Perfil() {
   }
 
   const quotas = summary?.quotas;
-  const nome = summary?.username ?? '—';
+  const nome = isGuest ? 'Visitante' : (summary?.username ?? '—');
   const inicial = nome.trim().charAt(0).toUpperCase() || '?';
 
   return (
@@ -190,8 +190,11 @@ export default function Perfil() {
             {nome}
           </Text>
           <Text variant="bodySm" color={scheme.textMuted} style={{ marginTop: 2, textAlign: 'center' }}>
-            {summary?.email ?? ''}
+            {isGuest ? 'Crie uma conta para guardar seu progresso.' : (summary?.email ?? '')}
           </Text>
+          {isGuest ? (
+            <Button label="Criar conta" icon="arrow-forward" style={{ marginTop: space.lg }} onPress={() => router.push('/conta')} />
+          ) : null}
 
           <GoldRule width={48} style={{ marginVertical: space.xl }} />
 
@@ -274,13 +277,15 @@ export default function Perfil() {
         ) : null}
 
         <RowGroup titulo="Preferências">
-          <ListRow
-            icon="person-outline"
-            iconBg="rgba(122,31,31,0.08)"
-            iconColor={scheme.accent}
-            label="Editar perfil"
-            onPress={() => router.push('/perfil/editar')}
-          />
+          {!isGuest ? (
+            <ListRow
+              icon="person-outline"
+              iconBg="rgba(122,31,31,0.08)"
+              iconColor={scheme.accent}
+              label="Editar perfil"
+              onPress={() => router.push('/perfil/editar')}
+            />
+          ) : null}
           <ListRow
             icon="notifications-outline"
             iconBg="rgba(139,105,20,0.10)"
@@ -332,13 +337,23 @@ export default function Perfil() {
         </RowGroup>
 
         <RowGroup titulo="Conta">
-          <ListRow
-            icon="log-out-outline"
-            iconBg={scheme.canvasWarm}
-            iconColor={scheme.textSecondary}
-            label="Sair da conta"
-            onPress={confirmarSaida}
-          />
+          {isGuest ? (
+            <ListRow
+              icon="log-in-outline"
+              iconBg={scheme.canvasWarm}
+              iconColor={scheme.textSecondary}
+              label="Já tenho conta"
+              onPress={() => router.push('/(auth)/login')}
+            />
+          ) : (
+            <ListRow
+              icon="log-out-outline"
+              iconBg={scheme.canvasWarm}
+              iconColor={scheme.textSecondary}
+              label="Sair da conta"
+              onPress={confirmarSaida}
+            />
+          )}
           <ListRow
             icon="trash-outline"
             iconBg="#FBF0EF"
@@ -354,9 +369,9 @@ export default function Perfil() {
           <Text
             variant="micro"
             color={scheme.textGhost}
-            style={{ textAlign: 'center', letterSpacing: 3, textTransform: 'uppercase' }}
+            style={{ textAlign: 'center' }}
           >
-            feith • exegese diária
+            feith · exegese diária
           </Text>
         </View>
       </ScrollView>
