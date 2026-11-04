@@ -128,8 +128,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const estadoAtual = useRef(state);
+  estadoAtual.current = state;
+
   const signIn = useCallback(
     async (response: AuthResponse) => {
+      const anterior = estadoAtual.current;
+      if (anterior.summary?.is_guest && anterior.token && jwtUserUuid(anterior.token) !== response.user_uuid) {
+        posthog?.capture('guest_left_for_existing_account');
+      }
       await aplicarToken(response.access_token, response.expires_in);
 
       // `user_uuid` e o identificador estavel devolvido pelo backend em todos

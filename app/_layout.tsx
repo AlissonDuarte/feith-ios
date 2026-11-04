@@ -86,7 +86,7 @@ function header({ title, voltar, scheme }: { title?: string; voltar: string; sch
  */
 function RouteGuard() {
   const { token, loading, summary } = useAuth();
-  const { scheme } = useTheme();
+  const { scheme, effectiveMode } = useTheme();
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
@@ -95,6 +95,14 @@ function RouteGuard() {
   // vale com sessao) e do router, para o toque na notificacao navegar.
   usePushNotifications();
   useRastreioDeTelas();
+
+  useEffect(() => {
+    posthog?.register({
+      is_guest: Boolean(summary?.is_guest),
+      plano: summary?.plan ?? null,
+      tema: effectiveMode,
+    });
+  }, [token, summary?.is_guest, summary?.plan, effectiveMode]);
 
   useEffect(() => {
     if (loading) return;

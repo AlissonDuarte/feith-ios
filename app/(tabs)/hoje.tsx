@@ -145,6 +145,19 @@ export default function Hoje() {
     }, [refreshSummary, router]),
   );
 
+  const estadoDaHoje = useRef({ leu_hoje: false, tem_ideia_central: false, sequencia: 0 });
+  estadoDaHoje.current = {
+    leu_hoje: summary?.read_today ?? false,
+    tem_ideia_central: Boolean(reflexao?.core_idea?.trim()),
+    sequencia: summary?.streak ?? 0,
+  };
+  const temResumo = Boolean(summary);
+  const reflexaoDeHoje = reflexao?.uuid;
+  useEffect(() => {
+    if (!focado || !reflexaoDeHoje || !temResumo) return;
+    posthog?.capture('hoje_viewed', { ...estadoDaHoje.current, noite: ehNoite(new Date()) });
+  }, [focado, reflexaoDeHoje, temResumo]);
+
   useEffect(() => {
     if (!reflexao?.uuid) return;
     AsyncStorage.getItem(TOUR_HOJE_KEY)
@@ -290,7 +303,10 @@ export default function Hoje() {
         </View>
 
         <Pressable
-          onPress={() => router.push('/perfil/sequencia')}
+          onPress={() => {
+            posthog?.capture('hoje_action_tapped', { acao: 'sequencia' });
+            router.push('/perfil/sequencia');
+          }}
           accessibilityRole="button"
           accessibilityLabel={`Sua sequência: ${streak} dias`}
         >
@@ -365,7 +381,7 @@ export default function Hoje() {
           icon="arrow-forward"
           style={{ marginTop: space.lg }}
           onPress={() => {
-            posthog?.capture('hoje_cta_tapped', { acao: temIdeia ? 'curta' : 'etapas', noite });
+            posthog?.capture('hoje_cta_tapped', { acao: temIdeia ? 'curta' : 'etapas', noite, leu_hoje: leuHoje, sequencia: streak });
             abrir({ modo: temIdeia ? 'curta' : 'etapas' });
           }}
         />
@@ -385,14 +401,20 @@ export default function Hoje() {
               icone="hand-left-outline"
               titulo="Oração final"
               legenda="Para encerrar o dia"
-              onPress={() => abrir({ modo: 'etapas', etapa: 'prayer' })}
+              onPress={() => {
+                posthog?.capture('hoje_action_tapped', { acao: 'oracao_final', noite });
+                abrir({ modo: 'etapas', etapa: 'prayer' });
+              }}
             />
           ) : (
             <Forma
               icone="layers"
               titulo="5 etapas"
               legenda={`${minutos} min de leitura`}
-              onPress={() => abrir({ modo: 'etapas' })}
+              onPress={() => {
+                posthog?.capture('hoje_action_tapped', { acao: 'etapas', noite });
+                abrir({ modo: 'etapas' });
+              }}
             />
           )}
         </View>
@@ -430,7 +452,10 @@ export default function Hoje() {
 
         {nota ? (
           <Pressable
-            onPress={() => router.push(`/leitura/${nota.reflection_uuid}`)}
+            onPress={() => {
+              posthog?.capture('hoje_action_tapped', { acao: 'ultima_nota' });
+              router.push(`/leitura/${nota.reflection_uuid}`);
+            }}
             accessibilityRole="button"
             accessibilityLabel="Abrir a reflexão da sua última anotação"
           >

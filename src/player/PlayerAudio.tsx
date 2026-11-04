@@ -33,6 +33,7 @@ interface Props {
   aoTocar?: () => void;
   abrirAoCarregar?: boolean;
   textoApoio?: string | null;
+  origem?: string;
 }
 
 function vibrar() {
@@ -45,7 +46,7 @@ function duracaoLegivel(segundos: number): string | null {
   return `${minutos} min`;
 }
 
-export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir, aoTocar, abrirAoCarregar, textoApoio }: Props) {
+export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir, aoTocar, abrirAoCarregar, textoApoio, origem: origemInformada }: Props) {
   const { scheme, effectiveMode } = useTheme();
   const estilos = useMemo(() => criarEstilos(scheme), [scheme]);
   const router = useRouter();
@@ -62,18 +63,18 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abrirAoCarregar, audio.transcript]);
 
-  const origem = onAnotar ? 'hoje' : 'leitura';
+  const origem = origemInformada ?? (onAnotar ? 'hoje' : 'leitura');
   const titulo = audio.transcript?.title ?? referencia ?? 'Leitura do dia';
   const emAndamento = !!audio.transcript && (audio.tocando || audio.posicao > 0);
   const progresso = audio.duracao > 0 ? Math.min(1, audio.posicao / audio.duracao) : 0;
 
-  function abrirAssinatura() {
-    posthog?.capture('audio_paywall_opened', { reflection_uuid: reflectionUuid, source: origem });
+  function abrirAssinatura(cta: 'bloqueado' | 'amostra_concluida' | 'amostra_player' = 'bloqueado') {
+    posthog?.capture('audio_paywall_opened', { reflection_uuid: reflectionUuid, source: origem, cta });
     router.push({ pathname: '/assinatura', params: { origem: 'audio' } });
   }
 
   function abrirPlayer() {
-    posthog?.capture('audio_player_expanded', { reflection_uuid: reflectionUuid, source: origem });
+    posthog?.capture('audio_player_expanded', { reflection_uuid: reflectionUuid, source: origem, sample: Boolean(audio.amostra) });
     setAberto(true);
   }
 
@@ -118,10 +119,10 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir, 
   let acaoMeta: (() => void) | null;
 
   if (audio.amostraConcluida) {
-    acaoPrincipal = abrirAssinatura;
+    acaoPrincipal = () => abrirAssinatura('amostra_concluida');
     iconePrincipal = 'headset';
     rotuloPrincipal = 'Ouvir a reflexão inteira';
-    acaoMeta = abrirAssinatura;
+    acaoMeta = () => abrirAssinatura('amostra_concluida');
     linha1 = 'Ouvir a reflexão inteira';
     linha2 = (
       <Text variant="caption" font="bodySemi" color={scheme.gold}>
@@ -129,10 +130,10 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir, 
       </Text>
     );
   } else if (audio.semAcesso) {
-    acaoPrincipal = abrirAssinatura;
+    acaoPrincipal = () => abrirAssinatura('bloqueado');
     iconePrincipal = 'headset';
     rotuloPrincipal = 'Ouvir a reflexão, exclusivo do Plano Apoiador';
-    acaoMeta = abrirAssinatura;
+    acaoMeta = () => abrirAssinatura('bloqueado');
     linha1 = 'Ouvir a reflexão';
     linha2 = (
       <>
@@ -280,7 +281,7 @@ export function PlayerAudio({ reflectionUuid, referencia, onAnotar, aoConcluir, 
         onAnotarNoTrecho={onAnotar ? anotarNoTrecho : undefined}
         onAssinar={() => {
           setAberto(false);
-          abrirAssinatura();
+          abrirAssinatura('amostra_player');
         }}
         textoApoio={textoApoio}
       />

@@ -151,7 +151,7 @@ export default function AssinaturaModal() {
   useEffect(() => {
     if (registrado.current) return;
     registrado.current = true;
-    posthog?.capture('paywall_viewed', { source: origem, reminder: marco });
+    posthog?.capture('paywall_viewed', { source: origem, reminder: marco, default_plan: 'annual' });
     void registrarExibicaoAssinatura(origem);
     if (origem === 'lembrete') void diasDeUso().then(setDias);
   }, [origem, marco]);
@@ -287,7 +287,12 @@ export default function AssinaturaModal() {
                 destaque={plano.destaque}
                 detalhePreco={plano.id === 'annual' ? precoPorMes(preco, produtos?.annual?.price) : null}
                 selecionado={planoSelecionado === plano.id}
-                onPress={() => setPlanoSelecionado(plano.id)}
+                onPress={() => {
+                  if (plano.id !== planoSelecionado) {
+                    posthog?.capture('paywall_plan_selected', { plan: plano.id, source: origem });
+                  }
+                  setPlanoSelecionado(plano.id);
+                }}
               />
             );
           })}

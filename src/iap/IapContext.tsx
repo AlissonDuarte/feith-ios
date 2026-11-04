@@ -140,6 +140,8 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
         console.warn('[IAP] Erro ao validar transacao:', e);
         posthog?.capture('subscription_purchase_failed', {
           stage: 'validation',
+          error_status: (e as { status?: number }).status ?? null,
+          error_message: mensagemDe(e),
           ...propriedadesCompra(purchase.productId),
         });
         setErro(mensagemDe(e) || 'Não foi possível confirmar sua assinatura com o servidor.');
@@ -299,6 +301,7 @@ export function IapProvider({ children }: { children: React.ReactNode }) {
       posthog?.capture('subscription_purchase_failed', {
         stage: 'request',
         error_code: err.code ?? 'unknown',
+        error_message: mensagemDe(e),
         ...propriedadesCompra(),
       });
       const msg = mensagemDe(e) || `Não foi possível iniciar a assinatura na ${NOME_LOJA}.`;

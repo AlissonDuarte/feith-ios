@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -20,7 +20,9 @@ const OURO = '#D8C79A';
 
 export default function Abertura() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, token } = useAuth();
+  const criando = useRef(false);
+  const focada = useIsFocused();
   const [versiculo, setVersiculo] = useState(() => getLocalFallbackVerse(new Date()));
   const [entrando, setEntrando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -33,25 +35,39 @@ export default function Abertura() {
     posthog?.capture('opening_viewed');
   }, []);
 
+  useEffect(() => {
+    if (focada && token && !criando.current) router.replace('/(tabs)/hoje');
+  }, [focada, token, router]);
+
   async function comecar() {
+    if (criando.current || token) return;
+    criando.current = true;
     setErro(null);
     setEntrando(true);
     posthog?.capture('opening_cta_tapped');
     try {
       await signIn(await api.createGuest());
-      const hoje = await api.getDailyReflection();
-      if (hoje.uuid) {
-        router.replace({
-          pathname: '/leitura/[key]',
-          params: { key: hoje.uuid, modo: 'curta', primeira: '1', hoje: '1' },
-        });
-      } else {
-        router.replace('/(tabs)/hoje');
-      }
     } catch (e) {
+      posthog?.capture('opening_guest_failed', {
+        status: (e as { status?: number }).status ?? null,
+        error_message: mensagemDe(e),
+      });
       setErro(mensagemDe(e));
       setEntrando(false);
+      criando.current = false;
+      return;
     }
+    const hoje = await api.getDailyReflection().catch(() => null);
+    if (hoje?.uuid) {
+      router.replace({
+        pathname: '/leitura/[key]',
+        params: { key: hoje.uuid, modo: 'curta', primeira: '1', hoje: '1' },
+      });
+    } else {
+      router.replace('/(tabs)/hoje');
+    }
+    setEntrando(false);
+    criando.current = false;
   }
 
   return (

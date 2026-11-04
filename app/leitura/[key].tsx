@@ -35,6 +35,7 @@ import { useRastreioDeLeitura } from '../../src/config/useRastreioDeLeitura';
 import { lembreteAssinaturaDevido } from '../../src/iap/lembretesAssinatura';
 import { minutosDeLeitura, secaoAtual } from '../../src/leitura/regras';
 import { PRIMEIRO_DIA_KEY } from '../../src/leitura/primeiroDia';
+import { useRastreioDaIdeia } from '../../src/leitura/useRastreioDaIdeia';
 import { ALTURA_BARRA_AUDIO, PlayerAudio } from '../../src/player/PlayerAudio';
 import { trechoDe } from '../../src/share/trecho';
 import { useTheme } from '../../src/theme/ThemeContext';
@@ -100,6 +101,8 @@ export default function Leitura() {
   }, [ehHoje, router]);
 
   const rastreio = useRastreioDeLeitura(modo === 'etapas' ? reflexao : null, ehHoje ? 'hoje' : 'leitura', aoLer);
+  const marcarDesfecho = useRastreioDaIdeia(modo === 'curta' && reflexao ? reflexao.uuid : null);
+  const secoesAlcancadas = useRef(new Set<string>());
 
   useEffect(
     () => () => {
@@ -124,11 +127,11 @@ export default function Leitura() {
     posthog?.capture('reader_font_changed', { escala: proxima });
   }
 
-  const registrarLeitura = useCallback(async () => {
+  const registrarLeitura = useCallback(async (motivo: 'concluiu_curta' | 'abriu_etapas' | 'tocou_audio') => {
     if (registrouLeitura.current) return;
     registrouLeitura.current = true;
     try {
-      await api.markReflectionRead();
+      await api.markReflectionRead(motivo);
       await refreshSummary();
       void reloadWidgets();
     } catch {
@@ -169,7 +172,7 @@ export default function Leitura() {
     }
     if (abriuEtapa.current) return;
     abriuEtapa.current = true;
-    void registrarLeitura();
+    void registrarLeitura('abriu_etapas');
   }, [reflexao?.uuid, modo, registrarLeitura]);
 
   const secoes = useMemo(
@@ -197,6 +200,17 @@ export default function Leitura() {
     rastreio.onScroll(e);
     const proxima = secaoAtual(posicoesRef.current, e.nativeEvent.contentOffset.y);
     setAtual((anterior) => (anterior === proxima ? anterior : proxima));
+    const secao = secoes[proxima];
+    if (secao && !secoesAlcancadas.current.has(secao.key)) {
+      secoesAlcancadas.current.add(secao.key);
+      posthog?.capture('reflection_section_reached', {
+        reflection_uuid: reflexao?.uuid ?? null,
+        section: secao.key,
+        position: proxima + 1,
+        total: secoes.length,
+        source: ehHoje ? 'hoje' : 'leitura',
+      });
+    }
   }
 
   function voltar() {
@@ -208,7 +222,8 @@ export default function Leitura() {
     if (!reflexao) return;
     setConcluindo(true);
     posthog?.capture('reading_finished_for_today', { reflection_uuid: reflexao.uuid, modo });
-    await registrarLeitura();
+    marcarDesfecho('concluded');
+    await registrarLeitura('concluiu_curta');
     const visto = await AsyncStorage.getItem(PRIMEIRO_DIA_KEY).catch(() => null);
     if (!visto && (params.primeira === '1' || isGuest)) {
       setConcluindo(false);
@@ -223,6 +238,7 @@ export default function Leitura() {
 
   function aprofundar() {
     posthog?.capture('reflection_depth_opened', { reflection_uuid: reflexao?.uuid ?? null });
+    marcarDesfecho('deepened');
     setAbrirPlayer(false);
     setModoEscolhido('etapas');
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -352,7 +368,8 @@ export default function Leitura() {
             <PlayerAudio
               reflectionUuid={reflexao.uuid}
               referencia={reflexao.scripture_reference}
-              aoTocar={() => void registrarLeitura()}
+              origem="curta"
+              aoTocar={() => void registrarLeitura('tocou_audio')}
               abrirAoCarregar={abrirPlayer}
               textoApoio={textoApoio}
               aoConcluir={aoLer}
@@ -450,7 +467,8 @@ export default function Leitura() {
                 setPrefixoNota(prefixo);
                 setEscrevendo(true);
               }}
-              aoTocar={() => void registrarLeitura()}
+              origem="etapas"
+              aoTocar={() => void registrarLeitura('tocou_audio')}
               abrirAoCarregar={abrirPlayer}
               textoApoio={textoApoio}
               aoConcluir={aoLer}

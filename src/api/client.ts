@@ -17,6 +17,7 @@
  * onde acontecem: os dois endpoints que mentem no codigo HTTP, o envelope de
  * paginacao que falta um campo, e as datas que nao sao ISO.
  */
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 import { parseDateBR, parseDateTimeBR, parseExpiresBR } from './dates';
@@ -110,7 +111,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     // O backend so devolve o token no corpo quando ve este header; sem ele a
     // resposta de login vem apenas com o Set-Cookie, que nao serve aqui.
     // Ver item B2 do plano.
-    'X-Client-Platform': 'ios',
+    'X-Client-Platform': Platform.OS,
+    'X-App-Version': Constants.expoConfig?.version ?? '',
     ...((extraHeaders as Record<string, string>) || {}),
   };
   if (accessToken) {
@@ -335,7 +337,8 @@ export const api = {
       query: { ref_key: reflectionUuid, log: false },
     }).then(hydrateReflection),
 
-  markReflectionRead: () => request<{ logged: boolean }>('/reflections/read', { method: 'POST' }),
+  markReflectionRead: (motivo: 'concluiu_curta' | 'abriu_etapas' | 'tocou_audio') =>
+    request<{ logged: boolean }>('/reflections/read', { method: 'POST', query: { motivo } }),
 
   /** GET alterna o favorito; DELETE remove. Mesmo path, semanticas diferentes. */
   toggleBookmark: (reflectionUuid: string) =>

@@ -292,6 +292,7 @@ export default function DiaDaTrilha() {
           <PlayerAudio
             reflectionUuid={dia.reflection_uuid}
             referencia={dia.scripture_reference}
+            origem="trilha"
             onAnotar={(prefixo) => {
               setPrefixoNota(prefixo);
               setAnotando(true);

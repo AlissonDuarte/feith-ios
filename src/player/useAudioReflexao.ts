@@ -133,7 +133,11 @@ export function useAudioReflexao(
           setSemAcesso(false);
           setErro(null);
           return;
-        } catch {
+        } catch (erroAmostra) {
+          posthog?.capture('audio_sample_unavailable', {
+            reflection_uuid: reflectionUuid,
+            status: (erroAmostra as { status?: number }).status ?? null,
+          });
           if (!montado.current) return;
         }
       }
@@ -225,6 +229,8 @@ export function useAudioReflexao(
     };
   }, [transcript, player]);
 
+  const amostraRef = useRef(transcript?.sampleSeconds);
+  amostraRef.current = transcript?.sampleSeconds;
   const ouvido = useRef({ segundos: 0, ultimaPosicao: 0, maxPosicao: 0, duracao: 0 });
   const concluiuRegistrado = useRef(false);
   const [amostraConcluida, setAmostraConcluida] = useState(false);
@@ -256,6 +262,7 @@ export function useAudioReflexao(
       if (o.segundos < 1) return;
       posthog?.capture('audio_session_ended', {
         reflection_uuid: reflectionUuid ?? null,
+        sample: Boolean(amostraRef.current),
         ...resumoOuvido(),
         max_position_seconds: Math.round(o.maxPosicao),
         completed: concluiuRegistrado.current,
@@ -285,6 +292,7 @@ export function useAudioReflexao(
         posthog?.capture('audio_paused', {
           reflection_uuid: reflectionUuid ?? null,
           position_seconds: Math.round(player.currentTime),
+          sample: Boolean(transcript?.sampleSeconds),
           ...resumoOuvido(),
         });
       } else {

@@ -29,6 +29,7 @@ export default function Conta() {
   }, []);
 
   async function entrar(metodo: Metodo, executar: () => Promise<boolean>) {
+    posthog?.capture('guest_account_prompt_tapped', { metodo });
     setErro(null);
     setCarregando(metodo);
     try {
@@ -83,7 +84,10 @@ export default function Conta() {
           variant="quiet"
           iconLeft="mail-outline"
           disabled={ocupado}
-          onPress={() => router.replace('/(auth)/register')}
+          onPress={() => {
+            posthog?.capture('guest_account_prompt_tapped', { metodo: 'email' });
+            router.replace('/(auth)/register');
+          }}
         />
       </View>
 
